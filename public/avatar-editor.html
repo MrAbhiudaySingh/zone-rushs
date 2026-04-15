@@ -884,9 +884,12 @@ function randomize(){
   S.sex=Math.random()>.5?'male':'female';
   S.skin=pick(SKIN_SW); S.hair=pick(HAIR_STYLES.filter(h=>h.id!=='none'));
   S.hairColor=pick(HAIR_SW); S.eye=pick(EYE_STYLES.filter(e=>e.id!=='none'));
-  S.eyeColor=pick(EYE_SW); S.torso=pick(TORSO_OPTS.filter(t=>t.id!=='none'));
-  S.legs=pick(LEGS_OPTS.filter(l=>l.id!=='none')); S.feet=pick(FEET_OPTS);
-  S.hat=pick(HAT_OPTS); S.clothColor=pick(CLOTH_SW);
+  S.eyeColor=pick(EYE_SW);
+  S.torso=pick(TORSO_OPTS.filter(t=>isEquipOwned('torso',t.id) && t.id!=='none') || [TORSO_OPTS[0]]);
+  S.legs=pick(LEGS_OPTS.filter(l=>isEquipOwned('legs',l.id) && l.id!=='none') || [LEGS_OPTS[0]]);
+  S.feet=pick(FEET_OPTS.filter(f=>isEquipOwned('feet',f.id)) || [FEET_OPTS[0]]);
+  S.hat=pick(HAT_OPTS.filter(h=>isEquipOwned('hat',h.id)) || [HAT_OPTS[0]]);
+  S.clothColor=pick(CLOTH_SW);
   S.anim=pick(Object.keys(ANIMS)); S.scene=pick(SCENES);
   document.querySelectorAll('.gb').forEach(b=>b.classList.toggle('active',b.dataset.b===S.sex));
   document.getElementById('sbg').style.background=S.scene.bg;
