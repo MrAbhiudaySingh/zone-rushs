@@ -645,6 +645,19 @@ const HAT_OPTS = [
   {id:'helmet',label:'HELM', icon:'⛑',path:'hat/helmet/bascinet/adult/{a}.png'},
   {id:'wizard',label:'WIZRD',icon:'🧙',path:'hat/magic/wizard/base/adult/{a}.png'},
 ];
+
+// Weapons - loaded externally from /sprites/ directory
+const WEAPON_OPTS = [
+  {id:'none',     label:'NONE',  icon:'—',  path:null, shopId:null},
+  {id:'dagger',   label:'DAGR',  icon:'🗡️', extSrc:'/sprites/weapon_dagger.png',   shopId:'lpc_dagger'},
+  {id:'longsword',label:'LSWD',  icon:'⚔️', extSrc:'/sprites/weapon_longsword.png',shopId:'lpc_longsw'},
+  {id:'shortsword',label:'SSWD', icon:'⚔️', extSrc:'/sprites/weapon_longsword.png',shopId:'lpc_shortsw'},
+  {id:'bow',      label:'BOW',   icon:'🏹', extSrc:'/sprites/weapon_bow.png',      shopId:'lpc_bow'},
+  {id:'spear',    label:'SPER',  icon:'🔱', extSrc:'/sprites/weapon_spear.png',    shopId:'lpc_spear'},
+  {id:'staff',    label:'STAF',  icon:'🪄', extSrc:'/sprites/weapon_staff.png',    shopId:'lpc_staff'},
+  {id:'warhammer',label:'WHAM',  icon:'🔨', extSrc:'/sprites/weapon_warhammer.png',shopId:'lpc_warhammer'},
+  {id:'waraxe',   label:'WAXE',  icon:'🪓', extSrc:'/sprites/weapon_waraxe.png',   shopId:null},
+];
 const SCENES = [
   {id:'night', label:'NIGHT',bg:'radial-gradient(ellipse at 50% 30%,#0d1b2a,#050a10)'},
   {id:'dngn',  label:'DNGN', bg:'radial-gradient(ellipse at 50% 80%,#1a0a00,#0a0500)'},
