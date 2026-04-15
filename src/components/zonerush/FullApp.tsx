@@ -4919,21 +4919,6 @@ function ProfileScreen({ user, onAdminAccess }) {
     tapTimer.current = setTimeout(() => { tapRef.current = 0; }, 2000);
   };
 
-  // Build owned equipment map from shop items
-  const getOwnedEquipment = useCallback(() => {
-    const allItems = ctx?.sharedShopItems || SHOP_ITEMS;
-    const owned = { torso:['none'], legs:['none'], feet:['none'], hat:['none'] };
-    allItems.forEach(item => {
-      if ((item.owned || item.price === 0 || item.priceAE === 0) && item.avatarSlot && item.avatarOptionId) {
-        if (!owned[item.avatarSlot]) owned[item.avatarSlot] = ['none'];
-        if (!owned[item.avatarSlot].includes(item.avatarOptionId)) {
-          owned[item.avatarSlot].push(item.avatarOptionId);
-        }
-      }
-    });
-    return owned;
-  }, [ctx?.sharedShopItems]);
-
   // Listen for avatar postMessage from iframe
   useEffect(() => {
     const handler = (e) => {
@@ -4941,13 +4926,6 @@ function ProfileScreen({ user, onAdminAccess }) {
         setAvatarDataUrl(e.data.dataUrl);
         setShowAvatarEditor(false);
         showToast("✨ Avatar updated!", "success");
-      }
-      if (e.data && e.data.type === 'avatar-editor-ready') {
-        // Send owned equipment to iframe
-        const iframe = document.querySelector('iframe[title="Avatar Editor"]');
-        if (iframe?.contentWindow) {
-          iframe.contentWindow.postMessage({ type:'update-owned-equipment', owned: getOwnedEquipment() }, '*');
-        }
       }
     };
     window.addEventListener('message', handler);
