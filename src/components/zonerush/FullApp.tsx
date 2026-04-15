@@ -1731,6 +1731,7 @@ function MarketScreen({ user }) {
   const ctx = useContext(AppContext);
   const [mTab, setMTab] = useState("shop");
   const [search, setSearch] = useState("");
+  const [catFilter, setCatFilter] = useState("all");
   const allShopItems = ctx?.sharedShopItems || SHOP_ITEMS;
   const activeShop = allShopItems.filter(i => i.active !== false);
   const [owned, setOwned] = useState(new Set(
@@ -1741,7 +1742,7 @@ function MarketScreen({ user }) {
   const [sellPrice, setSellPrice] = useState("");
   const marketplaceListings = ctx?.marketplaceListings || [];
 
-  const shopItems = activeShop.filter(i => !i.designer && !i._isMarketListing && (!search || i.name.toLowerCase().includes(search.toLowerCase())));
+  const shopItems = activeShop.filter(i => !i.designer && !i._isMarketListing && (!search || i.name.toLowerCase().includes(search.toLowerCase())) && (catFilter === "all" || i.cat === catFilter || (catFilter === "armor" && i.cat === "armor") || (catFilter === "clothing" && (i.cat === "clothing" || i.cat === "armor")) ));
   const community = [
     ...COMMUNITY_ITEMS,
     ...allShopItems.filter(i => i.designer && i.active !== false),
