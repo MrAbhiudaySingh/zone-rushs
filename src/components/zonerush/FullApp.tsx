@@ -4653,7 +4653,7 @@ function HomeScreen() {
         </div>
 
         {/* CTA button */}
-        <button onClick={() => { if (ctx?.startZoneCapture) ctx.startZoneCapture(); }} style={{
+        <button onClick={() => setTab("map")} style={{
           position:"absolute", bottom:18, left:16,
           padding:"10px 20px", borderRadius:16, border:"none", fontFamily:FONT,
           background:`linear-gradient(135deg, ${TA}, #FF9F1C)`,
@@ -4815,7 +4815,7 @@ function HomeScreen() {
       )}
 
       {/* ═══ MARKET SHORTCUT ═══ */}
-      <MarketShortcut onOpen={() => setTab("market")} />
+      <MarketShortcut onOpen={() => setTab("map")} />
 
       <div style={{ height:40 }} />
     </div>
