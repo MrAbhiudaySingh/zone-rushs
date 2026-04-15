@@ -5636,6 +5636,7 @@ export default function ZoneRushApp() {
       setSharedUser(u => ({ ...u, clan: null }));
       showToast("👋 You left the clan.", "info");
     },
+    donateToClan: async (amount) => {
       const amt = Math.min(amount, sharedUser.ae);
       if (amt <= 0) return;
       setSharedUser(u => ({
