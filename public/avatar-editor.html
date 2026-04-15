@@ -97,11 +97,6 @@ input[type=range]{accent-color:var(--accent);height:4px}
     <div class="sec"><div class="st">Skin Tone</div><div class="sr" id="skin-sw"></div></div>
     <div class="sec"><div class="st">Hair Style</div><div class="og" id="hair-og"></div></div>
     <div class="sec"><div class="st">Hair Color</div><div class="sr" id="hair-sw"></div></div>
-    <div class="sec">
-      <div class="st">Eye Style &amp; Color</div>
-      <div class="og" id="eye-og"></div>
-      <div class="sr" style="margin-top:6px" id="eye-sw"></div>
-    </div>
   </div>
   <div class="center">
     <div class="stage-wrap" id="stage-wrap">
@@ -704,8 +699,7 @@ function getLayers(animFile){
   // Face has no hurt sprite - skip gracefully
   const facePath=`head/faces/${S.sex}/neutral/${animFile}.png`;
   if(SPRITES[facePath]) L.push({path:facePath, type:'plain'});
-  // Eyes: original flat sprite, multiply-tinted
-  if(S.eye.path) L.push({path:rp(S.eye.path,animFile), type:'eye'});
+  // Eyes removed - they caused ugly overlay issues
   if(S.torso.path) L.push({path:rp(S.torso.path,animFile), type:'cloth'});
   if(S.legs.path)  L.push({path:rp(S.legs.path,animFile),  type:'cloth'});
   if(S.feet.path)  L.push({path:rp(S.feet.path,animFile),  type:'cloth'});
