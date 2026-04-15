@@ -127,6 +127,7 @@ input[type=range]{accent-color:var(--accent);height:4px}
     <div class="sec"><div class="st">Legs</div><div class="og" id="legs-og"></div></div>
     <div class="sec"><div class="st">Feet</div><div class="og" id="feet-og"></div></div>
     <div class="sec"><div class="st">Hat / Helm</div><div class="og" id="hat-og"></div></div>
+    <div class="sec"><div class="st">⚔ Weapon</div><div class="og" id="weapon-og"></div></div>
     <div class="sec"><div class="st">Cloth Color</div><div class="sr" id="cloth-sw"></div></div>
     <div class="sec"><div class="st">Background</div><div class="scg" id="scn"></div></div>
   </div>
@@ -644,6 +645,19 @@ const HAT_OPTS = [
   {id:'helmet',label:'HELM', icon:'⛑',path:'hat/helmet/bascinet/adult/{a}.png'},
   {id:'wizard',label:'WIZRD',icon:'🧙',path:'hat/magic/wizard/base/adult/{a}.png'},
 ];
+
+// Weapons - loaded externally from /sprites/ directory
+const WEAPON_OPTS = [
+  {id:'none',     label:'NONE',  icon:'—',  path:null, shopId:null},
+  {id:'dagger',   label:'DAGR',  icon:'🗡️', extSrc:'/sprites/weapon_dagger.png',   shopId:'lpc_dagger'},
+  {id:'longsword',label:'LSWD',  icon:'⚔️', extSrc:'/sprites/weapon_longsword.png',shopId:'lpc_longsw'},
+  {id:'shortsword',label:'SSWD', icon:'⚔️', extSrc:'/sprites/weapon_longsword.png',shopId:'lpc_shortsw'},
+  {id:'bow',      label:'BOW',   icon:'🏹', extSrc:'/sprites/weapon_bow.png',      shopId:'lpc_bow'},
+  {id:'spear',    label:'SPER',  icon:'🔱', extSrc:'/sprites/weapon_spear.png',    shopId:'lpc_spear'},
+  {id:'staff',    label:'STAF',  icon:'🪄', extSrc:'/sprites/weapon_staff.png',    shopId:'lpc_staff'},
+  {id:'warhammer',label:'WHAM',  icon:'🔨', extSrc:'/sprites/weapon_warhammer.png',shopId:'lpc_warhammer'},
+  {id:'waraxe',   label:'WAXE',  icon:'🪓', extSrc:'/sprites/weapon_waraxe.png',   shopId:null},
+];
 const SCENES = [
   {id:'night', label:'NIGHT',bg:'radial-gradient(ellipse at 50% 30%,#0d1b2a,#050a10)'},
   {id:'dngn',  label:'DNGN', bg:'radial-gradient(ellipse at 50% 80%,#1a0a00,#0a0500)'},
@@ -660,6 +674,7 @@ const S = {
   sex:'male', skin:SKIN_SW[0], hair:HAIR_STYLES[2], hairColor:HAIR_SW[0],
   eye:EYE_STYLES[1], eyeColor:EYE_SW[0],
   torso:TORSO_OPTS[1], legs:LEGS_OPTS[1], feet:FEET_OPTS[1], hat:HAT_OPTS[0],
+  weapon:WEAPON_OPTS[0],
   clothColor:CLOTH_SW[5], anim:'idle', dir:2, scene:SCENES[0], speed:8, scale:3,
 };
 let frameIdx=0, animTimer=null;
@@ -673,6 +688,18 @@ function getImg(path){
   const src=SPRITES[path];
   if(!src){imgCache[path]=null;return null;}
   const img=new Image(); img.src=src; imgCache[path]=img; return img;
+}
+// External image loader (for weapon sprites from /sprites/)
+const extImgCache={};
+function getExtImg(url){
+  if(!url) return null;
+  if(extImgCache[url]!==undefined) return extImgCache[url];
+  const img=new Image();
+  img.crossOrigin='anonymous';
+  img.src=url;
+  img.onload=()=>{ renderFrame(frameIdx); };
+  extImgCache[url]=img;
+  return img;
 }
 
 // Path resolver - handles {s},{a} substitution + fallbacks
@@ -705,6 +732,8 @@ function getLayers(animFile){
   if(S.feet.path)  L.push({path:rp(S.feet.path,animFile),  type:'cloth'});
   if(S.hair.path)  L.push({path:rp(S.hair.path,animFile),  type:'hair'});
   if(S.hat.path)   L.push({path:rp(S.hat.path,animFile),   type:'hat'});
+  // Weapon layer (external sprite)
+  if(S.weapon.extSrc) L.push({extSrc:S.weapon.extSrc, type:'weapon'});
   return L;
 }
 
@@ -770,6 +799,14 @@ function renderFrame(fn){
   const sx=frame*fs, sy=dir*fs;
 
   for(const layer of getLayers(A.file)){
+    // Handle external weapon sprites
+    if(layer.extSrc){
+      const wimg=getExtImg(layer.extSrc);
+      if(wimg&&wimg.complete&&wimg.naturalWidth>0){
+        blitLayer(ctx,wimg,sx,sy,fs,cs,'plain');
+      }
+      continue;
+    }
     if(!layer.path) continue;
     const img=getImg(layer.path);
     if(!img||!img.complete||img.naturalWidth===0) continue;
@@ -843,6 +880,30 @@ function buildScenes(){
     el.appendChild(d);
   });
 }
+// Owned items from shop (received via postMessage)
+let ownedShopItems = new Set();
+
+function buildWeaponOg(){
+  const el=document.getElementById('weapon-og'); el.innerHTML='';
+  WEAPON_OPTS.forEach(item=>{
+    const b=document.createElement('div');
+    const isOwned = !item.shopId || ownedShopItems.has(item.shopId);
+    b.className='opt'+(S.weapon===item?' active':'')+(isOwned?'':' locked');
+    if(!isOwned){
+      b.innerHTML=`${item.icon}<span class="ol">🔒</span>`;
+      b.style.opacity='0.4';
+      b.style.cursor='not-allowed';
+      b.title='Buy this weapon from the Shop first!';
+    } else {
+      b.innerHTML=`${item.icon}<span class="ol">${item.label}</span>`;
+      b.onclick=()=>{
+        S.weapon=item;buildWeaponOg();startAnim();
+      };
+    }
+    el.appendChild(b);
+  });
+}
+
 function buildAll(){
   buildSw('skin-sw',SKIN_SW,'skin');
   buildOg('hair-og',HAIR_STYLES,'hair');
@@ -851,9 +912,18 @@ function buildAll(){
   buildOg('legs-og',LEGS_OPTS,'legs');
   buildOg('feet-og',FEET_OPTS,'feet');
   buildOg('hat-og',HAT_OPTS,'hat');
+  buildWeaponOg();
   buildSw('cloth-sw',CLOTH_SW,'clothColor');
   buildAnims();buildDir();buildScenes();
 }
+
+// Listen for owned items from parent app
+window.addEventListener('message', function(e){
+  if(e.data && e.data.type === 'set-owned-items'){
+    ownedShopItems = new Set(e.data.ownedIds || []);
+    buildWeaponOg();
+  }
+});
 
 function setSex(sex,btn){
   S.sex=sex;
@@ -873,6 +943,8 @@ function randomize(){
   S.legs=pick(LEGS_OPTS.filter(l=>l.id!=='none'));
   S.feet=pick(FEET_OPTS.filter(f=>f.id!=='none'));
   S.hat=pick(HAT_OPTS);
+  const ownedWeapons=WEAPON_OPTS.filter(w=>!w.shopId||ownedShopItems.has(w.shopId));
+  S.weapon=pick(ownedWeapons.length?ownedWeapons:[WEAPON_OPTS[0]]);
   S.clothColor=pick(CLOTH_SW);
   S.anim=pick(Object.keys(ANIMS)); S.scene=pick(SCENES);
   document.querySelectorAll('.gb').forEach(b=>b.classList.toggle('active',b.dataset.b===S.sex));
