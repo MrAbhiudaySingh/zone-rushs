@@ -2006,9 +2006,32 @@ function MarketplaceListingCard({ item, onBuy }) {
   );
 }
 
+function SpritePreview({ src, size=48 }) {
+  // Renders a cropped view of an LPC spritesheet (first idle frame, facing down = row 2)
+  const canvasRef = useRef(null);
+  useEffect(() => {
+    if (!src || !canvasRef.current) return;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const ctx = canvasRef.current.getContext("2d");
+      ctx.imageSmoothingEnabled = false;
+      ctx.clearRect(0, 0, size, size);
+      // LPC spritesheets: 64x64 per frame, row 2 = facing down (south), first column
+      ctx.drawImage(img, 0, 128, 64, 64, 0, 0, size, size);
+    };
+    img.onerror = () => {};
+    img.src = src;
+  }, [src, size]);
+  if (!src) return null;
+  return <canvas ref={canvasRef} width={size} height={size} style={{ imageRendering:"pixelated", width:size, height:size }} />;
+}
+
 function ShopItemCard({ item, owned, onBuy, featured, forceOwned }) {
   const isOwned = owned || forceOwned;
   const rc = RARITY_COLOR[item.rarity];
+  const RARITY_LABEL = { common:"Common", uncommon:"Uncommon", rare:"Rare", epic:"Epic", legendary:"Legendary" };
+  const CAT_ICONS = { clothing:"👕", armor:"🛡️", footwear:"👢", headgear:"⛑️", weapon:"⚔️", consumable:"🧪" };
   return (
     <div style={{
       background:S1, border:`1px solid ${rc}30`, borderRadius:16, overflow:"hidden",
@@ -2016,13 +2039,20 @@ function ShopItemCard({ item, owned, onBuy, featured, forceOwned }) {
     }}>
       <div style={{ height:3, background:rc }} />
       <div style={{ padding:"14px 12px 12px", display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
-        <div style={{ fontSize:32 }}>{item.icon}</div>
+        {item.img ? (
+          <div style={{ width:48, height:48, background:`${rc}10`, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+            <SpritePreview src={item.img} size={48} />
+          </div>
+        ) : (
+          <div style={{ fontSize:32 }}>{item.icon || CAT_ICONS[item.cat] || "📦"}</div>
+        )}
         <div style={{ fontSize:12, fontWeight:700, color:TX, textAlign:"center", lineHeight:1.3 }}>{item.name}</div>
-        <div style={{ fontSize:10, color:rc, fontWeight:700 }}>{item.rarity} · {item.cat}</div>
+        <div style={{ fontSize:10, color:rc, fontWeight:700 }}>{RARITY_LABEL[item.rarity]} · {CAT_ICONS[item.cat] || ""} {item.cat}</div>
+        {item.weaponType && <div style={{ fontSize:9, color:TM }}>Type: {item.weaponType}</div>}
         {isOwned ? (
           <div style={{ padding:"5px 12px", background:`${TG}15`, border:`1px solid ${TG}40`, borderRadius:99, fontSize:11, fontWeight:700, color:TG }}>✓ Owned</div>
         ) : (
-          <button onClick={onBuy} style={{ padding:"7px 16px", background:`${rc}15`, border:`1px solid ${rc}40`, borderRadius:99, color:rc, fontSize:12, fontWeight:700, fontFamily:FONT }}>◎ {item.price}</button>
+          <button onClick={onBuy} style={{ padding:"7px 16px", background:`${rc}15`, border:`1px solid ${rc}40`, borderRadius:99, color:rc, fontSize:12, fontWeight:700, fontFamily:FONT }}>◎ {item.price || item.priceAE}</button>
         )}
       </div>
     </div>
