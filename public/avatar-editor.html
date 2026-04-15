@@ -689,6 +689,18 @@ function getImg(path){
   if(!src){imgCache[path]=null;return null;}
   const img=new Image(); img.src=src; imgCache[path]=img; return img;
 }
+// External image loader (for weapon sprites from /sprites/)
+const extImgCache={};
+function getExtImg(url){
+  if(!url) return null;
+  if(extImgCache[url]!==undefined) return extImgCache[url];
+  const img=new Image();
+  img.crossOrigin='anonymous';
+  img.src=url;
+  img.onload=()=>{ renderFrame(frameIdx); };
+  extImgCache[url]=img;
+  return img;
+}
 
 // Path resolver - handles {s},{a} substitution + fallbacks
 function rp(template,animFile){
