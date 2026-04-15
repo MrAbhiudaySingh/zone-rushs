@@ -880,6 +880,30 @@ function buildScenes(){
     el.appendChild(d);
   });
 }
+// Owned items from shop (received via postMessage)
+let ownedShopItems = new Set();
+
+function buildWeaponOg(){
+  const el=document.getElementById('weapon-og'); el.innerHTML='';
+  WEAPON_OPTS.forEach(item=>{
+    const b=document.createElement('div');
+    const isOwned = !item.shopId || ownedShopItems.has(item.shopId);
+    b.className='opt'+(S.weapon===item?' active':'')+(isOwned?'':' locked');
+    if(!isOwned){
+      b.innerHTML=`${item.icon}<span class="ol">🔒</span>`;
+      b.style.opacity='0.4';
+      b.style.cursor='not-allowed';
+      b.title='Buy this weapon from the Shop first!';
+    } else {
+      b.innerHTML=`${item.icon}<span class="ol">${item.label}</span>`;
+      b.onclick=()=>{
+        S.weapon=item;buildWeaponOg();startAnim();
+      };
+    }
+    el.appendChild(b);
+  });
+}
+
 function buildAll(){
   buildSw('skin-sw',SKIN_SW,'skin');
   buildOg('hair-og',HAIR_STYLES,'hair');
@@ -888,9 +912,18 @@ function buildAll(){
   buildOg('legs-og',LEGS_OPTS,'legs');
   buildOg('feet-og',FEET_OPTS,'feet');
   buildOg('hat-og',HAT_OPTS,'hat');
+  buildWeaponOg();
   buildSw('cloth-sw',CLOTH_SW,'clothColor');
   buildAnims();buildDir();buildScenes();
 }
+
+// Listen for owned items from parent app
+window.addEventListener('message', function(e){
+  if(e.data && e.data.type === 'set-owned-items'){
+    ownedShopItems = new Set(e.data.ownedIds || []);
+    buildWeaponOg();
+  }
+});
 
 function setSex(sex,btn){
   S.sex=sex;
