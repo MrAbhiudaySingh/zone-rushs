@@ -943,6 +943,8 @@ function randomize(){
   S.legs=pick(LEGS_OPTS.filter(l=>l.id!=='none'));
   S.feet=pick(FEET_OPTS.filter(f=>f.id!=='none'));
   S.hat=pick(HAT_OPTS);
+  const ownedWeapons=WEAPON_OPTS.filter(w=>!w.shopId||ownedShopItems.has(w.shopId));
+  S.weapon=pick(ownedWeapons.length?ownedWeapons:[WEAPON_OPTS[0]]);
   S.clothColor=pick(CLOTH_SW);
   S.anim=pick(Object.keys(ANIMS)); S.scene=pick(SCENES);
   document.querySelectorAll('.gb').forEach(b=>b.classList.toggle('active',b.dataset.b===S.sex));
