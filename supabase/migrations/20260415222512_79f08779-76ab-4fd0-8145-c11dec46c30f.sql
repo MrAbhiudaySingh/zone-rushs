@@ -1,0 +1,2 @@
+ALTER TABLE public.zones DROP CONSTRAINT zones_zone_type_check;
+ALTER TABLE public.zones ADD CONSTRAINT zones_zone_type_check CHECK (zone_type = ANY (ARRAY['standard', 'landmark', 'arena', 'residential', 'gym']));
