@@ -5761,6 +5761,15 @@ export default function ZoneRushApp() {
     },
   };
 
+  if (!authUser) {
+    return (
+      <>
+        <ToastContainer />
+        <AuthScreen onAuth={(user) => setAuthUser(user)} />
+      </>
+    );
+  }
+
   return (
     <AppContext.Provider value={appCtx}>
       <ToastContainer />
