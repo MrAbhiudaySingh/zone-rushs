@@ -10,33 +10,76 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiGoogleFitSyncRouteImport } from './routes/api/google-fit/sync'
+import { Route as ApiGoogleFitCallbackRouteImport } from './routes/api/google-fit/callback'
+import { Route as ApiGoogleFitAuthRouteImport } from './routes/api/google-fit/auth'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiGoogleFitSyncRoute = ApiGoogleFitSyncRouteImport.update({
+  id: '/api/google-fit/sync',
+  path: '/api/google-fit/sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiGoogleFitCallbackRoute = ApiGoogleFitCallbackRouteImport.update({
+  id: '/api/google-fit/callback',
+  path: '/api/google-fit/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiGoogleFitAuthRoute = ApiGoogleFitAuthRouteImport.update({
+  id: '/api/google-fit/auth',
+  path: '/api/google-fit/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/google-fit/auth': typeof ApiGoogleFitAuthRoute
+  '/api/google-fit/callback': typeof ApiGoogleFitCallbackRoute
+  '/api/google-fit/sync': typeof ApiGoogleFitSyncRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/google-fit/auth': typeof ApiGoogleFitAuthRoute
+  '/api/google-fit/callback': typeof ApiGoogleFitCallbackRoute
+  '/api/google-fit/sync': typeof ApiGoogleFitSyncRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/google-fit/auth': typeof ApiGoogleFitAuthRoute
+  '/api/google-fit/callback': typeof ApiGoogleFitCallbackRoute
+  '/api/google-fit/sync': typeof ApiGoogleFitSyncRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/api/google-fit/auth'
+    | '/api/google-fit/callback'
+    | '/api/google-fit/sync'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/api/google-fit/auth'
+    | '/api/google-fit/callback'
+    | '/api/google-fit/sync'
+  id:
+    | '__root__'
+    | '/'
+    | '/api/google-fit/auth'
+    | '/api/google-fit/callback'
+    | '/api/google-fit/sync'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiGoogleFitAuthRoute: typeof ApiGoogleFitAuthRoute
+  ApiGoogleFitCallbackRoute: typeof ApiGoogleFitCallbackRoute
+  ApiGoogleFitSyncRoute: typeof ApiGoogleFitSyncRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +91,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/google-fit/sync': {
+      id: '/api/google-fit/sync'
+      path: '/api/google-fit/sync'
+      fullPath: '/api/google-fit/sync'
+      preLoaderRoute: typeof ApiGoogleFitSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/google-fit/callback': {
+      id: '/api/google-fit/callback'
+      path: '/api/google-fit/callback'
+      fullPath: '/api/google-fit/callback'
+      preLoaderRoute: typeof ApiGoogleFitCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/google-fit/auth': {
+      id: '/api/google-fit/auth'
+      path: '/api/google-fit/auth'
+      fullPath: '/api/google-fit/auth'
+      preLoaderRoute: typeof ApiGoogleFitAuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiGoogleFitAuthRoute: ApiGoogleFitAuthRoute,
+  ApiGoogleFitCallbackRoute: ApiGoogleFitCallbackRoute,
+  ApiGoogleFitSyncRoute: ApiGoogleFitSyncRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

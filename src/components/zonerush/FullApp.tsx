@@ -994,12 +994,27 @@ function MissionCard({ m, idx=0 }) {
     setSyncing(true);
     try {
       if (ctx?.authUser) {
-        const { data } = await supabase.from("quest_progress").select("current_value").eq("user_id", ctx.authUser.id).eq("quest_definition_id", m.id).maybeSingle();
-        if (data?.current_value) {
-          setSimSteps(data.current_value);
-          showToast(`📡 Synced ${data.current_value.toLocaleString()} steps`, "success");
+        // Call real Google Fit sync endpoint
+        const res = await fetch("/api/google-fit/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: ctx.authUser.id }),
+        });
+        const result = await res.json();
+        if (result.synced && result.steps > 0) {
+          setSimSteps(result.steps);
+          showToast(`📡 Synced ${result.steps.toLocaleString()} steps from Google Fit`, "success");
+        } else if (result.error?.includes("not connected")) {
+          showToast("📡 Connect Google Fit in Settings to auto-track steps.", "info");
         } else {
-          showToast("📡 No health data synced yet. Connect Google Fitness in Settings.", "info");
+          // Fallback: check quest_progress directly
+          const { data } = await supabase.from("quest_progress").select("current_value").eq("user_id", ctx.authUser.id).eq("quest_definition_id", m.id).maybeSingle();
+          if (data?.current_value) {
+            setSimSteps(data.current_value);
+            showToast(`📡 ${data.current_value.toLocaleString()} steps recorded`, "success");
+          } else {
+            showToast("📡 No steps yet. Connect Google Fit in Settings.", "info");
+          }
         }
       }
     } catch { showToast("📡 Health sync unavailable.", "info"); }
@@ -5168,6 +5183,36 @@ function ProfileScreen({ user, onAdminAccess }) {
           <div style={{ padding:"0 16px" }}>
             <SectionHeader title="⚙️ Settings" />
             <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+              {/* Google Fit Connection */}
+              {(() => {
+                const [fitConnected, setFitConnected] = useState(false);
+                const [fitLoading, setFitLoading] = useState(true);
+                const ctx = useContext(AppContext);
+                useEffect(() => {
+                  if (!ctx?.authUser) return;
+                  supabase.from("google_fit_tokens").select("connected").eq("user_id", ctx.authUser.id).maybeSingle().then(({ data }) => {
+                    setFitConnected(!!data?.connected);
+                    setFitLoading(false);
+                  });
+                }, [ctx?.authUser]);
+                const handleConnect = () => {
+                  if (!ctx?.authUser) return;
+                  window.open(`/api/google-fit/auth?user_id=${ctx.authUser.id}`, "_blank", "width=500,height=600");
+                  // Poll for connection
+                  const interval = setInterval(async () => {
+                    const { data } = await supabase.from("google_fit_tokens").select("connected").eq("user_id", ctx.authUser.id).maybeSingle();
+                    if (data?.connected) { setFitConnected(true); clearInterval(interval); showToast("✅ Google Fit connected! Steps will sync automatically.", "success"); }
+                  }, 3000);
+                  setTimeout(() => clearInterval(interval), 120000);
+                };
+                return (
+                  <div onClick={fitConnected ? undefined : handleConnect} style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px", background:S1, border:`1.5px solid ${fitConnected ? TG : T}`, borderRadius:16, cursor: fitConnected ? "default" : "pointer" }}>
+                    <span style={{ fontSize:18 }}>🏃</span>
+                    <div style={{ flex:1 }}><div style={{ fontSize:13, fontWeight:700, color:TX }}>Google Fit</div><div style={{ fontSize:11, color: fitConnected ? TG : TM }}>{fitLoading ? "Checking..." : fitConnected ? "Connected — steps sync automatically" : "Tap to connect & auto-track steps"}</div></div>
+                    {fitConnected ? <span style={{ color:TG, fontSize:11, fontWeight:700 }}>✓ Active</span> : <span style={{ color:T, fontSize:16 }}>›</span>}
+                  </div>
+                );
+              })()}
               {/* Notifications toggle */}
               <div onClick={() => { setNotifs(!notifs); showToast(notifs ? "🔕 Notifications disabled" : "🔔 Notifications enabled", "info"); }} style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px", background:S1, border:`1.5px solid ${BR}`, borderRadius:16, cursor:"pointer" }}>
                 <span style={{ fontSize:18 }}>🔔</span>
