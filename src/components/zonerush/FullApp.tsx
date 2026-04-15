@@ -5299,8 +5299,8 @@ export default function ZoneRushApp() {
   const [sharedProofs,     setSharedProofs]     = useState(PROOF_SUBMISSIONS);
   const [playerNotifs,     setPlayerNotifs]     = useState([]);
   const [completedMissions, _setCompletedMissions] = useState(() => {
-    const saved = loadState("completedMissions", []);
-    return new Set(saved);
+    try { const s = localStorage.getItem("zr_completedMissions"); return s ? new Set(JSON.parse(s)) : new Set(); }
+    catch { return new Set(); }
   });
   const setCompletedMissions = (updater) => {
     _setCompletedMissions(prev => {
