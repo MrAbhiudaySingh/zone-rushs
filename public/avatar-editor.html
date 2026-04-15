@@ -938,6 +938,25 @@ buildAll();
 document.getElementById('sbg').style.background=S.scene.bg;
 renderGal();
 setTimeout(startAnim,200);
+
+// Listen for owned items from parent app
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'update-owned-equipment') {
+    ownedEquipment = e.data.owned || ownedEquipment;
+    // Reset any equipped item that is no longer owned
+    ['torso','legs','feet','hat'].forEach(slot => {
+      if (S[slot] && S[slot].id !== 'none' && !isEquipOwned(slot, S[slot].id)) {
+        const opts = {torso:TORSO_OPTS,legs:LEGS_OPTS,feet:FEET_OPTS,hat:HAT_OPTS}[slot];
+        S[slot] = opts[0]; // reset to 'none'
+      }
+    });
+    buildAll(); startAnim();
+  }
+});
+// Request owned items from parent on load
+if(window.parent && window.parent !== window) {
+  window.parent.postMessage({type:'avatar-editor-ready'},'*');
+}
 </script>
 </body>
 </html>
