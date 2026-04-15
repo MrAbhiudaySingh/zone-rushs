@@ -911,6 +911,18 @@ function toast(m){
   toastT=setTimeout(()=>t.classList.remove('show'),2000);
 }
 
+function confirmAvatar(){
+  const dataUrl=canvas.toDataURL('image/png');
+  const config=JSON.parse(JSON.stringify(S));
+  delete config.scene;
+  if(window.parent&&window.parent!==window){
+    window.parent.postMessage({type:'avatar-confirmed',dataUrl:dataUrl,config:config},'*');
+    toast('✓ AVATAR SET!');
+  } else {
+    toast('✓ AVATAR SET! (standalone mode)');
+  }
+}
+
 buildAll();
 document.getElementById('sbg').style.background=S.scene.bg;
 renderGal();
