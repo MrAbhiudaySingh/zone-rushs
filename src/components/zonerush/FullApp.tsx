@@ -107,7 +107,39 @@ const LIVE_EVENTS = [
     eligibility:"Level 1–5 only", color:TA },
 ];
 
-const LPC_BASE = "https://raw.githubusercontent.com/sanderfrenken/Universal-LPC-Spritesheet-Character-Generator/master/spritesheets";
+// Sprite preview images bundled locally from LPC repo
+const SPRITE_IMG = {
+  lpc_tshirt:    "/sprites/torso_sleeveless.png",
+  lpc_tunic:     "/sprites/torso_tunic.png",
+  lpc_vest:      "/sprites/torso_leather.png",
+  lpc_robe_c:    "/sprites/torso_robe.png",
+  lpc_long:      "/sprites/torso_longsleeve.png",
+  lpc_chainmail: "/sprites/torso_chainmail.png",
+  lpc_ranger:    "/sprites/torso_longsleeve.png",
+  lpc_leather:   "/sprites/torso_leather.png",
+  lpc_plate:     "/sprites/torso_plate.png",
+  lpc_dragonp:   "/sprites/torso_plate.png",
+  lpc_pants:     "/sprites/legs_pants.png",
+  lpc_shorts:    "/sprites/legs_shorts.png",
+  lpc_skirt:     "/sprites/legs_skirt.png",
+  lpc_armleg:    "/sprites/legs_armor.png",
+  lpc_sandals:   "/sprites/feet_sandals.png",
+  lpc_shoes:     "/sprites/feet_shoes.png",
+  lpc_boots:     "/sprites/feet_boots.png",
+  lpc_steelboot: "/sprites/feet_boots.png",
+  lpc_bandana:   "/sprites/head_bandana.png",
+  lpc_helmet:    "/sprites/head_helmet.png",
+  lpc_wizard:    "/sprites/head_helmet.png",
+  lpc_crown:     "/sprites/head_helmet.png",
+  lpc_dagger:    "/sprites/weapon_dagger.png",
+  lpc_shortsw:   "/sprites/weapon_longsword.png",
+  lpc_bow:       "/sprites/weapon_bow.png",
+  lpc_spear:     "/sprites/weapon_spear.png",
+  lpc_longsw:    "/sprites/weapon_longsword.png",
+  lpc_staff:     "/sprites/weapon_staff.png",
+  lpc_warhammer: "/sprites/weapon_warhammer.png",
+  lpc_waraxe:    "/sprites/weapon_waraxe.png",
+};
 
 const ITEM_ICONS = { clothing:"👕", armor:"🛡️", footwear:"👢", headgear:"⛑️", weapon:"⚔️", consumable:"🧪" };
 
@@ -2021,7 +2053,6 @@ function MarketplaceListingCard({ item, onBuy }) {
 }
 
 function SpritePreview({ src, size=48 }) {
-  // Renders a cropped view of an LPC spritesheet (first idle frame, facing down = row 2)
   const canvasRef = useRef(null);
   useEffect(() => {
     if (!src || !canvasRef.current) return;
@@ -2046,6 +2077,7 @@ function ShopItemCard({ item, owned, onBuy, featured, forceOwned }) {
   const rc = RARITY_COLOR[item.rarity];
   const RARITY_LABEL = { common:"Common", uncommon:"Uncommon", rare:"Rare", epic:"Epic", legendary:"Legendary" };
   const CAT_ICONS = { clothing:"👕", armor:"🛡️", footwear:"👢", headgear:"⛑️", weapon:"⚔️", consumable:"🧪" };
+  const spriteImg = SPRITE_IMG[item.id];
   return (
     <div style={{
       background:S1, border:`1px solid ${rc}30`, borderRadius:16, overflow:"hidden",
@@ -2053,8 +2085,12 @@ function ShopItemCard({ item, owned, onBuy, featured, forceOwned }) {
     }}>
       <div style={{ height:3, background:rc }} />
       <div style={{ padding:"14px 12px 12px", display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
-        <div style={{ width:48, height:48, background:`${rc}10`, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center" }}>
-          <span style={{ fontSize:28 }}>{item.icon || ITEM_ICONS[item.cat] || "📦"}</span>
+        <div style={{ width:56, height:56, background:`${rc}10`, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+          {spriteImg ? (
+            <SpritePreview src={spriteImg} size={56} />
+          ) : (
+            <span style={{ fontSize:28 }}>{item.icon || ITEM_ICONS[item.cat] || "📦"}</span>
+          )}
         </div>
         <div style={{ fontSize:12, fontWeight:700, color:TX, textAlign:"center", lineHeight:1.3 }}>{item.name}</div>
         <div style={{ fontSize:10, color:rc, fontWeight:700 }}>{RARITY_LABEL[item.rarity]} · {CAT_ICONS[item.cat] || ""} {item.cat}</div>
