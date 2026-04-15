@@ -5484,15 +5484,15 @@ export default function ZoneRushApp() {
         await supabase.from("profiles").update({ clan_id: c.id }).eq("user_id", authUser.id);
       }
 
-      // Fetch completed missions
-      const { data: userMissions } = await supabase.from("user_missions").select("*").eq("user_id", authUser.id);
-      if (userMissions?.length) {
-        const completedIds = new Set(userMissions.filter(m => m.completed).map(m => m.mission_id));
+      // Fetch quest progress from quest_progress table
+      const { data: questProgress } = await supabase.from("quest_progress").select("*").eq("user_id", authUser.id);
+      if (questProgress?.length) {
+        const completedIds = new Set(questProgress.filter(qp => qp.status === "completed" || qp.status === "claimed").map(qp => qp.quest_definition_id));
         _setCompletedMissions(completedIds);
-        // Update mission progress
+        // Update mission progress values
         setSharedMissions(ms => ms.map(m => {
-          const um = userMissions.find(u => u.mission_id === m.id);
-          return um ? { ...m, progress: um.progress } : m;
+          const qp = questProgress.find(q => q.quest_definition_id === m.id);
+          return qp ? { ...m, progress: qp.current_value, _progressId: qp.id } : m;
         }));
       }
 
