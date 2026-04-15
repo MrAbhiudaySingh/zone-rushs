@@ -14,7 +14,268 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      clan_members: {
+        Row: {
+          clan_id: string
+          clan_role: string
+          contribution_points: number
+          id: string
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          clan_id: string
+          clan_role?: string
+          contribution_points?: number
+          id?: string
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          clan_id?: string
+          clan_role?: string
+          contribution_points?: number
+          id?: string
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clan_members_clan_id_fkey"
+            columns: ["clan_id"]
+            isOneToOne: false
+            referencedRelation: "clans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clans: {
+        Row: {
+          aether_treasury: number
+          color: string
+          cpr_score: number
+          created_at: string
+          description: string | null
+          id: string
+          last_leader_active_at: string | null
+          leader_id: string | null
+          max_members: number
+          motto: string | null
+          name: string
+          rank: number | null
+          tag: string
+          total_members: number
+          updated_at: string
+          zones_held: number
+        }
+        Insert: {
+          aether_treasury?: number
+          color?: string
+          cpr_score?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          last_leader_active_at?: string | null
+          leader_id?: string | null
+          max_members?: number
+          motto?: string | null
+          name: string
+          rank?: number | null
+          tag: string
+          total_members?: number
+          updated_at?: string
+          zones_held?: number
+        }
+        Update: {
+          aether_treasury?: number
+          color?: string
+          cpr_score?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          last_leader_active_at?: string | null
+          leader_id?: string | null
+          max_members?: number
+          motto?: string | null
+          name?: string
+          rank?: number | null
+          tag?: string
+          total_members?: number
+          updated_at?: string
+          zones_held?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          aether: number
+          avatar_config: Json | null
+          avatar_data_url: string | null
+          combat_rank: string
+          created_at: string
+          display_name: string
+          id: string
+          influence_rank: string
+          level: number
+          shards: number
+          shields: number
+          streak: number
+          updated_at: string
+          user_id: string
+          xp: number
+          xp_next: number
+        }
+        Insert: {
+          aether?: number
+          avatar_config?: Json | null
+          avatar_data_url?: string | null
+          combat_rank?: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          influence_rank?: string
+          level?: number
+          shards?: number
+          shields?: number
+          streak?: number
+          updated_at?: string
+          user_id: string
+          xp?: number
+          xp_next?: number
+        }
+        Update: {
+          aether?: number
+          avatar_config?: Json | null
+          avatar_data_url?: string | null
+          combat_rank?: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          influence_rank?: string
+          level?: number
+          shards?: number
+          shields?: number
+          streak?: number
+          updated_at?: string
+          user_id?: string
+          xp?: number
+          xp_next?: number
+        }
+        Relationships: []
+      }
+      zone_captures: {
+        Row: {
+          attacker_user_id: string
+          attacking_clan_id: string
+          created_at: string
+          id: string
+          status: string
+          timer_paused_at: string | null
+          timer_started_at: string
+          total_paused_seconds: number
+          zone_id: string
+        }
+        Insert: {
+          attacker_user_id: string
+          attacking_clan_id: string
+          created_at?: string
+          id?: string
+          status?: string
+          timer_paused_at?: string | null
+          timer_started_at?: string
+          total_paused_seconds?: number
+          zone_id: string
+        }
+        Update: {
+          attacker_user_id?: string
+          attacking_clan_id?: string
+          created_at?: string
+          id?: string
+          status?: string
+          timer_paused_at?: string | null
+          timer_started_at?: string
+          total_paused_seconds?: number
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zone_captures_attacking_clan_id_fkey"
+            columns: ["attacking_clan_id"]
+            isOneToOne: false
+            referencedRelation: "clans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zone_captures_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      zones: {
+        Row: {
+          aether_rate_per_hour: number
+          contest_status: string
+          control_strength: number
+          created_at: string
+          development_level: number
+          geo_polygon: Json | null
+          id: string
+          last_capture_at: string | null
+          latitude: number
+          longitude: number
+          name: string
+          owner_clan_id: string | null
+          recapture_cooldown_until: string | null
+          tier: number
+          zone_type: string
+        }
+        Insert: {
+          aether_rate_per_hour?: number
+          contest_status?: string
+          control_strength?: number
+          created_at?: string
+          development_level?: number
+          geo_polygon?: Json | null
+          id?: string
+          last_capture_at?: string | null
+          latitude: number
+          longitude: number
+          name: string
+          owner_clan_id?: string | null
+          recapture_cooldown_until?: string | null
+          tier?: number
+          zone_type?: string
+        }
+        Update: {
+          aether_rate_per_hour?: number
+          contest_status?: string
+          control_strength?: number
+          created_at?: string
+          development_level?: number
+          geo_polygon?: Json | null
+          id?: string
+          last_capture_at?: string | null
+          latitude?: number
+          longitude?: number
+          name?: string
+          owner_clan_id?: string | null
+          recapture_cooldown_until?: string | null
+          tier?: number
+          zone_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zones_owner_clan_id_fkey"
+            columns: ["owner_clan_id"]
+            isOneToOne: false
+            referencedRelation: "clans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
