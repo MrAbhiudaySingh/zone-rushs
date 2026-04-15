@@ -107,40 +107,62 @@ const LIVE_EVENTS = [
     eligibility:"Level 1–5 only", color:TA },
 ];
 
+const LPC_BASE = "https://raw.githubusercontent.com/sanderfrenken/Universal-LPC-Spritesheet-Character-Generator/master/spritesheets";
+
 const SHOP_ITEMS = [
-  // ─── Clothing (Torso) ────
-  { id:"lpc_tshirt",   name:"Campus T-Shirt",      cat:"clothing",  price:0,   rarity:"common",   icon:"👕", owned:true,  featured:false, avatarSlot:"torso", avatarOptionId:"tshirt" },
-  { id:"lpc_long",     name:"Long Sleeve Jacket",   cat:"clothing",  price:180, rarity:"uncommon", icon:"🧥", owned:false, featured:true,  avatarSlot:"torso", avatarOptionId:"long" },
-  { id:"lpc_leather",  name:"Leather Armor",        cat:"armor",     price:350, rarity:"rare",     icon:"🦺", owned:false, featured:true,  avatarSlot:"torso", avatarOptionId:"leather" },
-  { id:"lpc_plate",    name:"Plate Armor",          cat:"armor",     price:600, rarity:"epic",     icon:"🛡️", owned:false, featured:true,  avatarSlot:"torso", avatarOptionId:"plate" },
-  // ─── Clothing (Legs) ────
-  { id:"lpc_pants",    name:"Basic Pants",          cat:"clothing",  price:0,   rarity:"common",   icon:"👖", owned:true,  featured:false, avatarSlot:"legs",  avatarOptionId:"pants" },
-  { id:"lpc_skirt",    name:"Flowing Skirt",        cat:"clothing",  price:120, rarity:"uncommon", icon:"👗", owned:false, featured:false, avatarSlot:"legs",  avatarOptionId:"skirt" },
-  // ─── Footwear ────
-  { id:"lpc_shoes",    name:"Basic Shoes",          cat:"footwear",  price:80,  rarity:"common",   icon:"👟", owned:false, featured:false, avatarSlot:"feet",  avatarOptionId:"shoes" },
-  { id:"lpc_boots",    name:"Combat Boots",         cat:"footwear",  price:200, rarity:"uncommon", icon:"👢", owned:false, featured:false, avatarSlot:"feet",  avatarOptionId:"boots" },
-  // ─── Headgear ────
-  { id:"lpc_helmet",   name:"Knight's Helmet",      cat:"headgear",  price:400, rarity:"rare",     icon:"⛑️", owned:false, featured:false, avatarSlot:"hat",   avatarOptionId:"helmet" },
-  { id:"lpc_wizard",   name:"Wizard Hat",           cat:"headgear",  price:550, rarity:"epic",     icon:"🧙", owned:false, featured:false, avatarSlot:"hat",   avatarOptionId:"wizard" },
+  // ─── Clothing (Torso) — Common ────
+  { id:"lpc_tshirt",    name:"Campus T-Shirt",       cat:"clothing", price:0,    rarity:"common",   img:`${LPC_BASE}/torso/clothes/shortsleeve/tshirt/male/idle.png`, owned:true,  featured:false, avatarSlot:"torso", avatarOptionId:"tshirt" },
+  { id:"lpc_tunic",     name:"Cotton Tunic",          cat:"clothing", price:60,   rarity:"common",   img:`${LPC_BASE}/torso/clothes/longsleeve/longsleeve/male/idle.png`, owned:false, featured:false, avatarSlot:"torso", avatarOptionId:"long" },
+  { id:"lpc_vest",      name:"Leather Vest",          cat:"clothing", price:90,   rarity:"common",   img:`${LPC_BASE}/torso/armour/leather/male/idle.png`, owned:false, featured:false, avatarSlot:"torso", avatarOptionId:"leather" },
+  { id:"lpc_robe_c",    name:"Cloth Robe",            cat:"clothing", price:75,   rarity:"common",   img:`${LPC_BASE}/torso/clothes/longsleeve/longsleeve/male/idle.png`, owned:false, featured:false, avatarSlot:"torso", avatarOptionId:"long" },
+  // ─── Clothing (Torso) — Uncommon ────
+  { id:"lpc_long",      name:"Long Sleeve Jacket",    cat:"clothing", price:180,  rarity:"uncommon", img:`${LPC_BASE}/torso/clothes/longsleeve/longsleeve/male/idle.png`, owned:false, featured:true,  avatarSlot:"torso", avatarOptionId:"long" },
+  { id:"lpc_chainmail", name:"Chainmail Shirt",       cat:"clothing", price:220,  rarity:"uncommon", img:`${LPC_BASE}/torso/armour/leather/male/idle.png`, owned:false, featured:false, avatarSlot:"torso", avatarOptionId:"leather" },
+  { id:"lpc_ranger",    name:"Ranger Garb",           cat:"clothing", price:200,  rarity:"uncommon", img:`${LPC_BASE}/torso/clothes/longsleeve/longsleeve/male/idle.png`, owned:false, featured:false, avatarSlot:"torso", avatarOptionId:"long" },
+  // ─── Clothing (Torso) — Rare/Epic ────
+  { id:"lpc_leather",   name:"Leather Armor",         cat:"armor",    price:350,  rarity:"rare",     img:`${LPC_BASE}/torso/armour/leather/male/idle.png`, owned:false, featured:true,  avatarSlot:"torso", avatarOptionId:"leather" },
+  { id:"lpc_plate",     name:"Plate Armor",           cat:"armor",    price:600,  rarity:"epic",     img:`${LPC_BASE}/torso/armour/plate/male/idle.png`, owned:false, featured:true,  avatarSlot:"torso", avatarOptionId:"plate" },
+  { id:"lpc_dragonp",   name:"Dragonscale Plate",     cat:"armor",    price:1200, rarity:"legendary",img:`${LPC_BASE}/torso/armour/plate/male/idle.png`, owned:false, featured:false, avatarSlot:"torso", avatarOptionId:"plate" },
+  // ─── Clothing (Legs) — Common ────
+  { id:"lpc_pants",     name:"Basic Pants",           cat:"clothing", price:0,    rarity:"common",   img:`${LPC_BASE}/legs/pants/male/idle.png`, owned:true,  featured:false, avatarSlot:"legs", avatarOptionId:"pants" },
+  { id:"lpc_shorts",    name:"Campus Shorts",         cat:"clothing", price:50,   rarity:"common",   img:`${LPC_BASE}/legs/pants/male/idle.png`, owned:false, featured:false, avatarSlot:"legs", avatarOptionId:"pants" },
+  // ─── Clothing (Legs) — Uncommon ────
+  { id:"lpc_skirt",     name:"Flowing Skirt",         cat:"clothing", price:120,  rarity:"uncommon", img:`${LPC_BASE}/legs/skirts/plain/male/idle.png`, owned:false, featured:false, avatarSlot:"legs", avatarOptionId:"skirt" },
+  { id:"lpc_armleg",    name:"Armored Leggings",      cat:"armor",    price:250,  rarity:"uncommon", img:`${LPC_BASE}/legs/pants/male/idle.png`, owned:false, featured:false, avatarSlot:"legs", avatarOptionId:"pants" },
+  // ─── Footwear — Common ────
+  { id:"lpc_sandals",   name:"Campus Sandals",        cat:"footwear", price:40,   rarity:"common",   img:`${LPC_BASE}/feet/shoes/basic/male/idle.png`, owned:false, featured:false, avatarSlot:"feet", avatarOptionId:"shoes" },
+  { id:"lpc_shoes",     name:"Basic Shoes",           cat:"footwear", price:80,   rarity:"common",   img:`${LPC_BASE}/feet/shoes/basic/male/idle.png`, owned:false, featured:false, avatarSlot:"feet", avatarOptionId:"shoes" },
+  // ─── Footwear — Uncommon ────
+  { id:"lpc_boots",     name:"Combat Boots",          cat:"footwear", price:200,  rarity:"uncommon", img:`${LPC_BASE}/feet/boots/basic/male/idle.png`, owned:false, featured:false, avatarSlot:"feet", avatarOptionId:"boots" },
+  { id:"lpc_steelboot", name:"Steel Greaves",         cat:"footwear", price:300,  rarity:"rare",     img:`${LPC_BASE}/feet/boots/basic/male/idle.png`, owned:false, featured:false, avatarSlot:"feet", avatarOptionId:"boots" },
+  // ─── Headgear — Common ────
+  { id:"lpc_bandana",   name:"Bandana",               cat:"headgear", price:60,   rarity:"common",   img:`${LPC_BASE}/hat/helmet/bascinet/adult/idle.png`, owned:false, featured:false, avatarSlot:"hat", avatarOptionId:"helmet" },
+  // ─── Headgear — Uncommon/Rare/Epic ────
+  { id:"lpc_helmet",    name:"Knight's Helmet",       cat:"headgear", price:400,  rarity:"rare",     img:`${LPC_BASE}/hat/helmet/bascinet/adult/idle.png`, owned:false, featured:false, avatarSlot:"hat", avatarOptionId:"helmet" },
+  { id:"lpc_wizard",    name:"Wizard Hat",            cat:"headgear", price:550,  rarity:"epic",     img:`${LPC_BASE}/hat/magic/wizard/base/adult/idle.png`, owned:false, featured:false, avatarSlot:"hat", avatarOptionId:"wizard" },
+  { id:"lpc_crown",     name:"Golden Crown",          cat:"headgear", price:1500, rarity:"legendary",img:`${LPC_BASE}/hat/helmet/bascinet/adult/idle.png`, owned:false, featured:false, avatarSlot:"hat", avatarOptionId:"helmet" },
+  // ─── Weapons — various rarities ────
+  { id:"lpc_dagger",    name:"Iron Dagger",           cat:"weapon",   price:150,  rarity:"common",   img:`${LPC_BASE}/weapons/right%20hand/male/idle.png`, owned:false, featured:false, weaponType:"sword" },
+  { id:"lpc_shortsw",   name:"Short Sword",           cat:"weapon",   price:280,  rarity:"uncommon", img:`${LPC_BASE}/weapons/right%20hand/male/idle.png`, owned:false, featured:false, weaponType:"sword" },
+  { id:"lpc_longsw",    name:"Longsword",             cat:"weapon",   price:450,  rarity:"rare",     img:`${LPC_BASE}/weapons/right%20hand/male/idle.png`, owned:false, featured:true,  weaponType:"sword" },
+  { id:"lpc_staff",     name:"Arcane Staff",          cat:"weapon",   price:500,  rarity:"rare",     img:`${LPC_BASE}/weapons/right%20hand/male/idle.png`, owned:false, featured:false, weaponType:"magic" },
+  { id:"lpc_warhammer", name:"War Hammer",            cat:"weapon",   price:700,  rarity:"epic",     img:`${LPC_BASE}/weapons/right%20hand/male/idle.png`, owned:false, featured:false, weaponType:"blunt" },
+  { id:"lpc_bow",       name:"Hunter's Bow",          cat:"weapon",   price:380,  rarity:"uncommon", img:`${LPC_BASE}/weapons/right%20hand/male/idle.png`, owned:false, featured:false, weaponType:"ranged" },
+  { id:"lpc_spear",     name:"Battle Spear",          cat:"weapon",   price:320,  rarity:"uncommon", img:`${LPC_BASE}/weapons/right%20hand/male/idle.png`, owned:false, featured:false, weaponType:"polearm" },
   // ─── Consumables ────
-  { id:"lpc_xpboost",  name:"XP Boost Potion",      cat:"consumable",price:150, rarity:"uncommon", icon:"🧪", owned:false, featured:false },
-  { id:"lpc_shield",   name:"Zone Shield (1h)",     cat:"consumable",price:250, rarity:"rare",     icon:"🔰", owned:false, featured:false },
+  { id:"lpc_xpboost",   name:"XP Boost Potion",       cat:"consumable",price:150, rarity:"uncommon", img:null, icon:"🧪", owned:false, featured:false },
+  { id:"lpc_shield",    name:"Zone Shield (1h)",      cat:"consumable",price:250, rarity:"rare",     img:null, icon:"🔰", owned:false, featured:false },
 ];
 
-const INIT_SHOP_ITEMS = [
-  { id:"lpc_tshirt",   name:"Campus T-Shirt",      cat:"clothing",  priceAE:0,   rarity:"common",   type:"general", stock:null, sold:0,  active:true, soulBound:false, avatarSlot:"torso", avatarOptionId:"tshirt" },
-  { id:"lpc_long",     name:"Long Sleeve Jacket",   cat:"clothing",  priceAE:180, rarity:"uncommon", type:"general", stock:null, sold:12, active:true, soulBound:false, avatarSlot:"torso", avatarOptionId:"long" },
-  { id:"lpc_leather",  name:"Leather Armor",        cat:"armor",     priceAE:350, rarity:"rare",     type:"limited", stock:30,  sold:8,  active:true, soulBound:false, avatarSlot:"torso", avatarOptionId:"leather" },
-  { id:"lpc_plate",    name:"Plate Armor",          cat:"armor",     priceAE:600, rarity:"epic",     type:"limited", stock:15,  sold:3,  active:true, soulBound:false, avatarSlot:"torso", avatarOptionId:"plate" },
-  { id:"lpc_pants",    name:"Basic Pants",          cat:"clothing",  priceAE:0,   rarity:"common",   type:"general", stock:null, sold:0,  active:true, soulBound:false, avatarSlot:"legs",  avatarOptionId:"pants" },
-  { id:"lpc_skirt",    name:"Flowing Skirt",        cat:"clothing",  priceAE:120, rarity:"uncommon", type:"general", stock:null, sold:15, active:true, soulBound:false, avatarSlot:"legs",  avatarOptionId:"skirt" },
-  { id:"lpc_shoes",    name:"Basic Shoes",          cat:"footwear",  priceAE:80,  rarity:"common",   type:"general", stock:null, sold:22, active:true, soulBound:false, avatarSlot:"feet",  avatarOptionId:"shoes" },
-  { id:"lpc_boots",    name:"Combat Boots",         cat:"footwear",  priceAE:200, rarity:"uncommon", type:"general", stock:null, sold:9,  active:true, soulBound:false, avatarSlot:"feet",  avatarOptionId:"boots" },
-  { id:"lpc_helmet",   name:"Knight's Helmet",      cat:"headgear",  priceAE:400, rarity:"rare",     type:"limited", stock:20,  sold:5,  active:true, soulBound:false, avatarSlot:"hat",   avatarOptionId:"helmet" },
-  { id:"lpc_wizard",   name:"Wizard Hat",           cat:"headgear",  priceAE:550, rarity:"epic",     type:"limited", stock:10,  sold:2,  active:true, soulBound:false, avatarSlot:"hat",   avatarOptionId:"wizard" },
-  { id:"lpc_xpboost",  name:"XP Boost Potion",      cat:"consumable",priceAE:150, rarity:"uncommon", type:"general", stock:null, sold:45, active:true, soulBound:true  },
-  { id:"lpc_shield",   name:"Zone Shield (1h)",     cat:"consumable",priceAE:250, rarity:"rare",     type:"limited", stock:50,  sold:11, active:true, soulBound:true  },
-];
+const INIT_SHOP_ITEMS = SHOP_ITEMS.map(item => ({
+  ...item,
+  priceAE: item.price,
+  type: item.rarity === "legendary" ? "limited" : "general",
+  stock: item.rarity === "legendary" ? 5 : item.rarity === "epic" ? 15 : null,
+  sold: Math.floor(Math.random() * 20),
+  active: true,
+  soulBound: item.cat === "consumable",
+}));
 
 const PROOF_SUBMISSIONS = [
   { id:"S001",userId:4821,userName:"Abhiuday S.",missionId:3,missionTitle:"Document Campus Art",cat:"Social",reward:100,xp:50,submittedAt:"14:12",imgUrl:"/assets/proof_placeholder.jpg",note:"Photographed the mural near the science block entrance.",status:"pending" },
@@ -1709,6 +1731,7 @@ function MarketScreen({ user }) {
   const ctx = useContext(AppContext);
   const [mTab, setMTab] = useState("shop");
   const [search, setSearch] = useState("");
+  const [catFilter, setCatFilter] = useState("all");
   const allShopItems = ctx?.sharedShopItems || SHOP_ITEMS;
   const activeShop = allShopItems.filter(i => i.active !== false);
   const [owned, setOwned] = useState(new Set(
@@ -1719,7 +1742,7 @@ function MarketScreen({ user }) {
   const [sellPrice, setSellPrice] = useState("");
   const marketplaceListings = ctx?.marketplaceListings || [];
 
-  const shopItems = activeShop.filter(i => !i.designer && !i._isMarketListing && (!search || i.name.toLowerCase().includes(search.toLowerCase())));
+  const shopItems = activeShop.filter(i => !i.designer && !i._isMarketListing && (!search || i.name.toLowerCase().includes(search.toLowerCase())) && (catFilter === "all" || i.cat === catFilter || (catFilter === "armor" && i.cat === "armor") || (catFilter === "clothing" && (i.cat === "clothing" || i.cat === "armor")) ));
   const community = [
     ...COMMUNITY_ITEMS,
     ...allShopItems.filter(i => i.designer && i.active !== false),
@@ -1791,6 +1814,16 @@ function MarketScreen({ user }) {
       <div style={{ padding:"0 16px" }}>
         {mTab === "shop" && (
           <>
+            {/* Category filter chips */}
+            <div style={{ display:"flex", gap:6, overflowX:"auto", marginBottom:12, paddingBottom:4 }}>
+              {[["all","All"],["clothing","Clothing"],["weapon","Weapons"],["footwear","Footwear"],["headgear","Headgear"],["consumable","Items"]].map(([k,l]) => (
+                <button key={k} onClick={() => setCatFilter(k)} style={{
+                  padding:"6px 14px", borderRadius:99, fontSize:11, fontWeight:700, fontFamily:FONT, whiteSpace:"nowrap",
+                  background: catFilter===k ? T : "rgba(255,255,255,0.06)", border: catFilter===k ? `1px solid ${T}` : `1px solid ${BR}`,
+                  color: catFilter===k ? "#000" : TM,
+                }}>{l}</button>
+              ))}
+            </div>
             {shopItems.filter(i=>i.featured).length > 0 && (
               <>
                 <div style={{ fontSize:14, fontWeight:700, color:TX, marginBottom:10 }}>⭐ Featured</div>
@@ -1984,9 +2017,32 @@ function MarketplaceListingCard({ item, onBuy }) {
   );
 }
 
+function SpritePreview({ src, size=48 }) {
+  // Renders a cropped view of an LPC spritesheet (first idle frame, facing down = row 2)
+  const canvasRef = useRef(null);
+  useEffect(() => {
+    if (!src || !canvasRef.current) return;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const ctx = canvasRef.current.getContext("2d");
+      ctx.imageSmoothingEnabled = false;
+      ctx.clearRect(0, 0, size, size);
+      // LPC spritesheets: 64x64 per frame, row 2 = facing down (south), first column
+      ctx.drawImage(img, 0, 128, 64, 64, 0, 0, size, size);
+    };
+    img.onerror = () => {};
+    img.src = src;
+  }, [src, size]);
+  if (!src) return null;
+  return <canvas ref={canvasRef} width={size} height={size} style={{ imageRendering:"pixelated", width:size, height:size }} />;
+}
+
 function ShopItemCard({ item, owned, onBuy, featured, forceOwned }) {
   const isOwned = owned || forceOwned;
   const rc = RARITY_COLOR[item.rarity];
+  const RARITY_LABEL = { common:"Common", uncommon:"Uncommon", rare:"Rare", epic:"Epic", legendary:"Legendary" };
+  const CAT_ICONS = { clothing:"👕", armor:"🛡️", footwear:"👢", headgear:"⛑️", weapon:"⚔️", consumable:"🧪" };
   return (
     <div style={{
       background:S1, border:`1px solid ${rc}30`, borderRadius:16, overflow:"hidden",
@@ -1994,13 +2050,20 @@ function ShopItemCard({ item, owned, onBuy, featured, forceOwned }) {
     }}>
       <div style={{ height:3, background:rc }} />
       <div style={{ padding:"14px 12px 12px", display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
-        <div style={{ fontSize:32 }}>{item.icon}</div>
+        {item.img ? (
+          <div style={{ width:48, height:48, background:`${rc}10`, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+            <SpritePreview src={item.img} size={48} />
+          </div>
+        ) : (
+          <div style={{ fontSize:32 }}>{item.icon || CAT_ICONS[item.cat] || "📦"}</div>
+        )}
         <div style={{ fontSize:12, fontWeight:700, color:TX, textAlign:"center", lineHeight:1.3 }}>{item.name}</div>
-        <div style={{ fontSize:10, color:rc, fontWeight:700 }}>{item.rarity} · {item.cat}</div>
+        <div style={{ fontSize:10, color:rc, fontWeight:700 }}>{RARITY_LABEL[item.rarity]} · {CAT_ICONS[item.cat] || ""} {item.cat}</div>
+        {item.weaponType && <div style={{ fontSize:9, color:TM }}>Type: {item.weaponType}</div>}
         {isOwned ? (
           <div style={{ padding:"5px 12px", background:`${TG}15`, border:`1px solid ${TG}40`, borderRadius:99, fontSize:11, fontWeight:700, color:TG }}>✓ Owned</div>
         ) : (
-          <button onClick={onBuy} style={{ padding:"7px 16px", background:`${rc}15`, border:`1px solid ${rc}40`, borderRadius:99, color:rc, fontSize:12, fontWeight:700, fontFamily:FONT }}>◎ {item.price}</button>
+          <button onClick={onBuy} style={{ padding:"7px 16px", background:`${rc}15`, border:`1px solid ${rc}40`, borderRadius:99, color:rc, fontSize:12, fontWeight:700, fontFamily:FONT }}>◎ {item.price || item.priceAE}</button>
         )}
       </div>
     </div>
@@ -4867,21 +4930,6 @@ function ProfileScreen({ user, onAdminAccess }) {
     tapTimer.current = setTimeout(() => { tapRef.current = 0; }, 2000);
   };
 
-  // Build owned equipment map from shop items
-  const getOwnedEquipment = useCallback(() => {
-    const allItems = ctx?.sharedShopItems || SHOP_ITEMS;
-    const owned = { torso:['none'], legs:['none'], feet:['none'], hat:['none'] };
-    allItems.forEach(item => {
-      if ((item.owned || item.price === 0 || item.priceAE === 0) && item.avatarSlot && item.avatarOptionId) {
-        if (!owned[item.avatarSlot]) owned[item.avatarSlot] = ['none'];
-        if (!owned[item.avatarSlot].includes(item.avatarOptionId)) {
-          owned[item.avatarSlot].push(item.avatarOptionId);
-        }
-      }
-    });
-    return owned;
-  }, [ctx?.sharedShopItems]);
-
   // Listen for avatar postMessage from iframe
   useEffect(() => {
     const handler = (e) => {
@@ -4889,13 +4937,6 @@ function ProfileScreen({ user, onAdminAccess }) {
         setAvatarDataUrl(e.data.dataUrl);
         setShowAvatarEditor(false);
         showToast("✨ Avatar updated!", "success");
-      }
-      if (e.data && e.data.type === 'avatar-editor-ready') {
-        // Send owned equipment to iframe
-        const iframe = document.querySelector('iframe[title="Avatar Editor"]');
-        if (iframe?.contentWindow) {
-          iframe.contentWindow.postMessage({ type:'update-owned-equipment', owned: getOwnedEquipment() }, '*');
-        }
       }
     };
     window.addEventListener('message', handler);
