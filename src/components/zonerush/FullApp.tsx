@@ -1264,7 +1264,7 @@ function DenPreview() {
 // BOTTOM NAV
 // ═══════════════════════════════════════════════════════════════════════════════
 const TABS = [
-  { id:"map",      icon:"🗺️", label:"Map" },
+  { id:"market",   icon:"🛒", label:"Market" },
   { id:"missions", icon:"🎯", label:"Quests" },
   { id:"home",     icon:"⚡", label:"Home",  center:true },
   { id:"clan",     icon:"⚔️", label:"Clan" },
@@ -2137,7 +2137,8 @@ function ClanHub({ user, onBack }) {
   const CLAN_TABS = [
     { id:"overview", icon:"📊", label:"Overview" },
     { id:"members",  icon:"👥", label:"Members" },
-    { id:"zones",    icon:"🗺️", label:"Zones" },
+    { id:"map",      icon:"🗺️", label:"Map" },
+    { id:"zones",    icon:"📍", label:"Zones" },
     { id:"war",      icon:"⚔️", label:"War" },
     { id:"treasury", icon:"◎",  label:"Treasury" },
   ];
@@ -2192,6 +2193,7 @@ function ClanHub({ user, onBack }) {
       <div style={{ flex:1, overflowY:"auto", padding:"14px 14px 90px" }}>
         {cTab === "overview" && <OverviewTab clan={clan} isLeader={isLeader} />}
         {cTab === "members" && <MembersTab clan={clan} isLeader={isLeader} isOfficer={isOfficer} />}
+        {cTab === "map" && <ZoneMapScreen />}
         {cTab === "zones" && <ZonesTab clan={clan} isLeader={isLeader} isOfficer={isOfficer} />}
         {cTab === "war" && <WarTab clan={clan} isLeader={isLeader} isOfficer={isOfficer} />}
         {cTab === "treasury" && <TreasuryTab clan={clan} isLeader={isLeader} />}
@@ -4815,7 +4817,7 @@ function HomeScreen() {
       )}
 
       {/* ═══ MARKET SHORTCUT ═══ */}
-      <MarketShortcut onOpen={() => setTab("map")} />
+      <MarketShortcut onOpen={() => setTab("market")} />
 
       <div style={{ height:40 }} />
     </div>
@@ -4825,7 +4827,7 @@ function HomeScreen() {
     <QuestScreen missions={missions} events={liveEvents} styleEvent={styleEvent} onStyleEvent={() => setStyleTab(true)} />
   );
 
-  if (tab === "map") return shell(<ZoneMapScreen onMarket={() => setTab("home")} />);
+  if (tab === "market") return shell(<MarketScreen user={ctx?.sharedUser || USER} />);
 
   if (tab === "clan") return shell(<ClanScreen userOverride={user.clan ? { ...CL_USER, ...user, clan: user.clan } : user} onBack={() => setTab("home")} />);
 
