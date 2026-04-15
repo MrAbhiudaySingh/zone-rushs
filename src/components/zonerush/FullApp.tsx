@@ -4851,10 +4851,9 @@ export default function ZoneRushApp() {
           }
         }
 
-        // Fetch zones (used by clan screens)
-        const { data: dbZones } = await supabase.from("zones").select("*, captured_clan:clans!captured_by(name, tag, color)");
+        // Fetch zones (used by clan screens and map)
+        const { data: dbZones } = await supabase.from("zones").select("*, owner_clan:clans!zones_owner_clan_id_fkey(name, tag, color)");
         if (dbZones?.length) {
-          // Store raw zones for clan features
           window.__zr_zones = dbZones;
         }
 
