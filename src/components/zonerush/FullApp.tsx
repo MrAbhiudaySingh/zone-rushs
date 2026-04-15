@@ -5179,30 +5179,75 @@ function ProfileScreen({ user, onAdminAccess }) {
       </div>
 
       {/* Achievements */}
-      <div style={{ padding:"0 16px", marginBottom:16 }}>
-        <SectionHeader title="🏆 Achievements" />
-        <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:4 }}>
-          {[
-            { icon:"📍", name:"First Zone", desc:"Captured your first zone", unlocked:true },
-            { icon:"🔥", name:"Streak 3", desc:"3-day streak", unlocked:true },
-            { icon:"👗", name:"Style Debut", desc:"First style entry", unlocked:true },
-            { icon:"⚔️", name:"Warrior", desc:"Win 10 combats", unlocked:false },
-            { icon:"🗺️", name:"Explorer", desc:"Visit all zones", unlocked:false },
-          ].map(a => (
-            <div key={a.name} style={{
-              flex:"0 0 100px", display:"flex", flexDirection:"column", alignItems:"center", gap:6,
-              padding:"14px 8px", background: a.unlocked ? `${TY}08` : "rgba(255,255,255,0.02)",
-              border:`1.5px solid ${a.unlocked ? `${TY}40` : BR}`, borderRadius:16,
-              opacity: a.unlocked ? 1 : 0.5,
-            }}>
-              <span style={{ fontSize:28, filter: a.unlocked ? "none" : "grayscale(1)" }}>{a.icon}</span>
-              <span style={{ fontSize:10, fontWeight:800, color: a.unlocked ? TX : TM, textAlign:"center" }}>{a.name}</span>
-              <span style={{ fontSize:9, color:TM, textAlign:"center" }}>{a.desc}</span>
-              {a.unlocked && <span style={{ fontSize:9, color:TY, fontWeight:700 }}>✓ Unlocked</span>}
+      {(() => {
+        const ctx = useContext(AppContext);
+        const [achievements, setAchievements] = useState([
+          { icon:"📍", name:"First Zone", desc:"Capture your first zone", unlocked:false, key:"first_zone" },
+          { icon:"🔥", name:"Streak 3", desc:"3-day streak", unlocked:false, key:"streak_3" },
+          { icon:"🔥", name:"Streak 7", desc:"7-day streak", unlocked:false, key:"streak_7" },
+          { icon:"🏃", name:"Step Master", desc:"Sync 10K steps", unlocked:false, key:"step_master" },
+          { icon:"⚔️", name:"Warrior", desc:"Win 10 combats", unlocked:false, key:"warrior" },
+          { icon:"🗺️", name:"Explorer", desc:"Visit 5+ zones", unlocked:false, key:"explorer" },
+          { icon:"🏅", name:"Quest Hero", desc:"Complete 20 quests", unlocked:false, key:"quest_hero" },
+          { icon:"👑", name:"Clan Leader", desc:"Create or lead a clan", unlocked:false, key:"clan_leader" },
+        ]);
+
+        useEffect(() => {
+          if (!ctx?.authUser) return;
+          const uid = ctx.authUser.id;
+          (async () => {
+            const unlocked = new Set();
+
+            // Check zone captures
+            const { count: zoneCount } = await supabase.from("zone_captures").select("id", { count:"exact", head:true }).eq("attacker_user_id", uid).eq("status", "completed");
+            if (zoneCount && zoneCount >= 1) unlocked.add("first_zone");
+
+            // Check streak from profile
+            const { data: profile } = await supabase.from("profiles").select("streak").eq("user_id", uid).maybeSingle();
+            if (profile?.streak >= 3) unlocked.add("streak_3");
+            if (profile?.streak >= 7) unlocked.add("streak_7");
+
+            // Check steps from google_fit_tokens
+            const { data: fit } = await supabase.from("google_fit_tokens").select("daily_steps").eq("user_id", uid).maybeSingle();
+            if (fit?.daily_steps >= 10000) unlocked.add("step_master");
+
+            // Check completed quests
+            const { count: questCount } = await supabase.from("quest_progress").select("id", { count:"exact", head:true }).eq("user_id", uid).eq("status", "completed");
+            if (questCount && questCount >= 20) unlocked.add("quest_hero");
+
+            // Check unique zones visited (via quest_proofs with gps)
+            const { data: proofs } = await supabase.from("quest_proofs").select("latitude,longitude").eq("user_id", uid);
+            if (proofs && proofs.length >= 5) unlocked.add("explorer");
+
+            // Check clan leadership
+            const { data: clan } = await supabase.from("clans").select("id").eq("leader_id", uid).maybeSingle();
+            if (clan) unlocked.add("clan_leader");
+
+            setAchievements(prev => prev.map(a => ({ ...a, unlocked: unlocked.has(a.key) })));
+          })();
+        }, [ctx?.authUser]);
+
+        return (
+          <div style={{ padding:"0 16px", marginBottom:16 }}>
+            <SectionHeader title="🏆 Achievements" />
+            <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:4 }}>
+              {achievements.map(a => (
+                <div key={a.name} style={{
+                  flex:"0 0 100px", display:"flex", flexDirection:"column", alignItems:"center", gap:6,
+                  padding:"14px 8px", background: a.unlocked ? `${TY}08` : "rgba(255,255,255,0.02)",
+                  border:`1.5px solid ${a.unlocked ? `${TY}40` : BR}`, borderRadius:16,
+                  opacity: a.unlocked ? 1 : 0.5,
+                }}>
+                  <span style={{ fontSize:28, filter: a.unlocked ? "none" : "grayscale(1)" }}>{a.icon}</span>
+                  <span style={{ fontSize:10, fontWeight:800, color: a.unlocked ? TX : TM, textAlign:"center" }}>{a.name}</span>
+                  <span style={{ fontSize:9, color:TM, textAlign:"center" }}>{a.desc}</span>
+                  {a.unlocked && <span style={{ fontSize:9, color:TY, fontWeight:700 }}>✓ Unlocked</span>}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+        );
+      })()}
 
       {/* Settings */}
       {(() => {
