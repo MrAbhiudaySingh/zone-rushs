@@ -994,12 +994,27 @@ function MissionCard({ m, idx=0 }) {
     setSyncing(true);
     try {
       if (ctx?.authUser) {
-        const { data } = await supabase.from("quest_progress").select("current_value").eq("user_id", ctx.authUser.id).eq("quest_definition_id", m.id).maybeSingle();
-        if (data?.current_value) {
-          setSimSteps(data.current_value);
-          showToast(`📡 Synced ${data.current_value.toLocaleString()} steps`, "success");
+        // Call real Google Fit sync endpoint
+        const res = await fetch("/api/google-fit/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: ctx.authUser.id }),
+        });
+        const result = await res.json();
+        if (result.synced && result.steps > 0) {
+          setSimSteps(result.steps);
+          showToast(`📡 Synced ${result.steps.toLocaleString()} steps from Google Fit`, "success");
+        } else if (result.error?.includes("not connected")) {
+          showToast("📡 Connect Google Fit in Settings to auto-track steps.", "info");
         } else {
-          showToast("📡 No health data synced yet. Connect Google Fitness in Settings.", "info");
+          // Fallback: check quest_progress directly
+          const { data } = await supabase.from("quest_progress").select("current_value").eq("user_id", ctx.authUser.id).eq("quest_definition_id", m.id).maybeSingle();
+          if (data?.current_value) {
+            setSimSteps(data.current_value);
+            showToast(`📡 ${data.current_value.toLocaleString()} steps recorded`, "success");
+          } else {
+            showToast("📡 No steps yet. Connect Google Fit in Settings.", "info");
+          }
         }
       }
     } catch { showToast("📡 Health sync unavailable.", "info"); }
