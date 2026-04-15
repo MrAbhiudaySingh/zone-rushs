@@ -2056,11 +2056,7 @@ function ClanScreen({ userOverride, onBack }) {
   return <ClanHub user={user} onBack={onBack} />;
 }
 
-const SUGGESTED_CLANS = [
-  { name:"BlazeThorn", tag:"BLZ", members:18, zones:8, color:TR, open:false },
-  { name:"SolarEdge",  tag:"SOL", members:10, zones:4, color:TA, open:true  },
-  { name:"CrimsonArc", tag:"CRA", members:7,  zones:3, color:"#F87171",open:true },
-];
+const SUGGESTED_CLANS = [];
 
 function NoClanScreen({ user, canCreate, onBack }) {
   const ctx = useContext(AppContext);
@@ -3440,16 +3436,7 @@ function ActivityFeed() {
 }
 
 // ─── PLAYERS SECTION ───────────────────────────────────────────────────────────
-const MOCK_PLAYERS = [
-  { id:4821, name:"Abhiuday S.",   email:"a.singh@uni.ac.uk",  level:7,  xp:3240,  ae:4280,  streak:4,  status:"active",  flag:false, clan:"Nocturne",  joinDate:"Jan 12" },
-  { id:2203, name:"Vikram K.",     email:"v.kumar@uni.ac.uk",  level:14, xp:9200,  ae:12800, streak:21, status:"active",  flag:false, clan:"Nocturne",  joinDate:"Jan 8"  },
-  { id:3317, name:"Priya M.",      email:"p.mehta@uni.ac.uk",  level:11, xp:6800,  ae:7400,  streak:9,  status:"active",  flag:false, clan:"Nocturne",  joinDate:"Jan 14" },
-  { id:5501, name:"Anon #5501",   email:"[encrypted]",        level:3,  xp:840,   ae:520,   streak:1,  status:"flagged", flag:true,  clan:null,        joinDate:"Feb 19" },
-  { id:1102, name:"Karan T.",      email:"k.tiwari@uni.ac.uk", level:6,  xp:2100,  ae:1800,  streak:0,  status:"warned",  flag:true,  clan:"Nocturne",  joinDate:"Jan 20" },
-  { id:7743, name:"Meera K.",      email:"m.kapoor@uni.ac.uk", level:8,  xp:3900,  ae:3200,  streak:6,  status:"active",  flag:false, clan:"IronVeil",  joinDate:"Jan 11" },
-  { id:9912, name:"Rohit D.",      email:"r.desai@uni.ac.uk",  level:5,  xp:1600,  ae:940,   streak:2,  status:"inactive",flag:false, clan:null,        joinDate:"Feb 1"  },
-  { id:6634, name:"Sneha R.",      email:"s.rao@uni.ac.uk",    level:9,  xp:4700,  ae:5100,  streak:14, status:"active",  flag:false, clan:"SolarEdge", joinDate:"Jan 9"  },
-];
+const MOCK_PLAYERS = [];
 
 function PlayersSection() {
   const ctx = useContext(AppContext);
@@ -4025,13 +4012,7 @@ function CombatSection() {
 }
 
 // ─── CLANS SECTION ─────────────────────────────────────────────────────────────
-const CLAN_DATA = [
-  { name:"BlazeThorn",tag:"BLZ",leader:"Unknown",members:18,zones:8,cpr:94.2,treasury:28400,flags:1 },
-  { name:"IronVeil",tag:"IRV",leader:"Unknown",members:15,zones:6,cpr:91.0,treasury:19200,flags:0 },
-  { name:"Nocturne",tag:"NCT",leader:"Vikram K.",members:12,zones:5,cpr:87.4,treasury:18400,flags:0 },
-  { name:"SolarEdge",tag:"SOL",leader:"Unknown",members:10,zones:4,cpr:78.1,treasury:12100,flags:2 },
-  { name:"CrimsonArc",tag:"CRA",leader:"Unknown",members:7,zones:3,cpr:71.3,treasury:8400,flags:0 },
-];
+const CLAN_DATA = [];
 
 function ClansSection() {
   const [clans, setClans] = useState(CLAN_DATA);
@@ -5291,11 +5272,7 @@ export default function ZoneRushApp() {
   );
   const [sharedStyleEvent, setSharedStyleEvent] = useState({
     ...STYLE_EVENT_LIVE,
-    gallery:[
-      { id:"ST001",userName:"Priya M.", title:"Midnight Scholar",votes:48,isMine:false },
-      { id:"ST002",userName:"Vikram K.",title:"Shadow Capture",  votes:41,isMine:false },
-      { id:"ST005",userName:"Sneha R.", title:"The Archivist",   votes:35,isMine:false },
-    ],
+    gallery:[],
   });
   const [sharedStyleSubs,  setSharedStyleSubs]  = useState(STYLE_SUBMISSIONS_INIT);
   const [sharedProofs,     setSharedProofs]     = useState(PROOF_SUBMISSIONS);
@@ -5425,7 +5402,7 @@ export default function ZoneRushApp() {
     if (!authUser) return;
     const fetchUserData = async () => {
       // Fetch profile
-      const { data: profile } = await supabase.from("profiles").select("*").eq("id", authUser.id).single();
+      const { data: profile } = await supabase.from("profiles").select("*").eq("user_id", authUser.id).single();
       if (profile) {
         // ── Streak logic: check if streak should reset ──
         const lastActive = profile.updated_at ? new Date(profile.updated_at) : null;
