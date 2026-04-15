@@ -4956,6 +4956,7 @@ function ProfileScreen({ user, onAdminAccess }) {
   const ctx = useContext(AppContext);
   const tapRef = useRef(0);
   const tapTimer = useRef(null);
+  const iframeRef = useRef(null);
   const [showAvatarEditor, setShowAvatarEditor] = useState(false);
   const [avatarDataUrl, setAvatarDataUrl] = useState(null);
   const handleAdminTap = () => {
@@ -4963,6 +4964,22 @@ function ProfileScreen({ user, onAdminAccess }) {
     clearTimeout(tapTimer.current);
     if (tapRef.current >= 7) { tapRef.current = 0; if (onAdminAccess) onAdminAccess(); return; }
     tapTimer.current = setTimeout(() => { tapRef.current = 0; }, 2000);
+  };
+
+  // Collect owned item IDs from shop context
+  const getOwnedIds = () => {
+    const allItems = ctx?.sharedShopItems || SHOP_ITEMS;
+    return allItems.filter(i => i.owned).map(i => i.id);
+  };
+
+  // Send owned items to iframe when it loads
+  const handleIframeLoad = () => {
+    if (iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage({
+        type: 'set-owned-items',
+        ownedIds: getOwnedIds(),
+      }, '*');
+    }
   };
 
   // Listen for avatar postMessage from iframe
@@ -4995,7 +5012,9 @@ function ProfileScreen({ user, onAdminAccess }) {
               display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer",
             }}>✕</button>
             <iframe
+              ref={iframeRef}
               src="/avatar-editor.html"
+              onLoad={handleIframeLoad}
               style={{ width:"100%", height:"100%", border:"none" }}
               title="Avatar Editor"
             />
