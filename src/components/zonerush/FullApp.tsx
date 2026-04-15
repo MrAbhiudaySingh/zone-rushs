@@ -2053,7 +2053,6 @@ function MarketplaceListingCard({ item, onBuy }) {
 }
 
 function SpritePreview({ src, size=48 }) {
-  // Renders a cropped view of an LPC spritesheet (first idle frame, facing down = row 2)
   const canvasRef = useRef(null);
   useEffect(() => {
     if (!src || !canvasRef.current) return;
@@ -2078,6 +2077,7 @@ function ShopItemCard({ item, owned, onBuy, featured, forceOwned }) {
   const rc = RARITY_COLOR[item.rarity];
   const RARITY_LABEL = { common:"Common", uncommon:"Uncommon", rare:"Rare", epic:"Epic", legendary:"Legendary" };
   const CAT_ICONS = { clothing:"👕", armor:"🛡️", footwear:"👢", headgear:"⛑️", weapon:"⚔️", consumable:"🧪" };
+  const spriteImg = SPRITE_IMG[item.id];
   return (
     <div style={{
       background:S1, border:`1px solid ${rc}30`, borderRadius:16, overflow:"hidden",
@@ -2085,8 +2085,12 @@ function ShopItemCard({ item, owned, onBuy, featured, forceOwned }) {
     }}>
       <div style={{ height:3, background:rc }} />
       <div style={{ padding:"14px 12px 12px", display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
-        <div style={{ width:48, height:48, background:`${rc}10`, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center" }}>
-          <span style={{ fontSize:28 }}>{item.icon || ITEM_ICONS[item.cat] || "📦"}</span>
+        <div style={{ width:56, height:56, background:`${rc}10`, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+          {spriteImg ? (
+            <SpritePreview src={spriteImg} size={56} />
+          ) : (
+            <span style={{ fontSize:28 }}>{item.icon || ITEM_ICONS[item.cat] || "📦"}</span>
+          )}
         </div>
         <div style={{ fontSize:12, fontWeight:700, color:TX, textAlign:"center", lineHeight:1.3 }}>{item.name}</div>
         <div style={{ fontSize:10, color:rc, fontWeight:700 }}>{RARITY_LABEL[item.rarity]} · {CAT_ICONS[item.cat] || ""} {item.cat}</div>
