@@ -971,7 +971,26 @@ function MissionCard({ m, idx=0 }) {
   const [simSteps, setSimSteps] = useState(m.progress || 0);
   const [gpsVerifying, setGpsVerifying] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [fitConnected, setFitConnected] = useState(null);
   const fileInputRef = useRef(null);
+
+  // Check Google Fit connection for health_api quests
+  useEffect(() => {
+    if (m.type !== "health_api" || !ctx?.authUser) return;
+    supabase.from("google_fit_tokens").select("connected").eq("user_id", ctx.authUser.id).maybeSingle().then(({ data }) => {
+      setFitConnected(!!data?.connected);
+    });
+  }, [m.type, ctx?.authUser]);
+
+  const handleConnectGoogleFit = () => {
+    if (!ctx?.authUser) return;
+    window.open(`/api/google-fit/auth?user_id=${ctx.authUser.id}`, "_blank", "width=500,height=600");
+    const interval = setInterval(async () => {
+      const { data } = await supabase.from("google_fit_tokens").select("connected").eq("user_id", ctx.authUser.id).maybeSingle();
+      if (data?.connected) { setFitConnected(true); clearInterval(interval); showToast("✅ Google Fit connected! Tap Sync to pull steps.", "success"); }
+    }, 3000);
+    setTimeout(() => clearInterval(interval), 120000);
+  };
 
   // Sync completion state from context
   useEffect(() => {
@@ -1210,10 +1229,20 @@ function MissionCard({ m, idx=0 }) {
                     padding:"4px 10px", borderRadius:8, border:`1px solid ${T}40`, background:`${T}10`,
                     color:T, fontSize:9, fontWeight:700, fontFamily:FONT, cursor: syncing ? "wait" : "pointer",
                   }}>
-                    {syncing ? "📡 Syncing..." : "📡 Sync Health"}
+                    {syncing ? "📡 Syncing..." : "📡 Sync Steps"}
                   </button>
                 )}
               </div>
+              {!completed && fitConnected === false && (
+                <button onClick={handleConnectGoogleFit} style={{
+                  marginTop:6, padding:"8px 16px", borderRadius:12, border:`1.5px solid ${TG}50`,
+                  background:`linear-gradient(135deg, ${TG}20, ${TG}08)`, width:"100%",
+                  color:TG, fontSize:11, fontWeight:800, fontFamily:FONT, cursor:"pointer",
+                  display:"flex", alignItems:"center", justifyContent:"center", gap:6,
+                }}>
+                  🏃 Connect Google Fit for auto-tracking
+                </button>
+              )}
             </div>
           ) : m.goal > 1 && !completed ? (
             <div>
