@@ -74,38 +74,21 @@ const MONO  = "'Nunito','Nunito',monospace";
 // Rarity colors — vibrant, distinct
 const RARITY_COLOR = { common:"#8B9AB0", uncommon:TG, rare:TB, epic:TA, legendary:TY };
 
-// ─── MOCK DATA ─────────────────────────────────────────────────────────────────
+// ─── DEFAULT DATA (empty — real data comes from DB) ──────────────────────────
 const USER = {
-  name:"Abhiuday", level:7,
-  xp:3240, xpNext:4000,
-  ae:4280, shards:7,
-  streak:4, shields:2,
-  combatRank:"Silver II", influenceRank:"Sprout",
+  name:"Player", level:1,
+  xp:0, xpNext:1000,
+  ae:0, shards:0,
+  streak:0, shields:0,
+  combatRank:"Unranked", influenceRank:"Unranked",
   clan:null,
 };
 
-const MISSIONS = [
-  { id:1, title:"Morning Walk",        cat:"Health",    color:TG,   icon:"👟", type:"steps",  reward:"80 AE",  xp:"40 XP", progress:6200, goal:8000,  timer:"6h",  week:false },
-  { id:2, title:"Visit the Library",   cat:"Territory", color:TY,   icon:"📍", type:"checkin",reward:"120 AE", xp:"60 XP", progress:0,    goal:1,     timer:"23h", week:false },
-  { id:3, title:"Document Campus Art", cat:"Social",    color:TB,   icon:"📷", type:"photo",  reward:"100 AE", xp:"50 XP", progress:0,    goal:1,     timer:"23h", week:false },
-  { id:4, title:"Cross-Dept Selfie",   cat:"Social",    color:TA,   icon:"🤝", type:"photo",  reward:"160 AE", xp:"60 XP", progress:0,    goal:1,     timer:"5d",  week:true  },
-  { id:5, title:"Capture 3 Zones",     cat:"Territory", color:TR,   icon:"⚔️", type:"checkin",reward:"300 AE", xp:"120 XP",progress:1,    goal:3,     timer:"5d",  week:true  },
-  { id:6, title:"Meditate 3× This Week",cat:"Wellness", color:T,    icon:"🧘", type:"photo",  reward:"200 AE", xp:"80 XP", progress:2,    goal:3,     timer:"5d",  week:true  },
-];
+const MISSIONS = [];
 
-const MONTHLY_MISSIONS = [
-  { id:101, title:"Zone Domination Month", cat:"Territory", color:TA,  icon:"🗺️", type:"checkin", reward:"1200 AE", xp:"500 XP", progress:18, goal:50, timer:"18d", month:true },
-  { id:102, title:"Social Butterfly",      cat:"Social",    color:TB,  icon:"🤝", type:"photo",   reward:"800 AE",  xp:"300 XP", progress:4,  goal:20, timer:"18d", month:true },
-  { id:103, title:"Wellness Streak Month", cat:"Wellness",  color:TG,  icon:"🧘", type:"steps",   reward:"600 AE",  xp:"250 XP", progress:12, goal:30, timer:"18d", month:true },
-  { id:104, title:"Story Quest Completist",cat:"Story",     color:TY,  icon:"📖", type:"checkin", reward:"2000 AE", xp:"800 XP", progress:2,  goal:5,  timer:"18d", month:true },
-];
+const MONTHLY_MISSIONS = [];
 
-const LIVE_EVENTS = [
-  { id:1, title:"Freshers Capture Blitz", type:"territory", status:"active",
-    desc:"Top 3 clans capture the most zones. Freshers only.",
-    endDate:"Mar 27", reward:"500 AE + Fresher badge", participants:84, maxParticipants:200,
-    eligibility:"Level 1–5 only", color:TA },
-];
+const LIVE_EVENTS = [];
 
 // Sprite preview images bundled locally from LPC repo
 const SPRITE_IMG = {
@@ -199,58 +182,29 @@ const INIT_SHOP_ITEMS = SHOP_ITEMS.map(item => ({
   soulBound: item.cat === "consumable",
 }));
 
-const PROOF_SUBMISSIONS = [
-  { id:"S001",userId:4821,userName:"Abhiuday S.",missionId:3,missionTitle:"Document Campus Art",cat:"Social",reward:100,xp:50,submittedAt:"14:12",imgUrl:"/assets/proof_placeholder.jpg",note:"Photographed the mural near the science block entrance.",status:"pending" },
-  { id:"S002",userId:7743,userName:"Meera K.",missionId:4,missionTitle:"Meditation Session",cat:"Wellness",reward:45,xp:20,submittedAt:"13:58",imgUrl:"/assets/proof_placeholder.jpg",note:"10-min session with Headspace, screenshot attached.",status:"pending" },
-  { id:"S003",userId:2203,userName:"Vikram K.",missionId:6,missionTitle:"Department Selfie",cat:"Social",reward:160,xp:60,submittedAt:"13:22",imgUrl:"/assets/proof_placeholder.jpg",note:"Selfie with someone from civil engineering dept.",status:"pending" },
-  { id:"S005",userId:3317,userName:"Priya M.",missionId:4,missionTitle:"Meditation Session",cat:"Wellness",reward:45,xp:20,submittedAt:"11:30",imgUrl:"/assets/proof_placeholder.jpg",note:"Morning yoga session photo.",status:"approved" },
-];
+const PROOF_SUBMISSIONS = [];
 
-const COMMUNITY_ITEMS = [
-  { id:"c1", name:"Midnight Scholar", designer:"Priya M.",  price:200, votes:48, icon:"👗", weekId:12, owned:false, rarity:"epic" },
-  { id:"c2", name:"Shadow Capture",   designer:"Vikram K.", price:200, votes:41, icon:"👗", weekId:12, owned:false, rarity:"epic" },
-  { id:"c3", name:"The Archivist",    designer:"Sneha R.",  price:200, votes:35, icon:"👗", weekId:11, owned:true,  rarity:"epic" },
-];
+const COMMUNITY_ITEMS = [];
 
-const STORY = { ch:1, title:"The Missing Ledger", sub:"Uncover the secrets hidden across campus zones...", clues:2, total:5 };
-const WEEKLY = { done:3, total:6, days:3 };
+const STORY = { ch:0, title:"Coming Soon", sub:"Story quests are not yet available.", clues:0, total:0 };
+const WEEKLY = { done:0, total:0, days:0 };
 
-const STYLE_SUBMISSIONS_INIT = [
-  { id:"ST001",userId:3317,userName:"Priya M.",  title:"Midnight Scholar",votes:48,status:"approved",submittedAt:"Feb 18",flagged:false },
-  { id:"ST002",userId:2203,userName:"Vikram K.", title:"Shadow Capture",  votes:41,status:"approved",submittedAt:"Feb 18",flagged:false },
-  { id:"ST005",userId:6634,userName:"Sneha R.",  title:"The Archivist",   votes:35,status:"approved",submittedAt:"Feb 19",flagged:false },
-];
+const STYLE_SUBMISSIONS_INIT = [];
 
 const STYLE_EVENT_LIVE = {
-  phase:"submission", weekId:12,
-  theme:"Design a look for someone who just captured the library at midnight.",
-  submissionEnds:"Mar 19", votingEnds:"Mar 24",
-  gallery:[
-    { id:"ST001",userName:"Priya M.", title:"Midnight Scholar",votes:48,isMine:false },
-    { id:"ST002",userName:"Vikram K.",title:"Shadow Capture",  votes:41,isMine:false },
-    { id:"ST005",userName:"Sneha R.", title:"The Archivist",   votes:35,isMine:false },
-    { id:"MY001",userName:"You",      title:"Neon Archive",    votes:14,isMine:true  },
-  ],
+  phase:"submission", weekId:1,
+  theme:"No active style event.",
+  submissionEnds:"TBD", votingEnds:"TBD",
+  gallery:[],
 };
 
 // ─── CLAN DATA ─────────────────────────────────────────────────────────────────
 const CL_USER = {
-  name:"Abhiuday", level:7, ae:4280, shards:7,
-  clan:{ id:"nocturne", name:"Nocturne", tag:"NCT", motto:"We own the night.", color:TL,
-    founded:"Feb 2026", memberRole:"Officer", treasury:18400, weeklyXP:12400,
-    rank:3, cpr:87.4, zonesHeld:5, totalMembers:12, maxMembers:20 },
+  name:"Player", level:1, ae:0, shards:0,
+  clan:null,
 };
 
-const MEMBERS = [
-  { id:1, name:"Vikram S.",  role:"Leader",  level:14, xp:9200, zones:3, status:"online",  avatar:"🟣" },
-  { id:2, name:"Abhiuday",   role:"Officer", level:7,  xp:3240, zones:1, status:"online",  avatar:"🔵", isMe:true },
-  { id:3, name:"Priya M.",   role:"Officer", level:11, xp:6800, zones:2, status:"away",    avatar:"🟢" },
-  { id:4, name:"Karan T.",   role:"Member",  level:6,  xp:2100, zones:0, status:"online",  avatar:"🟡" },
-  { id:5, name:"Sneha R.",   role:"Member",  level:9,  xp:4700, zones:1, status:"offline", avatar:"🔴" },
-  { id:6, name:"Anish P.",   role:"Member",  level:5,  xp:1800, zones:0, status:"offline", avatar:"🟠" },
-  { id:7, name:"Meera K.",   role:"Member",  level:8,  xp:3900, zones:1, status:"online",  avatar:"⚪" },
-  { id:8, name:"Rohit D.",   role:"Member",  level:6,  xp:2300, zones:0, status:"away",    avatar:"🟤" },
-];
+const MEMBERS = [];
 
 const GAME_RULES = { ZONE_ATTACK_COOLDOWN_HOURS:24, WAR_DECLARE_COST_AE:200, ZONE_GEO_RADIUS_METRES:100 };
 const _now = Date.now();
@@ -268,44 +222,11 @@ function clanCooldownRemaining(zone) {
   return `${h}h ${m}m`;
 }
 
-const ZONES = [
-  { id:1, name:"Main Library",    type:"library", income:50, defense:82, capturedBy:"Nocturne", contested:false, capturedAt:"3d ago", bonusType:"XP +20%", lastAttackedAt:_hAgo(30), attackedTodayBy:null },
-  { id:2, name:"Sports Arena",    type:"arena",   income:80, defense:65, capturedBy:"Nocturne", contested:true,  capturedBy2:"BlazeThorn", bonusType:"AE +15%", lastAttackedAt:_hAgo(3), attackedTodayBy:"BlazeThorn" },
-  { id:3, name:"Cafeteria Block", type:"social",  income:40, defense:90, capturedBy:"Nocturne", contested:false, capturedAt:"1d ago", bonusType:"Streak +1",lastAttackedAt:_hAgo(48),attackedTodayBy:null },
-  { id:4, name:"North Quad",      type:"outdoor", income:60, defense:71, capturedBy:"Nocturne", contested:false, capturedAt:"5d ago", bonusType:"AE +10%", lastAttackedAt:_hAgo(72),attackedTodayBy:null },
-  { id:5, name:"Engineering Dept",type:"academic",income:70, defense:58, capturedBy:"Nocturne", contested:true,  capturedBy2:"IronVeil",  bonusType:"XP +25%", lastAttackedAt:_hAgo(1), attackedTodayBy:"IronVeil" },
-];
-
-const ATTACKABLE_ZONES = [
-  { id:10, name:"Clock Tower",   type:"landmark", owner:"IronVeil",   income:100, lastAttackedAt:null,     attackedTodayBy:null },
-  { id:11, name:"North Quad",    type:"outdoor",  owner:"BlazeThorn", income:60,  lastAttackedAt:null,     attackedTodayBy:null },
-  { id:12, name:"Student Union", type:"social",   owner:"SolarEdge",  income:55,  lastAttackedAt:_hAgo(5), attackedTodayBy:"Nocturne" },
-  { id:13, name:"Science Block", type:"academic", owner:"IronVeil",   income:65,  lastAttackedAt:_hAgo(2), attackedTodayBy:"BlazeThorn" },
-  { id:14, name:"West Canteen",  type:"social",   owner:"BlazeThorn", income:45,  lastAttackedAt:_hAgo(50),attackedTodayBy:null },
-];
-
-const WAR_LOG = [
-  { id:1, type:"attack",  zone:"Science Block", enemy:"BlazeThorn", result:"victory", time:"2h ago", xpGain:200 },
-  { id:2, type:"defense", zone:"Main Library",  enemy:"IronVeil",   result:"victory", time:"6h ago", xpGain:150 },
-  { id:3, type:"attack",  zone:"Clock Tower",   enemy:"IronVeil",   result:"defeat",  time:"1d ago", xpGain:40 },
-  { id:4, type:"defense", zone:"Sports Arena",  enemy:"BlazeThorn", result:"ongoing", time:"Now",    xpGain:0 },
-];
-
-const ENEMY_CLANS = [
-  { name:"BlazeThorn", tag:"BLZ", rank:1, zones:8, cpr:94.2, color:TR },
-  { name:"IronVeil",   tag:"IRV", rank:2, zones:6, cpr:91.0, color:"#94A3B8" },
-  { name:"Nocturne",   tag:"NCT", rank:3, zones:5, cpr:87.4, color:TL, isUs:true },
-  { name:"SolarEdge",  tag:"SOL", rank:4, zones:4, cpr:78.1, color:TA },
-  { name:"CrimsonArc", tag:"CRA", rank:5, zones:3, cpr:71.3, color:TR },
-];
-
-const TREASURY_LOG = [
-  { id:1, type:"income", desc:"Zone passive income",    amount:+320, time:"Today" },
-  { id:2, type:"income", desc:"Clan war victory bonus", amount:+500, time:"Today" },
-  { id:3, type:"spend",  desc:"Zone upgrade: Library",  amount:-800, time:"Yesterday" },
-  { id:4, type:"income", desc:"Member contributions",   amount:+240, time:"Yesterday" },
-  { id:5, type:"spend",  desc:"War declaration fee",    amount:-200, time:"2d ago" },
-];
+const ZONES = [];
+const ATTACKABLE_ZONES = [];
+const WAR_LOG = [];
+const ENEMY_CLANS = [];
+const TREASURY_LOG = [];
 
 // Moods for wellbeing overlay
 const MOODS = [
