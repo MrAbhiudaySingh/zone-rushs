@@ -5601,11 +5601,16 @@ export default function ZoneRushApp() {
         }
         return { ...u, ae: u.ae + ae, xp: newXp, level: newLevel, xpNext: newXpNext };
       });
-      // Write to Supabase
+      // Write to quest_progress table
       if (authUser) {
-        supabase.from("user_missions").upsert({
-          user_id: authUser.id, mission_id: id, completed: true, completed_at: new Date().toISOString(), progress: 1,
-        }, { onConflict: "user_id,mission_id" }).then(() => {});
+        const mission = sharedMissions.find(m => m.id === id);
+        const targetVal = mission?.goal || 1;
+        supabase.from("quest_progress").upsert({
+          user_id: authUser.id, quest_definition_id: id,
+          current_value: targetVal, target_value: targetVal,
+          status: "completed", completed_at: new Date().toISOString(),
+          period_start: new Date().toISOString(),
+        }, { onConflict: "user_id,quest_definition_id", ignoreDuplicates: false }).then(() => {});
       }
     },
     purchaseItem: (id, price) => {
