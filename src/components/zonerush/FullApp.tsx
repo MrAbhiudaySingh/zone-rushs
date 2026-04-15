@@ -4542,6 +4542,8 @@ function ProfileScreen({ user, onAdminAccess }) {
   const ctx = useContext(AppContext);
   const tapRef = useRef(0);
   const tapTimer = useRef(null);
+  const [showAvatarEditor, setShowAvatarEditor] = useState(false);
+  const [avatarDataUrl, setAvatarDataUrl] = useState(null);
   const handleAdminTap = () => {
     tapRef.current += 1;
     clearTimeout(tapTimer.current);
@@ -4549,24 +4551,74 @@ function ProfileScreen({ user, onAdminAccess }) {
     tapTimer.current = setTimeout(() => { tapRef.current = 0; }, 2000);
   };
 
+  // Listen for avatar postMessage from iframe
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.data && e.data.type === 'avatar-confirmed') {
+        setAvatarDataUrl(e.data.dataUrl);
+        setShowAvatarEditor(false);
+        showToast("✨ Avatar updated!", "success");
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
   const xpPct = (user.xp / user.xpNext) * 100;
   const r = 50, circ = 2 * Math.PI * r;
 
   return (
     <div style={{ position:"relative", zIndex:1, height:"100dvh", overflowY:"auto", paddingBottom:90 }}>
+      {/* Avatar Editor Modal */}
+      {showAvatarEditor && (
+        <div style={{ position:"fixed", inset:0, zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>
+          <div onClick={() => setShowAvatarEditor(false)} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.85)", backdropFilter:"blur(8px)" }} />
+          <div style={{ position:"relative", zIndex:1, width:"100%", height:"100%", maxWidth:960, maxHeight:"95vh", borderRadius:0, overflow:"hidden", border:`2px solid ${T}`, boxShadow:`0 0 40px ${T}40` }}>
+            <button onClick={() => setShowAvatarEditor(false)} style={{
+              position:"absolute", top:8, right:8, zIndex:10,
+              width:36, height:36, borderRadius:"50%", border:`2px solid ${TR}`,
+              background:"rgba(13,17,23,0.9)", color:TR, fontSize:18, fontWeight:900,
+              display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer",
+            }}>✕</button>
+            <iframe
+              src="/avatar-editor.html"
+              style={{ width:"100%", height:"100%", border:"none" }}
+              title="Avatar Editor"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Profile header */}
       <div style={{ padding:"24px 16px 0", textAlign:"center", position:"relative" }}>
         <div style={{ position:"absolute", top:0, left:0, right:0, height:160, background:`linear-gradient(160deg, ${T}20, ${TA}10, transparent)`, pointerEvents:"none" }} />
         {/* Avatar */}
-        <div onClick={handleAdminTap} style={{
-          width:90, height:90, borderRadius:28, margin:"0 auto 14px",
-          background:`linear-gradient(135deg, ${T}, ${TA})`,
-          display:"flex", alignItems:"center", justifyContent:"center",
-          fontSize:36, fontWeight:900, color:"#0D1117",
-          boxShadow:`0 0 0 4px ${BG}, 0 0 0 6px ${T}60, 0 12px 32px ${T}40`,
-          animation:"tealGlow 3s ease-in-out infinite", position:"relative", userSelect:"none",
-        }}>
-          {user.name.charAt(0)}
+        <div style={{ position:"relative", display:"inline-block", marginBottom:14 }}>
+          <div onClick={handleAdminTap} style={{
+            width:90, height:90, borderRadius:28, margin:"0 auto",
+            background: avatarDataUrl ? "transparent" : `linear-gradient(135deg, ${T}, ${TA})`,
+            display:"flex", alignItems:"center", justifyContent:"center",
+            fontSize:36, fontWeight:900, color:"#0D1117",
+            boxShadow:`0 0 0 4px ${BG}, 0 0 0 6px ${T}60, 0 12px 32px ${T}40`,
+            animation:"tealGlow 3s ease-in-out infinite", position:"relative", userSelect:"none",
+            overflow:"hidden",
+          }}>
+            {avatarDataUrl ? (
+              <img src={avatarDataUrl} alt="Avatar" style={{ width:"100%", height:"100%", objectFit:"cover", imageRendering:"pixelated" }} />
+            ) : (
+              user.name.charAt(0)
+            )}
+          </div>
+          {/* Edit Avatar button */}
+          <button onClick={() => setShowAvatarEditor(true)} style={{
+            position:"absolute", bottom:-4, right:-4,
+            width:30, height:30, borderRadius:"50%",
+            background:`linear-gradient(135deg, ${T}, ${TG})`,
+            border:`2px solid ${BG}`,
+            display:"flex", alignItems:"center", justifyContent:"center",
+            fontSize:13, cursor:"pointer", color:"#0D1117", fontWeight:900,
+            boxShadow:`0 2px 8px ${T}60`,
+          }}>✎</button>
         </div>
         <div style={{ fontSize:24, fontWeight:900, color:TX, letterSpacing:"-0.5px" }}>{user.name}</div>
         <div style={{ fontSize:12, color:TM, marginTop:4, marginBottom:16 }}>Level {user.level} · {user.combatRank} · {user.influenceRank}</div>
