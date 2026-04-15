@@ -5085,7 +5085,7 @@ export default function ZoneRushApp() {
     INIT_SHOP_ITEMS.map(it => ({
       ...it, price:it.priceAE, rarity:it.rarity,
       icon:(SHOP_ITEMS.find(s => s.id===it.id)||{}).icon||"🎁",
-      owned:false, featured:["s1","s3","s6"].includes(it.id),
+      owned: it.priceAE === 0, featured:["lpc_long","lpc_leather","lpc_plate"].includes(it.id),
     }))
   );
   const [sharedStyleEvent, setSharedStyleEvent] = useState({
