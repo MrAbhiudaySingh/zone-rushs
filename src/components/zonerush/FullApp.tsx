@@ -107,7 +107,39 @@ const LIVE_EVENTS = [
     eligibility:"Level 1–5 only", color:TA },
 ];
 
-const LPC_BASE = "https://raw.githubusercontent.com/sanderfrenken/Universal-LPC-Spritesheet-Character-Generator/master/spritesheets";
+// Sprite preview images bundled locally from LPC repo
+const SPRITE_IMG = {
+  lpc_tshirt:    "/sprites/torso_sleeveless.png",
+  lpc_tunic:     "/sprites/torso_tunic.png",
+  lpc_vest:      "/sprites/torso_leather.png",
+  lpc_robe_c:    "/sprites/torso_robe.png",
+  lpc_long:      "/sprites/torso_longsleeve.png",
+  lpc_chainmail: "/sprites/torso_chainmail.png",
+  lpc_ranger:    "/sprites/torso_longsleeve.png",
+  lpc_leather:   "/sprites/torso_leather.png",
+  lpc_plate:     "/sprites/torso_plate.png",
+  lpc_dragonp:   "/sprites/torso_plate.png",
+  lpc_pants:     "/sprites/legs_pants.png",
+  lpc_shorts:    "/sprites/legs_shorts.png",
+  lpc_skirt:     "/sprites/legs_skirt.png",
+  lpc_armleg:    "/sprites/legs_armor.png",
+  lpc_sandals:   "/sprites/feet_sandals.png",
+  lpc_shoes:     "/sprites/feet_shoes.png",
+  lpc_boots:     "/sprites/feet_boots.png",
+  lpc_steelboot: "/sprites/feet_boots.png",
+  lpc_bandana:   "/sprites/head_bandana.png",
+  lpc_helmet:    "/sprites/head_helmet.png",
+  lpc_wizard:    "/sprites/head_helmet.png",
+  lpc_crown:     "/sprites/head_helmet.png",
+  lpc_dagger:    "/sprites/weapon_dagger.png",
+  lpc_shortsw:   "/sprites/weapon_longsword.png",
+  lpc_bow:       "/sprites/weapon_bow.png",
+  lpc_spear:     "/sprites/weapon_spear.png",
+  lpc_longsw:    "/sprites/weapon_longsword.png",
+  lpc_staff:     "/sprites/weapon_staff.png",
+  lpc_warhammer: "/sprites/weapon_warhammer.png",
+  lpc_waraxe:    "/sprites/weapon_waraxe.png",
+};
 
 const ITEM_ICONS = { clothing:"👕", armor:"🛡️", footwear:"👢", headgear:"⛑️", weapon:"⚔️", consumable:"🧪" };
 
