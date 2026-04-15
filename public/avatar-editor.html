@@ -732,6 +732,8 @@ function getLayers(animFile){
   if(S.feet.path)  L.push({path:rp(S.feet.path,animFile),  type:'cloth'});
   if(S.hair.path)  L.push({path:rp(S.hair.path,animFile),  type:'hair'});
   if(S.hat.path)   L.push({path:rp(S.hat.path,animFile),   type:'hat'});
+  // Weapon layer (external sprite)
+  if(S.weapon.extSrc) L.push({extSrc:S.weapon.extSrc, type:'weapon'});
   return L;
 }
 
