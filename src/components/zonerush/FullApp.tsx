@@ -1229,10 +1229,20 @@ function MissionCard({ m, idx=0 }) {
                     padding:"4px 10px", borderRadius:8, border:`1px solid ${T}40`, background:`${T}10`,
                     color:T, fontSize:9, fontWeight:700, fontFamily:FONT, cursor: syncing ? "wait" : "pointer",
                   }}>
-                    {syncing ? "📡 Syncing..." : "📡 Sync Health"}
+                    {syncing ? "📡 Syncing..." : "📡 Sync Steps"}
                   </button>
                 )}
               </div>
+              {!completed && fitConnected === false && (
+                <button onClick={handleConnectGoogleFit} style={{
+                  marginTop:6, padding:"8px 16px", borderRadius:12, border:`1.5px solid ${TG}50`,
+                  background:`linear-gradient(135deg, ${TG}20, ${TG}08)`, width:"100%",
+                  color:TG, fontSize:11, fontWeight:800, fontFamily:FONT, cursor:"pointer",
+                  display:"flex", alignItems:"center", justifyContent:"center", gap:6,
+                }}>
+                  🏃 Connect Google Fit for auto-tracking
+                </button>
+              )}
             </div>
           ) : m.goal > 1 && !completed ? (
             <div>
