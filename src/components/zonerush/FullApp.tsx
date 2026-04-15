@@ -5629,7 +5629,13 @@ export default function ZoneRushApp() {
         }));
       }
     },
-    donateToClan: async (amount) => {
+    leaveClan: async () => {
+      if (authUser && sharedUser.clan?.id) {
+        await supabase.from("clan_members").delete().eq("user_id", authUser.id).eq("clan_id", sharedUser.clan.id);
+      }
+      setSharedUser(u => ({ ...u, clan: null }));
+      showToast("👋 You left the clan.", "info");
+    },
       const amt = Math.min(amount, sharedUser.ae);
       if (amt <= 0) return;
       setSharedUser(u => ({
