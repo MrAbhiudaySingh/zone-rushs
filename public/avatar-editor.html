@@ -799,6 +799,14 @@ function renderFrame(fn){
   const sx=frame*fs, sy=dir*fs;
 
   for(const layer of getLayers(A.file)){
+    // Handle external weapon sprites
+    if(layer.extSrc){
+      const wimg=getExtImg(layer.extSrc);
+      if(wimg&&wimg.complete&&wimg.naturalWidth>0){
+        blitLayer(ctx,wimg,sx,sy,fs,cs,'plain');
+      }
+      continue;
+    }
     if(!layer.path) continue;
     const img=getImg(layer.path);
     if(!img||!img.complete||img.naturalWidth===0) continue;
