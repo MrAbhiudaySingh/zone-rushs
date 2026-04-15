@@ -971,7 +971,26 @@ function MissionCard({ m, idx=0 }) {
   const [simSteps, setSimSteps] = useState(m.progress || 0);
   const [gpsVerifying, setGpsVerifying] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [fitConnected, setFitConnected] = useState(null);
   const fileInputRef = useRef(null);
+
+  // Check Google Fit connection for health_api quests
+  useEffect(() => {
+    if (m.type !== "health_api" || !ctx?.authUser) return;
+    supabase.from("google_fit_tokens").select("connected").eq("user_id", ctx.authUser.id).maybeSingle().then(({ data }) => {
+      setFitConnected(!!data?.connected);
+    });
+  }, [m.type, ctx?.authUser]);
+
+  const handleConnectGoogleFit = () => {
+    if (!ctx?.authUser) return;
+    window.open(`/api/google-fit/auth?user_id=${ctx.authUser.id}`, "_blank", "width=500,height=600");
+    const interval = setInterval(async () => {
+      const { data } = await supabase.from("google_fit_tokens").select("connected").eq("user_id", ctx.authUser.id).maybeSingle();
+      if (data?.connected) { setFitConnected(true); clearInterval(interval); showToast("✅ Google Fit connected! Tap Sync to pull steps.", "success"); }
+    }, 3000);
+    setTimeout(() => clearInterval(interval), 120000);
+  };
 
   // Sync completion state from context
   useEffect(() => {
