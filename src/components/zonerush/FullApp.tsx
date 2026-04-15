@@ -1614,18 +1614,78 @@ function StyleEventGallery({ event, onBack }) {
 function QuestScreen({ missions, events, styleEvent, onStyleEvent }) {
   const ctx = useContext(AppContext);
   const [qTab, setQTab] = useState("daily");
-  const daily  = missions.filter(m => !m.week && !m.month && !m._disabled);
-  const weekly = missions.filter(m => m.week && !m._disabled);
-  const MONTH_DONE = MONTHLY_MISSIONS.filter(m => m.progress >= m.goal).length;
+
+  const daily  = missions.filter(m => m.tier === "daily" && !m._disabled);
+  const weekly = missions.filter(m => m.tier === "weekly" && !m._disabled);
+  const monthly = missions.filter(m => m.tier === "monthly" && !m._disabled);
+
+  const dailyCompleted = daily.filter(m => ctx?.completedMissions?.has(m.id)).length;
+  const weeklyCompleted = weekly.filter(m => ctx?.completedMissions?.has(m.id)).length;
+  const monthlyCompleted = monthly.filter(m => ctx?.completedMissions?.has(m.id)).length;
+
+  // Calculate time remaining
+  const now = new Date();
+  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const hoursLeft = Math.max(0, Math.floor((endOfDay - now) / 3600000));
+  const dayOfWeek = now.getDay();
+  const daysToSunday = (7 - dayOfWeek) % 7 || 7;
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const daysLeftMonth = Math.max(0, daysInMonth - now.getDate());
+
+  // Group quests by category
+  const groupByCategory = (quests) => {
+    const groups = {};
+    quests.forEach(q => {
+      const cat = q.cat || "general";
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(q);
+    });
+    return groups;
+  };
+
+  const CATEGORY_LABELS = {
+    movement: "🚶 Movement & Presence",
+    photo_proof: "📸 Quick Photo Proof",
+    territory: "⚔️ Territory Hooks",
+    health: "💪 Health & Activity",
+    content: "🖼️ Content Creation",
+    sustainability: "♻️ Sustainability",
+    exploration: "🧭 Exploration",
+    consistency: "🏆 Consistency & Discipline",
+    social: "👑 Social Status",
+    contribution: "📖 Contribution",
+    creator: "🎨 Creator / Builder",
+    legend: "⚡ Legend Quests",
+    general: "📋 General",
+  };
+
+  const renderGroup = (quests) => {
+    const groups = groupByCategory(quests);
+    return Object.entries(groups).map(([cat, items]) => (
+      <div key={cat} style={{ marginBottom:16 }}>
+        <div style={{ fontSize:13, fontWeight:800, color:TX, marginBottom:8, display:"flex", alignItems:"center", gap:6 }}>
+          {CATEGORY_LABELS[cat] || cat}
+          <span style={{ fontSize:11, color:TM, fontWeight:600 }}>({items.filter(m => ctx?.completedMissions?.has(m.id)).length}/{items.length})</span>
+        </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+          {items.map((m, i) => <MissionCard key={m.id} m={m} idx={i} />)}
+        </div>
+      </div>
+    ));
+  };
 
   return (
     <div style={{ position:"relative", zIndex:1, height:"100dvh", overflowY:"auto", paddingBottom:90 }}>
-      {/* Screen header */}
       <div style={{ padding:"20px 16px 0" }}>
         <div style={{ fontSize:26, fontWeight:900, color:TX, letterSpacing:"-0.5px", marginBottom:2 }}>Quests</div>
-        <div style={{ fontSize:13, color:TM, marginBottom:16 }}>Complete missions · earn AE + XP</div>
+        <div style={{ fontSize:13, color:TM, marginBottom:16 }}>Complete quests · earn AE + XP + 💎</div>
         <TabBar
-          tabs={[["daily","Daily"], ["weekly","Weekly"], ["monthly","Monthly"], ["events","Events", events.length]]}
+          tabs={[
+            ["daily","Daily", daily.length],
+            ["weekly","Weekly", weekly.length],
+            ["monthly","Monthly", monthly.length],
+            ["events","Events", events.length],
+          ]}
           active={qTab}
           onSelect={setQTab}
         />
@@ -1634,75 +1694,55 @@ function QuestScreen({ missions, events, styleEvent, onStyleEvent }) {
       <div style={{ padding:"16px 16px 0" }}>
         {/* DAILY */}
         {qTab === "daily" && (
-          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
-              <span style={{ fontSize:12, fontWeight:700, color:TM }}>📅 Today</span>
-              <span style={{ fontSize:12, color:TD }}>{daily.filter(m=>m.progress>0).length}/{daily.length} started</span>
-            </div>
-            {daily.map(m => <MissionCard key={m.id} m={m} />)}
-            <div style={{ padding:"12px 14px", background:`${TG}08`, border:`1px solid ${TG}25`, borderRadius:12, fontSize:12, color:TM }}>
-              🔄 Daily missions reset at midnight · complete all for <span style={{ color:TG, fontWeight:700 }}>+50 AE</span> bonus
-            </div>
+          <div>
+            <Card gradient={`linear-gradient(135deg, ${T}12, ${TG}06), ${S1}`} style={{ marginBottom:12 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+                <span style={{ fontSize:14, fontWeight:700, color:TX }}>📅 Today's Progress</span>
+                <span style={{ fontSize:14, fontWeight:800, color:TG }}>{dailyCompleted}/{daily.length}</span>
+              </div>
+              <ProgressBar value={dailyCompleted} max={daily.length || 1} color={`linear-gradient(90deg, ${T}, ${TG})`} height={6} />
+              <div style={{ display:"flex", justifyContent:"space-between", marginTop:8 }}>
+                <span style={{ fontSize:11, color:TM }}>Resets in {hoursLeft}h</span>
+                <span style={{ fontSize:11, color:TG, fontWeight:700 }}>All done → +50 AE bonus</span>
+              </div>
+            </Card>
+            {renderGroup(daily)}
           </div>
         )}
 
         {/* WEEKLY */}
         {qTab === "weekly" && (
-          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-              <span style={{ fontSize:12, fontWeight:700, color:TM }}>📅 This Week</span>
-              <span style={{ fontSize:12, color:TD }}>Resets in {WEEKLY.days}d</span>
-            </div>
-            <Card gradient={`linear-gradient(135deg, ${T}10, ${TL}05), ${S1}`} style={{ marginBottom:4 }}>
+          <div>
+            <Card gradient={`linear-gradient(135deg, ${TB}12, ${T}06), ${S1}`} style={{ marginBottom:12 }}>
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                <span style={{ fontSize:14, fontWeight:700, color:TX }}>Weekly Progress</span>
-                <span style={{ fontSize:14, fontWeight:800, color:TL }}>{WEEKLY.done}/{WEEKLY.total}</span>
+                <span style={{ fontSize:14, fontWeight:700, color:TX }}>📅 Weekly Progress</span>
+                <span style={{ fontSize:14, fontWeight:800, color:TB }}>{weeklyCompleted}/{weekly.length}</span>
               </div>
-              <ProgressBar value={WEEKLY.done} max={WEEKLY.total} color={`linear-gradient(90deg, ${T}, ${TG})`} height={6} />
-              <div style={{ fontSize:11, color:TM, marginTop:8 }}>Complete all {WEEKLY.total} for <span style={{ color:TL, fontWeight:700 }}>+300 AE</span> weekly bonus</div>
+              <ProgressBar value={weeklyCompleted} max={weekly.length || 1} color={`linear-gradient(90deg, ${TB}, ${TG})`} height={6} />
+              <div style={{ display:"flex", justifyContent:"space-between", marginTop:8 }}>
+                <span style={{ fontSize:11, color:TM }}>Resets in {daysToSunday}d</span>
+                <span style={{ fontSize:11, color:TB, fontWeight:700 }}>All done → +300 AE bonus</span>
+              </div>
             </Card>
-            {weekly.map(m => <MissionCard key={m.id} m={m} />)}
+            {renderGroup(weekly)}
           </div>
         )}
 
         {/* MONTHLY */}
         {qTab === "monthly" && (
-          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-              <span style={{ fontSize:12, fontWeight:700, color:TM }}>📆 {new Date().toLocaleDateString("en-US", { month:"long", year:"numeric" })}</span>
-              <span style={{ fontSize:12, color:TD }}>{Math.max(0, new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate() - new Date().getDate())} days left</span>
-            </div>
-            <Card gradient={`linear-gradient(135deg, ${TL}10, ${T}05), ${S1}`} style={{ marginBottom:4 }}>
+          <div>
+            <Card gradient={`linear-gradient(135deg, ${TL}12, ${TY}06), ${S1}`} style={{ marginBottom:12 }}>
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                <span style={{ fontSize:14, fontWeight:700, color:TX }}>Monthly Challenges</span>
-                <span style={{ fontSize:14, fontWeight:800, color:TL }}>{MONTH_DONE}/{MONTHLY_MISSIONS.length}</span>
+                <span style={{ fontSize:14, fontWeight:700, color:TX }}>📆 {now.toLocaleDateString("en-US", { month:"long", year:"numeric" })}</span>
+                <span style={{ fontSize:14, fontWeight:800, color:TL }}>{monthlyCompleted}/{monthly.length}</span>
               </div>
-              <ProgressBar value={MONTH_DONE} max={MONTHLY_MISSIONS.length} color={`linear-gradient(90deg, ${TL}, ${TG})`} height={6} />
-              <div style={{ fontSize:11, color:TM, marginTop:8 }}>Complete all for <span style={{ color:TL, fontWeight:700 }}>+2,000 AE</span> grand bonus 🏆</div>
+              <ProgressBar value={monthlyCompleted} max={monthly.length || 1} color={`linear-gradient(90deg, ${TL}, ${TG})`} height={6} />
+              <div style={{ display:"flex", justifyContent:"space-between", marginTop:8 }}>
+                <span style={{ fontSize:11, color:TM }}>{daysLeftMonth} days left</span>
+                <span style={{ fontSize:11, color:TL, fontWeight:700 }}>All done → +2,000 AE 🏆</span>
+              </div>
             </Card>
-            {MONTHLY_MISSIONS.map(m => {
-              const pct = (m.progress / m.goal) * 100;
-              return (
-                <div key={m.id} style={{ background:S1, border:`1px solid ${BR}`, borderRadius:16, padding:"14px 16px" }}>
-                  <div style={{ display:"flex", gap:12, marginBottom:10 }}>
-                    <div style={{ width:44, height:44, borderRadius:12, background:`${m.color}15`, border:`1px solid ${m.color}30`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>{m.icon}</div>
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontSize:14, fontWeight:700, color:TX, marginBottom:3 }}>{m.title}</div>
-                      <div style={{ display:"flex", gap:8 }}>
-                        <span style={{ fontSize:10, fontWeight:700, color:m.color, background:`${m.color}15`, borderRadius:99, padding:"2px 8px" }}>{m.cat}</span>
-                        <span style={{ fontSize:11, color:TM }}>⏱ {m.timer}</span>
-                      </div>
-                    </div>
-                    <div style={{ textAlign:"right" }}>
-                      <div style={{ fontSize:13, fontWeight:800, color:TA }}>{m.reward}</div>
-                      <div style={{ fontSize:11, color:TG }}>{m.xp}</div>
-                    </div>
-                  </div>
-                  <ProgressBar value={m.progress} max={m.goal} color={m.color} height={5} />
-                  <div style={{ fontSize:10, color:TM, marginTop:5 }}>{m.progress} / {m.goal} complete</div>
-                </div>
-              );
-            })}
+            {renderGroup(monthly)}
           </div>
         )}
 
@@ -1734,14 +1774,14 @@ function QuestScreen({ missions, events, styleEvent, onStyleEvent }) {
                       <span style={{ fontSize:10, fontWeight:700, color:ev.color, background:`${ev.color}15`, borderRadius:99, padding:"2px 8px" }}>{ev.type.toUpperCase()}</span>
                     </div>
                     <div style={{ textAlign:"right" }}>
-                      <div style={{ fontSize:12, fontWeight:800, color:ev.color }}>{ev.reward.split(" + ")[0]}</div>
+                      <div style={{ fontSize:12, fontWeight:800, color:ev.color }}>{ev.reward?.split(" + ")?.[0]}</div>
                       <div style={{ fontSize:10, color:TM }}>Ends {ev.endDate}</div>
                     </div>
                   </div>
                   <div style={{ fontSize:12, color:TM, marginBottom:10, lineHeight:1.5 }}>{ev.desc}</div>
                   <ProgressBar value={pct} max={100} color={ev.color} height={4} />
                   <div style={{ fontSize:10, color:TM, marginTop:4, marginBottom:10 }}>{ev.participants}/{ev.maxParticipants} participants · {ev.eligibility}</div>
-                  <button onClick={() => { if (ctx?.joinEvent) ctx.joinEvent(ev.id); showToast(`⚡ Joined "${ev.title}"! Good luck!`, "success"); }} disabled={ctx?.joinedEvents?.has(ev.id)} style={{ padding:"9px 16px", background: ctx?.joinedEvents?.has(ev.id) ? `${TG}30` : ev.color, border:"none", borderRadius:10, color: ctx?.joinedEvents?.has(ev.id) ? TG : "#fff", fontSize:12, fontWeight:700, fontFamily:FONT }}>{ctx?.joinedEvents?.has(ev.id) ? "✓ Joined" : "Join Event →"}</button>
+                  <button onClick={() => { if (ctx?.joinEvent) ctx.joinEvent(ev.id); showToast(`⚡ Joined "${ev.title}"!`, "success"); }} disabled={ctx?.joinedEvents?.has(ev.id)} style={{ padding:"9px 16px", background: ctx?.joinedEvents?.has(ev.id) ? `${TG}30` : ev.color, border:"none", borderRadius:10, color: ctx?.joinedEvents?.has(ev.id) ? TG : "#fff", fontSize:12, fontWeight:700, fontFamily:FONT }}>{ctx?.joinedEvents?.has(ev.id) ? "✓ Joined" : "Join Event →"}</button>
                 </div>
               );
             })}
