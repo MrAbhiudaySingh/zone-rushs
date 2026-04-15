@@ -1264,7 +1264,7 @@ function DenPreview() {
 // BOTTOM NAV
 // ═══════════════════════════════════════════════════════════════════════════════
 const TABS = [
-  { id:"market",   icon:"🏪", label:"Market" },
+  { id:"map",      icon:"🗺️", label:"Map" },
   { id:"missions", icon:"🎯", label:"Quests" },
   { id:"home",     icon:"⚡", label:"Home",  center:true },
   { id:"clan",     icon:"⚔️", label:"Clan" },
