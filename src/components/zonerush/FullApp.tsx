@@ -2157,10 +2157,12 @@ function NoClanScreen({ user, canCreate, onBack }) {
 }
 
 function ClanHub({ user, onBack }) {
+  const ctx = useContext(AppContext);
   const clan = user.clan;
   const isLeader = clan.memberRole === "Leader";
   const isOfficer = isLeader || clan.memberRole === "Officer";
   const [cTab, setCTab] = useState("overview");
+  const [confirmLeave, setConfirmLeave] = useState(false);
 
   const CLAN_TABS = [
     { id:"overview", icon:"📊", label:"Overview" },
@@ -2194,11 +2196,17 @@ function ClanHub({ user, onBack }) {
             </div>
           </div>
         </div>
-        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:14 }}>
-          <div style={{ width:6, height:6, borderRadius:"50%", background:TG }} />
-          <span style={{ fontSize:11, color:TM }}>
-            <span style={{ color:clan.color, fontWeight:700 }}>{clan.memberRole}</span> · {Math.max(clan.totalMembers, MEMBERS.length)}/{clan.maxMembers} members
-          </span>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+            <div style={{ width:6, height:6, borderRadius:"50%", background:TG }} />
+            <span style={{ fontSize:11, color:TM }}>
+              <span style={{ color:clan.color, fontWeight:700 }}>{clan.memberRole}</span> · {clan.totalMembers}/{clan.maxMembers} members
+            </span>
+          </div>
+          <button onClick={() => setConfirmLeave(true)} style={{
+            background:"none", border:`1px solid ${TR}40`, borderRadius:8, padding:"4px 10px",
+            color:TR, fontSize:10, fontWeight:700, fontFamily:FONT, cursor:"pointer",
+          }}>Leave</button>
         </div>
 
         {/* Tab bar */}
@@ -2226,6 +2234,22 @@ function ClanHub({ user, onBack }) {
         {cTab === "war" && <WarTab clan={clan} isLeader={isLeader} isOfficer={isOfficer} />}
         {cTab === "treasury" && <TreasuryTab clan={clan} isLeader={isLeader} />}
       </div>
+
+      {/* Leave clan confirmation modal */}
+      {confirmLeave && (
+        <div onClick={() => setConfirmLeave(false)} style={{ position:"fixed", inset:0, zIndex:300, background:"rgba(13,17,23,0.9)", backdropFilter:"blur(16px)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:S1, border:`1px solid ${BR}`, borderRadius:20, padding:24, maxWidth:340, width:"100%" }}>
+            <div style={{ fontSize:18, fontWeight:800, color:TX, marginBottom:8 }}>Leave {clan.name}?</div>
+            <div style={{ fontSize:13, color:TM, marginBottom:20, lineHeight:1.6 }}>
+              You'll lose access to clan zones, treasury, and war participation. You can rejoin later if the clan is open.
+            </div>
+            <div style={{ display:"flex", gap:10 }}>
+              <button onClick={() => setConfirmLeave(false)} style={{ flex:1, padding:"12px", borderRadius:12, background:"rgba(255,255,255,0.06)", border:`1px solid ${BR}`, color:TX, fontSize:13, fontWeight:700, fontFamily:FONT }}>Cancel</button>
+              <button onClick={() => { if (ctx?.leaveClan) ctx.leaveClan(); setConfirmLeave(false); }} style={{ flex:1, padding:"12px", borderRadius:12, background:TR, border:"none", color:"#fff", fontSize:13, fontWeight:700, fontFamily:FONT }}>Leave Clan</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
