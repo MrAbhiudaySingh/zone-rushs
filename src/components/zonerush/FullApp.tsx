@@ -4655,7 +4655,7 @@ function HomeScreen() {
         </div>
 
         {/* CTA button */}
-        <button onClick={() => setTab("map")} style={{
+        <button onClick={() => setTab("clan")} style={{
           position:"absolute", bottom:18, left:16,
           padding:"10px 20px", borderRadius:16, border:"none", fontFamily:FONT,
           background:`linear-gradient(135deg, ${TA}, #FF9F1C)`,
