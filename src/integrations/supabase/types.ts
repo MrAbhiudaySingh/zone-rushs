@@ -112,54 +112,66 @@ export type Database = {
           avatar_config: Json | null
           avatar_data_url: string | null
           combat_rank: string
+          course: string | null
           created_at: string
           display_name: string
           id: string
           influence_rank: string
           level: number
+          roll_number: string | null
           shards: number
           shields: number
+          specialisation: string | null
           streak: number
           updated_at: string
           user_id: string
           xp: number
           xp_next: number
+          year: string | null
         }
         Insert: {
           aether?: number
           avatar_config?: Json | null
           avatar_data_url?: string | null
           combat_rank?: string
+          course?: string | null
           created_at?: string
           display_name?: string
           id?: string
           influence_rank?: string
           level?: number
+          roll_number?: string | null
           shards?: number
           shields?: number
+          specialisation?: string | null
           streak?: number
           updated_at?: string
           user_id: string
           xp?: number
           xp_next?: number
+          year?: string | null
         }
         Update: {
           aether?: number
           avatar_config?: Json | null
           avatar_data_url?: string | null
           combat_rank?: string
+          course?: string | null
           created_at?: string
           display_name?: string
           id?: string
           influence_rank?: string
           level?: number
+          roll_number?: string | null
           shards?: number
           shields?: number
+          specialisation?: string | null
           streak?: number
           updated_at?: string
           user_id?: string
           xp?: number
           xp_next?: number
+          year?: string | null
         }
         Relationships: []
       }
