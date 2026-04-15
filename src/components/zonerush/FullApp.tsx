@@ -4909,7 +4909,7 @@ function HomeScreen() {
       <div style={{ padding:"14px 16px 0" }}>
         <SectionHeader title="Today's Missions" action="See All →" onAction={() => setTab("missions")} />
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-          {missions.filter(m => !m.week && !m._disabled).map((m, i) => <MissionCard key={m.id} m={m} idx={i} />)}
+          {missions.filter(m => m.tier === "daily" && !m._disabled).slice(0, 5).map((m, i) => <MissionCard key={m.id} m={m} idx={i} />)}
         </div>
       </div>
 
