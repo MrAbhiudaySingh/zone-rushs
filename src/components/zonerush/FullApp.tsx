@@ -4524,7 +4524,7 @@ function HomeScreen() {
     <QuestScreen missions={missions} events={liveEvents} styleEvent={styleEvent} onStyleEvent={() => setStyleTab(true)} />
   );
 
-  if (tab === "market") return shell(<MarketScreen user={user} />);
+  if (tab === "map") return shell(<ZoneMapScreen onMarket={() => setTab("home")} />);
 
   if (tab === "clan") return shell(<ClanScreen userOverride={user.clan ? { ...CL_USER, ...user, clan: user.clan } : user} onBack={() => setTab("home")} />);
 
