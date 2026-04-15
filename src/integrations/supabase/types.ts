@@ -175,6 +175,160 @@ export type Database = {
         }
         Relationships: []
       }
+      quest_definitions: {
+        Row: {
+          aether_reward: number
+          category: string
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          requires_clan: boolean
+          shard_reward: number
+          sort_order: number
+          target_value: number
+          tier: string
+          title: string
+          tracking_type: string
+          updated_at: string
+          xp_reward: number
+        }
+        Insert: {
+          aether_reward?: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          requires_clan?: boolean
+          shard_reward?: number
+          sort_order?: number
+          target_value?: number
+          tier?: string
+          title: string
+          tracking_type?: string
+          updated_at?: string
+          xp_reward?: number
+        }
+        Update: {
+          aether_reward?: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          requires_clan?: boolean
+          shard_reward?: number
+          sort_order?: number
+          target_value?: number
+          tier?: string
+          title?: string
+          tracking_type?: string
+          updated_at?: string
+          xp_reward?: number
+        }
+        Relationships: []
+      }
+      quest_progress: {
+        Row: {
+          claimed_at: string | null
+          completed_at: string | null
+          created_at: string
+          current_value: number
+          id: string
+          period_end: string | null
+          period_start: string
+          quest_definition_id: string
+          status: string
+          target_value: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          claimed_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          current_value?: number
+          id?: string
+          period_end?: string | null
+          period_start?: string
+          quest_definition_id: string
+          status?: string
+          target_value?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          claimed_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          current_value?: number
+          id?: string
+          period_end?: string | null
+          period_start?: string
+          quest_definition_id?: string
+          status?: string
+          target_value?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_progress_quest_definition_id_fkey"
+            columns: ["quest_definition_id"]
+            isOneToOne: false
+            referencedRelation: "quest_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quest_proofs: {
+        Row: {
+          created_at: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          proof_type: string
+          proof_url: string | null
+          quest_progress_id: string
+          user_id: string
+          verified: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          proof_type?: string
+          proof_url?: string | null
+          quest_progress_id: string
+          user_id: string
+          verified?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          proof_type?: string
+          proof_url?: string | null
+          quest_progress_id?: string
+          user_id?: string
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_proofs_quest_progress_id_fkey"
+            columns: ["quest_progress_id"]
+            isOneToOne: false
+            referencedRelation: "quest_progress"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       zone_captures: {
         Row: {
           attacker_user_id: string
