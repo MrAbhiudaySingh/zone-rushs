@@ -5238,12 +5238,9 @@ export default function ZoneRushApp() {
   const [dbReady, setDbReady] = useState(false);
   const [authUser, setAuthUser] = useState(null);
 
-  // Persist state to localStorage as fallback (used when not authenticated)
-  const loadState = (key, fallback) => {
-    try { const s = localStorage.getItem("zr_" + key); return s ? JSON.parse(s) : fallback; }
-    catch { return fallback; }
-  };
-  const [sharedUser, _setSharedUser] = useState(() => loadState("user", { ...USER }));
+  // Don't load stale demo data from localStorage — always start from defaults
+  // Real data will be loaded from DB when authenticated
+  const [sharedUser, _setSharedUser] = useState({ ...USER });
   const setSharedUser = (updater) => {
     _setSharedUser(prev => {
       const next = typeof updater === "function" ? updater(prev) : updater;
