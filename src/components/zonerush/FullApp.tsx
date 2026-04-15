@@ -108,25 +108,38 @@ const LIVE_EVENTS = [
 ];
 
 const SHOP_ITEMS = [
-  { id:"s1", name:"Neon Visor",        cat:"headwear",  price:120, rarity:"common",   icon:"🥽", owned:false, featured:true  },
-  { id:"s2", name:"Campus Cap",        cat:"headwear",  price:200, rarity:"uncommon", icon:"🧢", owned:true,  featured:false },
-  { id:"s3", name:"Infiltrator Jacket",cat:"outerwear", price:450, rarity:"rare",     icon:"🧥", owned:false, featured:true  },
-  { id:"s4", name:"Shadow Frames",     cat:"eyewear",   price:80,  rarity:"common",   icon:"😎", owned:false, featured:false },
-  { id:"s5", name:"Den Plant (Rare)",  cat:"furniture", price:300, rarity:"rare",     icon:"🪴", owned:false, featured:false },
-  { id:"s6", name:"Combat Shield Skin",cat:"equipment", price:550, rarity:"epic",     icon:"🛡️", owned:false, featured:true  },
-  { id:"s7", name:"Streak Potion",     cat:"consumable",price:150, rarity:"uncommon", icon:"🧪", owned:false, featured:false },
-  { id:"s8", name:"Clan Banner (Gold)",cat:"clan",      price:800, rarity:"epic",     icon:"🏴", owned:false, featured:false },
+  // ─── Clothing (Torso) ────
+  { id:"lpc_tshirt",   name:"Campus T-Shirt",      cat:"clothing",  price:0,   rarity:"common",   icon:"👕", owned:true,  featured:false, avatarSlot:"torso", avatarOptionId:"tshirt" },
+  { id:"lpc_long",     name:"Long Sleeve Jacket",   cat:"clothing",  price:180, rarity:"uncommon", icon:"🧥", owned:false, featured:true,  avatarSlot:"torso", avatarOptionId:"long" },
+  { id:"lpc_leather",  name:"Leather Armor",        cat:"armor",     price:350, rarity:"rare",     icon:"🦺", owned:false, featured:true,  avatarSlot:"torso", avatarOptionId:"leather" },
+  { id:"lpc_plate",    name:"Plate Armor",          cat:"armor",     price:600, rarity:"epic",     icon:"🛡️", owned:false, featured:true,  avatarSlot:"torso", avatarOptionId:"plate" },
+  // ─── Clothing (Legs) ────
+  { id:"lpc_pants",    name:"Basic Pants",          cat:"clothing",  price:0,   rarity:"common",   icon:"👖", owned:true,  featured:false, avatarSlot:"legs",  avatarOptionId:"pants" },
+  { id:"lpc_skirt",    name:"Flowing Skirt",        cat:"clothing",  price:120, rarity:"uncommon", icon:"👗", owned:false, featured:false, avatarSlot:"legs",  avatarOptionId:"skirt" },
+  // ─── Footwear ────
+  { id:"lpc_shoes",    name:"Basic Shoes",          cat:"footwear",  price:80,  rarity:"common",   icon:"👟", owned:false, featured:false, avatarSlot:"feet",  avatarOptionId:"shoes" },
+  { id:"lpc_boots",    name:"Combat Boots",         cat:"footwear",  price:200, rarity:"uncommon", icon:"👢", owned:false, featured:false, avatarSlot:"feet",  avatarOptionId:"boots" },
+  // ─── Headgear ────
+  { id:"lpc_helmet",   name:"Knight's Helmet",      cat:"headgear",  price:400, rarity:"rare",     icon:"⛑️", owned:false, featured:false, avatarSlot:"hat",   avatarOptionId:"helmet" },
+  { id:"lpc_wizard",   name:"Wizard Hat",           cat:"headgear",  price:550, rarity:"epic",     icon:"🧙", owned:false, featured:false, avatarSlot:"hat",   avatarOptionId:"wizard" },
+  // ─── Consumables ────
+  { id:"lpc_xpboost",  name:"XP Boost Potion",      cat:"consumable",price:150, rarity:"uncommon", icon:"🧪", owned:false, featured:false },
+  { id:"lpc_shield",   name:"Zone Shield (1h)",     cat:"consumable",price:250, rarity:"rare",     icon:"🔰", owned:false, featured:false },
 ];
 
 const INIT_SHOP_ITEMS = [
-  { id:"s1", name:"Neon Visor",         cat:"headwear",  priceAE:120, rarity:"common",   type:"general", stock:null, sold:47, active:true, soulBound:false },
-  { id:"s2", name:"Campus Cap",         cat:"headwear",  priceAE:200, rarity:"uncommon", type:"general", stock:null, sold:31, active:true, soulBound:false },
-  { id:"s3", name:"Infiltrator Jacket", cat:"outerwear", priceAE:450, rarity:"rare",     type:"limited", stock:50,  sold:38, active:true, soulBound:false },
-  { id:"s4", name:"Shadow Frames",      cat:"eyewear",   priceAE:80,  rarity:"common",   type:"general", stock:null, sold:88, active:true, soulBound:false },
-  { id:"s5", name:"Den Plant (Rare)",   cat:"furniture", priceAE:300, rarity:"rare",     type:"limited", stock:20,  sold:20, active:false,soulBound:true  },
-  { id:"s6", name:"Combat Shield Skin", cat:"equipment", priceAE:550, rarity:"epic",     type:"limited", stock:15,  sold:9,  active:true, soulBound:false },
-  { id:"s7", name:"Streak Potion",      cat:"consumable",priceAE:150, rarity:"uncommon", type:"general", stock:null,sold:112,active:true, soulBound:true  },
-  { id:"s8", name:"Clan Banner (Gold)", cat:"clan",      priceAE:800, rarity:"epic",     type:"limited", stock:10,  sold:3,  active:true, soulBound:false },
+  { id:"lpc_tshirt",   name:"Campus T-Shirt",      cat:"clothing",  priceAE:0,   rarity:"common",   type:"general", stock:null, sold:0,  active:true, soulBound:false, avatarSlot:"torso", avatarOptionId:"tshirt" },
+  { id:"lpc_long",     name:"Long Sleeve Jacket",   cat:"clothing",  priceAE:180, rarity:"uncommon", type:"general", stock:null, sold:12, active:true, soulBound:false, avatarSlot:"torso", avatarOptionId:"long" },
+  { id:"lpc_leather",  name:"Leather Armor",        cat:"armor",     priceAE:350, rarity:"rare",     type:"limited", stock:30,  sold:8,  active:true, soulBound:false, avatarSlot:"torso", avatarOptionId:"leather" },
+  { id:"lpc_plate",    name:"Plate Armor",          cat:"armor",     priceAE:600, rarity:"epic",     type:"limited", stock:15,  sold:3,  active:true, soulBound:false, avatarSlot:"torso", avatarOptionId:"plate" },
+  { id:"lpc_pants",    name:"Basic Pants",          cat:"clothing",  priceAE:0,   rarity:"common",   type:"general", stock:null, sold:0,  active:true, soulBound:false, avatarSlot:"legs",  avatarOptionId:"pants" },
+  { id:"lpc_skirt",    name:"Flowing Skirt",        cat:"clothing",  priceAE:120, rarity:"uncommon", type:"general", stock:null, sold:15, active:true, soulBound:false, avatarSlot:"legs",  avatarOptionId:"skirt" },
+  { id:"lpc_shoes",    name:"Basic Shoes",          cat:"footwear",  priceAE:80,  rarity:"common",   type:"general", stock:null, sold:22, active:true, soulBound:false, avatarSlot:"feet",  avatarOptionId:"shoes" },
+  { id:"lpc_boots",    name:"Combat Boots",         cat:"footwear",  priceAE:200, rarity:"uncommon", type:"general", stock:null, sold:9,  active:true, soulBound:false, avatarSlot:"feet",  avatarOptionId:"boots" },
+  { id:"lpc_helmet",   name:"Knight's Helmet",      cat:"headgear",  priceAE:400, rarity:"rare",     type:"limited", stock:20,  sold:5,  active:true, soulBound:false, avatarSlot:"hat",   avatarOptionId:"helmet" },
+  { id:"lpc_wizard",   name:"Wizard Hat",           cat:"headgear",  priceAE:550, rarity:"epic",     type:"limited", stock:10,  sold:2,  active:true, soulBound:false, avatarSlot:"hat",   avatarOptionId:"wizard" },
+  { id:"lpc_xpboost",  name:"XP Boost Potion",      cat:"consumable",priceAE:150, rarity:"uncommon", type:"general", stock:null, sold:45, active:true, soulBound:true  },
+  { id:"lpc_shield",   name:"Zone Shield (1h)",     cat:"consumable",priceAE:250, rarity:"rare",     type:"limited", stock:50,  sold:11, active:true, soulBound:true  },
 ];
 
 const PROOF_SUBMISSIONS = [
