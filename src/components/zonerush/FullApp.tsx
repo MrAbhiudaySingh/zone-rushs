@@ -2056,11 +2056,7 @@ function ClanScreen({ userOverride, onBack }) {
   return <ClanHub user={user} onBack={onBack} />;
 }
 
-const SUGGESTED_CLANS = [
-  { name:"BlazeThorn", tag:"BLZ", members:18, zones:8, color:TR, open:false },
-  { name:"SolarEdge",  tag:"SOL", members:10, zones:4, color:TA, open:true  },
-  { name:"CrimsonArc", tag:"CRA", members:7,  zones:3, color:"#F87171",open:true },
-];
+const SUGGESTED_CLANS = [];
 
 function NoClanScreen({ user, canCreate, onBack }) {
   const ctx = useContext(AppContext);
@@ -2161,10 +2157,12 @@ function NoClanScreen({ user, canCreate, onBack }) {
 }
 
 function ClanHub({ user, onBack }) {
+  const ctx = useContext(AppContext);
   const clan = user.clan;
   const isLeader = clan.memberRole === "Leader";
   const isOfficer = isLeader || clan.memberRole === "Officer";
   const [cTab, setCTab] = useState("overview");
+  const [confirmLeave, setConfirmLeave] = useState(false);
 
   const CLAN_TABS = [
     { id:"overview", icon:"📊", label:"Overview" },
@@ -2198,11 +2196,17 @@ function ClanHub({ user, onBack }) {
             </div>
           </div>
         </div>
-        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:14 }}>
-          <div style={{ width:6, height:6, borderRadius:"50%", background:TG }} />
-          <span style={{ fontSize:11, color:TM }}>
-            <span style={{ color:clan.color, fontWeight:700 }}>{clan.memberRole}</span> · {Math.max(clan.totalMembers, MEMBERS.length)}/{clan.maxMembers} members
-          </span>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+            <div style={{ width:6, height:6, borderRadius:"50%", background:TG }} />
+            <span style={{ fontSize:11, color:TM }}>
+              <span style={{ color:clan.color, fontWeight:700 }}>{clan.memberRole}</span> · {clan.totalMembers}/{clan.maxMembers} members
+            </span>
+          </div>
+          <button onClick={() => setConfirmLeave(true)} style={{
+            background:"none", border:`1px solid ${TR}40`, borderRadius:8, padding:"4px 10px",
+            color:TR, fontSize:10, fontWeight:700, fontFamily:FONT, cursor:"pointer",
+          }}>Leave</button>
         </div>
 
         {/* Tab bar */}
@@ -2230,6 +2234,22 @@ function ClanHub({ user, onBack }) {
         {cTab === "war" && <WarTab clan={clan} isLeader={isLeader} isOfficer={isOfficer} />}
         {cTab === "treasury" && <TreasuryTab clan={clan} isLeader={isLeader} />}
       </div>
+
+      {/* Leave clan confirmation modal */}
+      {confirmLeave && (
+        <div onClick={() => setConfirmLeave(false)} style={{ position:"fixed", inset:0, zIndex:300, background:"rgba(13,17,23,0.9)", backdropFilter:"blur(16px)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:S1, border:`1px solid ${BR}`, borderRadius:20, padding:24, maxWidth:340, width:"100%" }}>
+            <div style={{ fontSize:18, fontWeight:800, color:TX, marginBottom:8 }}>Leave {clan.name}?</div>
+            <div style={{ fontSize:13, color:TM, marginBottom:20, lineHeight:1.6 }}>
+              You'll lose access to clan zones, treasury, and war participation. You can rejoin later if the clan is open.
+            </div>
+            <div style={{ display:"flex", gap:10 }}>
+              <button onClick={() => setConfirmLeave(false)} style={{ flex:1, padding:"12px", borderRadius:12, background:"rgba(255,255,255,0.06)", border:`1px solid ${BR}`, color:TX, fontSize:13, fontWeight:700, fontFamily:FONT }}>Cancel</button>
+              <button onClick={() => { if (ctx?.leaveClan) ctx.leaveClan(); setConfirmLeave(false); }} style={{ flex:1, padding:"12px", borderRadius:12, background:TR, border:"none", color:"#fff", fontSize:13, fontWeight:700, fontFamily:FONT }}>Leave Clan</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -3440,16 +3460,7 @@ function ActivityFeed() {
 }
 
 // ─── PLAYERS SECTION ───────────────────────────────────────────────────────────
-const MOCK_PLAYERS = [
-  { id:4821, name:"Abhiuday S.",   email:"a.singh@uni.ac.uk",  level:7,  xp:3240,  ae:4280,  streak:4,  status:"active",  flag:false, clan:"Nocturne",  joinDate:"Jan 12" },
-  { id:2203, name:"Vikram K.",     email:"v.kumar@uni.ac.uk",  level:14, xp:9200,  ae:12800, streak:21, status:"active",  flag:false, clan:"Nocturne",  joinDate:"Jan 8"  },
-  { id:3317, name:"Priya M.",      email:"p.mehta@uni.ac.uk",  level:11, xp:6800,  ae:7400,  streak:9,  status:"active",  flag:false, clan:"Nocturne",  joinDate:"Jan 14" },
-  { id:5501, name:"Anon #5501",   email:"[encrypted]",        level:3,  xp:840,   ae:520,   streak:1,  status:"flagged", flag:true,  clan:null,        joinDate:"Feb 19" },
-  { id:1102, name:"Karan T.",      email:"k.tiwari@uni.ac.uk", level:6,  xp:2100,  ae:1800,  streak:0,  status:"warned",  flag:true,  clan:"Nocturne",  joinDate:"Jan 20" },
-  { id:7743, name:"Meera K.",      email:"m.kapoor@uni.ac.uk", level:8,  xp:3900,  ae:3200,  streak:6,  status:"active",  flag:false, clan:"IronVeil",  joinDate:"Jan 11" },
-  { id:9912, name:"Rohit D.",      email:"r.desai@uni.ac.uk",  level:5,  xp:1600,  ae:940,   streak:2,  status:"inactive",flag:false, clan:null,        joinDate:"Feb 1"  },
-  { id:6634, name:"Sneha R.",      email:"s.rao@uni.ac.uk",    level:9,  xp:4700,  ae:5100,  streak:14, status:"active",  flag:false, clan:"SolarEdge", joinDate:"Jan 9"  },
-];
+const MOCK_PLAYERS = [];
 
 function PlayersSection() {
   const ctx = useContext(AppContext);
@@ -4025,13 +4036,7 @@ function CombatSection() {
 }
 
 // ─── CLANS SECTION ─────────────────────────────────────────────────────────────
-const CLAN_DATA = [
-  { name:"BlazeThorn",tag:"BLZ",leader:"Unknown",members:18,zones:8,cpr:94.2,treasury:28400,flags:1 },
-  { name:"IronVeil",tag:"IRV",leader:"Unknown",members:15,zones:6,cpr:91.0,treasury:19200,flags:0 },
-  { name:"Nocturne",tag:"NCT",leader:"Vikram K.",members:12,zones:5,cpr:87.4,treasury:18400,flags:0 },
-  { name:"SolarEdge",tag:"SOL",leader:"Unknown",members:10,zones:4,cpr:78.1,treasury:12100,flags:2 },
-  { name:"CrimsonArc",tag:"CRA",leader:"Unknown",members:7,zones:3,cpr:71.3,treasury:8400,flags:0 },
-];
+const CLAN_DATA = [];
 
 function ClansSection() {
   const [clans, setClans] = useState(CLAN_DATA);
@@ -5257,12 +5262,9 @@ export default function ZoneRushApp() {
   const [dbReady, setDbReady] = useState(false);
   const [authUser, setAuthUser] = useState(null);
 
-  // Persist state to localStorage as fallback (used when not authenticated)
-  const loadState = (key, fallback) => {
-    try { const s = localStorage.getItem("zr_" + key); return s ? JSON.parse(s) : fallback; }
-    catch { return fallback; }
-  };
-  const [sharedUser, _setSharedUser] = useState(() => loadState("user", { ...USER }));
+  // Don't load stale demo data from localStorage — always start from defaults
+  // Real data will be loaded from DB when authenticated
+  const [sharedUser, _setSharedUser] = useState({ ...USER });
   const setSharedUser = (updater) => {
     _setSharedUser(prev => {
       const next = typeof updater === "function" ? updater(prev) : updater;
@@ -5291,18 +5293,14 @@ export default function ZoneRushApp() {
   );
   const [sharedStyleEvent, setSharedStyleEvent] = useState({
     ...STYLE_EVENT_LIVE,
-    gallery:[
-      { id:"ST001",userName:"Priya M.", title:"Midnight Scholar",votes:48,isMine:false },
-      { id:"ST002",userName:"Vikram K.",title:"Shadow Capture",  votes:41,isMine:false },
-      { id:"ST005",userName:"Sneha R.", title:"The Archivist",   votes:35,isMine:false },
-    ],
+    gallery:[],
   });
   const [sharedStyleSubs,  setSharedStyleSubs]  = useState(STYLE_SUBMISSIONS_INIT);
   const [sharedProofs,     setSharedProofs]     = useState(PROOF_SUBMISSIONS);
   const [playerNotifs,     setPlayerNotifs]     = useState([]);
   const [completedMissions, _setCompletedMissions] = useState(() => {
-    const saved = loadState("completedMissions", []);
-    return new Set(saved);
+    try { const s = localStorage.getItem("zr_completedMissions"); return s ? new Set(JSON.parse(s)) : new Set(); }
+    catch { return new Set(); }
   });
   const setCompletedMissions = (updater) => {
     _setCompletedMissions(prev => {
@@ -5425,7 +5423,7 @@ export default function ZoneRushApp() {
     if (!authUser) return;
     const fetchUserData = async () => {
       // Fetch profile
-      const { data: profile } = await supabase.from("profiles").select("*").eq("id", authUser.id).single();
+      const { data: profile } = await supabase.from("profiles").select("*").eq("user_id", authUser.id).single();
       if (profile) {
         // ── Streak logic: check if streak should reset ──
         const lastActive = profile.updated_at ? new Date(profile.updated_at) : null;
@@ -5438,15 +5436,15 @@ export default function ZoneRushApp() {
         if (daysSinceActive > 1) {
           // Missed a day — reset streak
           currentStreak = 0;
-          await supabase.from("profiles").update({ streak: 0, updated_at: new Date().toISOString() }).eq("id", authUser.id);
+          await supabase.from("profiles").update({ streak: 0, updated_at: new Date().toISOString() }).eq("user_id", authUser.id);
         } else if (daysSinceActive === 1) {
           // Consecutive day — increment streak
           currentStreak = (profile.streak || 0) + 1;
-          await supabase.from("profiles").update({ streak: currentStreak, updated_at: new Date().toISOString() }).eq("id", authUser.id);
+          await supabase.from("profiles").update({ streak: currentStreak, updated_at: new Date().toISOString() }).eq("user_id", authUser.id);
         }
         // daysSinceActive === 0 means same day, keep streak as is but update timestamp
         if (daysSinceActive === 0) {
-          await supabase.from("profiles").update({ updated_at: new Date().toISOString() }).eq("id", authUser.id);
+          await supabase.from("profiles").update({ updated_at: new Date().toISOString() }).eq("user_id", authUser.id);
         }
 
         _setSharedUser({
@@ -5477,7 +5475,7 @@ export default function ZoneRushApp() {
           }
         }));
         // Also update profiles table
-        await supabase.from("profiles").update({ clan_id: c.id }).eq("id", authUser.id);
+        await supabase.from("profiles").update({ clan_id: c.id }).eq("user_id", authUser.id);
       }
 
       // Fetch completed missions
@@ -5631,7 +5629,7 @@ export default function ZoneRushApp() {
       const dbClan = dbClans.find(c => c.name === name);
       if (authUser && dbClan) {
         await supabase.from("clan_members").insert({ clan_id: dbClan.id, user_id: authUser.id, role: "member" });
-        await supabase.from("profiles").update({ clan_id: dbClan.id }).eq("id", authUser.id);
+        await supabase.from("profiles").update({ clan_id: dbClan.id }).eq("user_id", authUser.id);
         const { count } = await supabase.from("clan_members").select("id", { count: "exact", head: true }).eq("clan_id", dbClan.id);
         const clanZones = (window.__zr_zones || []).filter(z => z.captured_by === dbClan.id);
         setSharedUser(u => ({
@@ -5654,6 +5652,13 @@ export default function ZoneRushApp() {
           clan: { id:tag.toLowerCase(), name, tag, motto:"New member!", color, founded:"Mar 2026", memberRole:"Member", treasury:existingClan ? 8000 : 0, weeklyXP:existingClan ? 6000 : 0, rank:existingClan?.rank || 99, cpr:existingClan?.cpr || 0, zonesHeld:existingClan?.zones || 0, totalMembers:memberCount + 1, maxMembers:20 }
         }));
       }
+    },
+    leaveClan: async () => {
+      if (authUser && sharedUser.clan?.id) {
+        await supabase.from("clan_members").delete().eq("user_id", authUser.id).eq("clan_id", sharedUser.clan.id);
+      }
+      setSharedUser(u => ({ ...u, clan: null }));
+      showToast("👋 You left the clan.", "info");
     },
     donateToClan: async (amount) => {
       const amt = Math.min(amount, sharedUser.ae);
@@ -5816,7 +5821,7 @@ export default function ZoneRushApp() {
         }).select().single();
         if (newClan) {
           await supabase.from("clan_members").insert({ clan_id: newClan.id, user_id: authUser.id, role: "leader" });
-          await supabase.from("profiles").update({ clan_id: newClan.id, ae: sharedUser.ae - 500 }).eq("id", authUser.id);
+          await supabase.from("profiles").update({ clan_id: newClan.id, ae: sharedUser.ae - 500 }).eq("user_id", authUser.id);
           setSharedUser(u => ({
             ...u, ae: u.ae - 500,
             clan: { id: newClan.id, name, tag, motto: motto || "New clan!", color: TL, founded: "Mar 2026", memberRole: "Leader", treasury: 0, weeklyXP: 0, rank: 99, cpr: 0, zonesHeld: 0, totalMembers: 1, maxMembers: 20 }
