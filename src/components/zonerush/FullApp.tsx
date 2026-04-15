@@ -1814,6 +1814,16 @@ function MarketScreen({ user }) {
       <div style={{ padding:"0 16px" }}>
         {mTab === "shop" && (
           <>
+            {/* Category filter chips */}
+            <div style={{ display:"flex", gap:6, overflowX:"auto", marginBottom:12, paddingBottom:4 }}>
+              {[["all","All"],["clothing","Clothing"],["weapon","Weapons"],["footwear","Footwear"],["headgear","Headgear"],["consumable","Items"]].map(([k,l]) => (
+                <button key={k} onClick={() => setCatFilter(k)} style={{
+                  padding:"6px 14px", borderRadius:99, fontSize:11, fontWeight:700, fontFamily:FONT, whiteSpace:"nowrap",
+                  background: catFilter===k ? T : "rgba(255,255,255,0.06)", border: catFilter===k ? `1px solid ${T}` : `1px solid ${BR}`,
+                  color: catFilter===k ? "#000" : TM,
+                }}>{l}</button>
+              ))}
+            </div>
             {shopItems.filter(i=>i.featured).length > 0 && (
               <>
                 <div style={{ fontSize:14, fontWeight:700, color:TX, marginBottom:10 }}>⭐ Featured</div>
