@@ -1,0 +1,1 @@
+ALTER TABLE public.quest_progress ADD CONSTRAINT quest_progress_user_quest_unique UNIQUE (user_id, quest_definition_id);
