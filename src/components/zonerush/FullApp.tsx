@@ -966,109 +966,173 @@ function MarketShortcut({ onOpen }) {
 function MissionCard({ m, idx=0 }) {
   const ctx = useContext(AppContext);
   const [submitting, setSubmitting] = useState(false);
-  const [completed, setCompleted] = useState(false);
+  const [completed, setCompleted] = useState(() => ctx?.completedMissions?.has(m.id) || false);
   const [proofSubmitted, setProofSubmitted] = useState(false);
-  const [stepsSimulating, setStepsSimulating] = useState(false);
   const [simSteps, setSimSteps] = useState(m.progress || 0);
   const [gpsVerifying, setGpsVerifying] = useState(false);
-
-  // Steps missions: sync from health data (Google Fitness / Apple Health)
-  // No more fake random simulation — steps come from real health API or manual DB progress
   const [syncing, setSyncing] = useState(false);
-  
+  const fileInputRef = useRef(null);
+
+  // Sync completion state from context
   useEffect(() => {
-    // Check if already completed from DB progress
-    if (m.type === "steps" && simSteps >= m.goal && !completed) {
-      const aeMatch = m.reward.match(/(\d+)/);
-      const xpMatch = m.xp.match(/(\d+)/);
-      const aeAmount = aeMatch ? parseInt(aeMatch[1]) : 0;
-      const xpAmount = xpMatch ? parseInt(xpMatch[1]) : 0;
-      if (ctx?.completeMission) ctx.completeMission(m.id, aeAmount, xpAmount);
+    if (ctx?.completedMissions?.has(m.id)) setCompleted(true);
+  }, [ctx?.completedMissions, m.id]);
+
+  // Steps/health_api tracking
+  useEffect(() => {
+    if (m.type === "health_api" && simSteps >= m.goal && !completed) {
+      const ae = m.aether_reward || 0;
+      const xp = m.xp_reward || 0;
+      if (ctx?.completeMission) ctx.completeMission(m.id, ae, xp);
       setCompleted(true);
-      showToast(`✓ ${m.title} completed! +${aeAmount} AE +${xpAmount} XP`, "success");
+      showToast(`✓ ${m.title} completed! +${ae} AE +${xp} XP`, "success");
     }
   }, [simSteps]);
 
   const handleSyncHealth = async () => {
     if (syncing || completed) return;
     setSyncing(true);
-    // Try to read from DB for any synced health data
     try {
       if (ctx?.authUser) {
-        const { data } = await supabase.from("user_missions").select("progress").eq("user_id", ctx.authUser.id).eq("mission_id", m.id).maybeSingle();
-        if (data?.progress) {
-          setSimSteps(data.progress);
-          showToast(`📡 Synced ${data.progress.toLocaleString()} steps from health data`, "success");
+        const { data } = await supabase.from("quest_progress").select("current_value").eq("user_id", ctx.authUser.id).eq("quest_definition_id", m.id).maybeSingle();
+        if (data?.current_value) {
+          setSimSteps(data.current_value);
+          showToast(`📡 Synced ${data.current_value.toLocaleString()} steps`, "success");
         } else {
-          showToast("📡 No health data synced yet. Connect Google Fitness or Apple Health in Settings to track steps automatically.", "info");
+          showToast("📡 No health data synced yet. Connect Google Fitness in Settings.", "info");
         }
-      } else {
-        showToast("📡 Sign in to sync health data from Google Fitness or Apple Health.", "info");
       }
-    } catch {
-      showToast("📡 Health sync unavailable — connect Google Fitness or Apple Health in Settings.", "info");
-    }
+    } catch { showToast("📡 Health sync unavailable.", "info"); }
     setSyncing(false);
+  };
+
+  const handleGPSCheckIn = () => {
+    if (completed || submitting || gpsVerifying) return;
+    setGpsVerifying(true);
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          setGpsVerifying(false);
+          setSubmitting(true);
+          // Store GPS proof
+          if (ctx?.authUser) {
+            // Upsert quest progress
+            const { data: qp } = await supabase.from("quest_progress").upsert({
+              user_id: ctx.authUser.id, quest_definition_id: m.id,
+              current_value: 1, target_value: m.goal || 1,
+              status: "completed", completed_at: new Date().toISOString(),
+              period_start: new Date().toISOString(),
+            }, { onConflict: "user_id,quest_definition_id", ignoreDuplicates: false }).select().single();
+            if (qp) {
+              await supabase.from("quest_proofs").insert({
+                user_id: ctx.authUser.id, quest_progress_id: qp.id,
+                proof_type: "gps_checkin", latitude: pos.coords.latitude, longitude: pos.coords.longitude,
+              });
+            }
+          }
+          const ae = m.aether_reward || 0;
+          const xp = m.xp_reward || 0;
+          if (ctx?.completeMission) ctx.completeMission(m.id, ae, xp);
+          setSubmitting(false);
+          setCompleted(true);
+          showToast(`✓ ${m.title} — GPS verified! +${ae} AE +${xp} XP`, "success");
+        },
+        (err) => {
+          setGpsVerifying(false);
+          showToast(`⚠ GPS failed: ${err.message}. Enable location access.`, "error");
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } else {
+      setGpsVerifying(false);
+      showToast("⚠ GPS not available on this device.", "error");
+    }
+  };
+
+  const handlePhotoUpload = async (file) => {
+    if (!file || !ctx?.authUser) return;
+    setSubmitting(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const filePath = `${ctx.authUser.id}/${m.id}_${Date.now()}.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from("quest-proofs").upload(filePath, file);
+      if (uploadErr) throw uploadErr;
+      const { data: urlData } = supabase.storage.from("quest-proofs").getPublicUrl(filePath);
+
+      // Create/update quest progress
+      const { data: qp } = await supabase.from("quest_progress").upsert({
+        user_id: ctx.authUser.id, quest_definition_id: m.id,
+        current_value: Math.min((m.progress || 0) + 1, m.goal || 1),
+        target_value: m.goal || 1,
+        status: ((m.progress || 0) + 1) >= (m.goal || 1) ? "completed" : "active",
+        completed_at: ((m.progress || 0) + 1) >= (m.goal || 1) ? new Date().toISOString() : null,
+        period_start: new Date().toISOString(),
+      }, { onConflict: "user_id,quest_definition_id", ignoreDuplicates: false }).select().single();
+
+      if (qp) {
+        await supabase.from("quest_proofs").insert({
+          user_id: ctx.authUser.id, quest_progress_id: qp.id,
+          proof_type: "photo", proof_url: urlData?.publicUrl,
+        });
+      }
+
+      setSubmitting(false);
+      setProofSubmitted(true);
+
+      // For photo quests, submit proof for admin review (no instant reward)
+      if (ctx?.submitProof) {
+        ctx.submitProof({
+          id: "P" + Date.now(),
+          userId: ctx.authUser.id,
+          userName: ctx?.sharedUser?.name || "Player",
+          missionId: m.id, missionTitle: m.title, cat: m.cat,
+          reward: m.aether_reward || 0, xp: m.xp_reward || 0,
+          submittedAt: new Date().toLocaleTimeString("en-GB", { hour:"2-digit", minute:"2-digit" }),
+          imgUrl: urlData?.publicUrl || "/assets/proof_placeholder.jpg",
+          note: "Photo proof submitted.", status: "pending",
+        });
+      }
+      showToast(`📷 Proof submitted for "${m.title}" — awaiting review`, "info");
+    } catch (err) {
+      setSubmitting(false);
+      showToast(`❌ Upload failed: ${err.message}`, "error");
+    }
   };
 
   const handleAction = () => {
     if (completed || submitting || proofSubmitted) return;
 
-    if (m.type === "checkin") {
-      // Simulate GPS verification
-      setGpsVerifying(true);
-      setTimeout(() => {
-        setGpsVerifying(false);
-        const dist = Math.floor(Math.random() * 80 + 10);
-        if (dist <= 100) {
-          setSubmitting(true);
-          setTimeout(() => {
-            setSubmitting(false);
-            setCompleted(true);
-            const aeMatch = m.reward.match(/(\d+)/);
-            const xpMatch = m.xp.match(/(\d+)/);
-            const aeAmount = aeMatch ? parseInt(aeMatch[1]) : 0;
-            const xpAmount = xpMatch ? parseInt(xpMatch[1]) : 0;
-            if (ctx?.completeMission) ctx.completeMission(m.id, aeAmount, xpAmount);
-            showToast(`✓ ${m.title} — GPS verified (${dist}m)! +${aeAmount} AE +${xpAmount} XP`, "success");
-          }, 800);
-        } else {
-          showToast(`⚠ GPS check failed — you're ${dist}m away. Move closer to the zone.`, "error");
-        }
-      }, 2000);
+    if (m.type === "gps" || m.type === "gps_timer") {
+      handleGPSCheckIn();
       return;
     }
 
     if (m.type === "photo") {
-      // Photo missions: submit proof for admin approval — NO instant reward
+      fileInputRef.current?.click();
+      return;
+    }
+
+    // System/manual quests — complete directly
+    if (m.type === "system" || m.type === "manual") {
       setSubmitting(true);
       setTimeout(() => {
         setSubmitting(false);
-        setProofSubmitted(true);
-        // Add to admin proof queue
-        if (ctx?.submitProof) {
-          ctx.submitProof({
-            id: "P" + Date.now(),
-            userId: 4821,
-            userName: ctx?.sharedUser?.name || "Player",
-            missionId: m.id,
-            missionTitle: m.title,
-            cat: m.cat,
-            reward: parseInt(m.reward.match(/(\d+)/)?.[1] || "0"),
-            xp: parseInt(m.xp.match(/(\d+)/)?.[1] || "0"),
-            submittedAt: new Date().toLocaleTimeString("en-GB", { hour:"2-digit", minute:"2-digit" }),
-            imgUrl: "/assets/proof_placeholder.jpg",
-            note: "Photo proof submitted by player.",
-            status: "pending",
-          });
-        }
-        showToast(`📷 Proof submitted for "${m.title}" — awaiting admin review`, "info");
-      }, 1500);
-      return;
+        setCompleted(true);
+        const ae = m.aether_reward || 0;
+        const xp = m.xp_reward || 0;
+        if (ctx?.completeMission) ctx.completeMission(m.id, ae, xp);
+        showToast(`✓ ${m.title} completed! +${ae} AE +${xp} XP`, "success");
+      }, 800);
     }
   };
 
-  const actionLabel = gpsVerifying ? "📡 Verifying GPS..." : submitting ? "⏳ Submitting..." : m.type === "checkin" ? "📍 Check In (GPS)" : "📷 Upload Photo";
+  const actionLabel = gpsVerifying ? "📡 Verifying GPS..." : submitting ? "⏳ Submitting..."
+    : (m.type === "gps" || m.type === "gps_timer") ? "📍 Check In (GPS)"
+    : m.type === "photo" ? "📷 Upload Photo"
+    : m.type === "health_api" ? "📡 Sync Health"
+    : "✓ Complete";
+
+  const pct = m.goal > 1 ? Math.min(100, (m.progress / m.goal) * 100) : 0;
 
   return (
     <div className="card-entry" style={{
@@ -1079,6 +1143,10 @@ function MissionCard({ m, idx=0 }) {
       opacity: completed ? 0.7 : 1,
       transition:"opacity 0.3s, border-color 0.3s",
     }}>
+      {/* Hidden file input for photo uploads */}
+      <input ref={fileInputRef} type="file" accept="image/*" capture="environment" style={{ display:"none" }}
+        onChange={(e) => { if (e.target.files?.[0]) handlePhotoUpload(e.target.files[0]); }} />
+
       <div style={{ height:4, background: completed ? `linear-gradient(90deg, ${TG}, ${TG}60)` : proofSubmitted ? `linear-gradient(90deg, ${TY}, ${TY}60)` : `linear-gradient(90deg, ${m.color}, ${m.color}60)` }} />
       <div style={{ display:"flex", gap:12, padding:"14px 14px 14px" }}>
         <div style={{
@@ -1094,41 +1162,48 @@ function MissionCard({ m, idx=0 }) {
           <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8, marginBottom:7 }}>
             <div>
               <div style={{ fontSize:14, fontWeight:800, color: completed ? TG : TX, marginBottom:4, textDecoration: completed ? "line-through" : "none" }}>{m.title}</div>
-              <div style={{ display:"flex", alignItems:"center", gap:7 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:7, flexWrap:"wrap" }}>
                 <span style={{
                   fontSize:10, fontWeight:900, color:"#0D1117",
                   background: completed ? TG : m.color, borderRadius:99, padding:"2px 9px",
                   boxShadow:`0 2px 8px ${m.color}50`,
                 }}>{m.cat}</span>
                 <span style={{ fontSize:11, color:TM, fontWeight:700 }}>⏱ {m.timer}</span>
-                {m.type === "steps" && <span style={{ fontSize:9, color:TG, fontWeight:700, background:`${TG}15`, padding:"2px 6px", borderRadius:4 }}>📡 LIVE</span>}
+                {m.type === "health_api" && <span style={{ fontSize:9, color:TG, fontWeight:700, background:`${TG}15`, padding:"2px 6px", borderRadius:4 }}>📡 LIVE</span>}
+                {m.type === "gps" && <span style={{ fontSize:9, color:TB, fontWeight:700, background:`${TB}15`, padding:"2px 6px", borderRadius:4 }}>📍 GPS</span>}
+                {m.requires_clan && <span style={{ fontSize:9, color:TA, fontWeight:700, background:`${TA}15`, padding:"2px 6px", borderRadius:4 }}>⚔️ CLAN</span>}
               </div>
             </div>
             <div style={{ textAlign:"right", flexShrink:0 }}>
               <div style={{ fontSize:14, fontWeight:900, color: completed ? TG : TY }}>{completed ? "✓ Done" : m.reward}</div>
               <div style={{ fontSize:11, color:TG, fontWeight:800 }}>{m.xp}</div>
+              {m.shard_reward > 0 && <div style={{ fontSize:10, color:TL, fontWeight:700 }}>💎 {m.shard_reward}</div>}
             </div>
           </div>
 
-          {m.type === "steps" ? (
+          {m.description && !completed && (
+            <div style={{ fontSize:11, color:TM, marginBottom:8, lineHeight:1.4 }}>{m.description}</div>
+          )}
+
+          {m.type === "health_api" ? (
             <div>
               <ProgressBar value={completed ? m.goal : simSteps} max={m.goal} color={completed ? TG : m.color} height={6} />
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:4 }}>
-                <span style={{ fontSize:10, color:TM, fontWeight:700 }}>{(completed ? m.goal : simSteps).toLocaleString()} / {m.goal.toLocaleString()} steps</span>
+                <span style={{ fontSize:10, color:TM, fontWeight:700 }}>{(completed ? m.goal : simSteps).toLocaleString()} / {m.goal.toLocaleString()}</span>
                 {!completed && (
                   <button onClick={handleSyncHealth} disabled={syncing} style={{
                     padding:"4px 10px", borderRadius:8, border:`1px solid ${T}40`, background:`${T}10`,
                     color:T, fontSize:9, fontWeight:700, fontFamily:FONT, cursor: syncing ? "wait" : "pointer",
                   }}>
-                    {syncing ? "📡 Syncing..." : "📡 Sync Health Data"}
+                    {syncing ? "📡 Syncing..." : "📡 Sync Health"}
                   </button>
                 )}
               </div>
-              {!completed && simSteps === 0 && (
-                <div style={{ fontSize:10, color:TD, marginTop:4, lineHeight:1.4 }}>
-                  Connect Google Fitness or Apple Health to auto-track steps
-                </div>
-              )}
+            </div>
+          ) : m.goal > 1 && !completed ? (
+            <div>
+              <ProgressBar value={m.progress} max={m.goal} color={m.color} height={5} />
+              <div style={{ fontSize:10, color:TM, marginTop:4, fontWeight:700 }}>{m.progress} / {m.goal}</div>
             </div>
           ) : completed ? (
             <div style={{ padding:"8px 16px", borderRadius:12, background:`${TG}15`, border:`1px solid ${TG}40`, fontSize:12, fontWeight:700, color:TG, textAlign:"center" }}>
@@ -1136,11 +1211,15 @@ function MissionCard({ m, idx=0 }) {
             </div>
           ) : proofSubmitted ? (
             <div style={{ padding:"8px 16px", borderRadius:12, background:`${TY}15`, border:`1px solid ${TY}40`, fontSize:12, fontWeight:700, color:TY, textAlign:"center" }}>
-              ⏳ Proof submitted — Awaiting admin review
+              ⏳ Proof submitted — Awaiting review
+            </div>
+          ) : m.requires_clan && !ctx?.sharedUser?.clan ? (
+            <div style={{ padding:"8px 16px", borderRadius:12, background:`${TA}15`, border:`1px solid ${TA}40`, fontSize:12, fontWeight:700, color:TA, textAlign:"center" }}>
+              ⚔️ Join a clan to unlock
             </div>
           ) : (
             <button onClick={handleAction} disabled={submitting || gpsVerifying} style={{
-              padding:"8px 16px", borderRadius:12, border:"none", fontFamily:FONT,
+              padding:"8px 16px", borderRadius:12, border:"none", fontFamily:FONT, width:"100%",
               background: (submitting || gpsVerifying) ? `${TM}30` : `linear-gradient(135deg, ${m.color}CC, ${m.color}88)`,
               color: (submitting || gpsVerifying) ? TM : "#0D1117", fontSize:12, fontWeight:900,
               boxShadow: (submitting || gpsVerifying) ? "none" : `0 4px 12px ${m.color}40`,
