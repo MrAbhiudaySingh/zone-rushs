@@ -5436,15 +5436,15 @@ export default function ZoneRushApp() {
         if (daysSinceActive > 1) {
           // Missed a day — reset streak
           currentStreak = 0;
-          await supabase.from("profiles").update({ streak: 0, updated_at: new Date().toISOString() }).eq("id", authUser.id);
+          await supabase.from("profiles").update({ streak: 0, updated_at: new Date().toISOString() }).eq("user_id", authUser.id);
         } else if (daysSinceActive === 1) {
           // Consecutive day — increment streak
           currentStreak = (profile.streak || 0) + 1;
-          await supabase.from("profiles").update({ streak: currentStreak, updated_at: new Date().toISOString() }).eq("id", authUser.id);
+          await supabase.from("profiles").update({ streak: currentStreak, updated_at: new Date().toISOString() }).eq("user_id", authUser.id);
         }
         // daysSinceActive === 0 means same day, keep streak as is but update timestamp
         if (daysSinceActive === 0) {
-          await supabase.from("profiles").update({ updated_at: new Date().toISOString() }).eq("id", authUser.id);
+          await supabase.from("profiles").update({ updated_at: new Date().toISOString() }).eq("user_id", authUser.id);
         }
 
         _setSharedUser({
@@ -5475,7 +5475,7 @@ export default function ZoneRushApp() {
           }
         }));
         // Also update profiles table
-        await supabase.from("profiles").update({ clan_id: c.id }).eq("id", authUser.id);
+        await supabase.from("profiles").update({ clan_id: c.id }).eq("user_id", authUser.id);
       }
 
       // Fetch completed missions
@@ -5629,7 +5629,7 @@ export default function ZoneRushApp() {
       const dbClan = dbClans.find(c => c.name === name);
       if (authUser && dbClan) {
         await supabase.from("clan_members").insert({ clan_id: dbClan.id, user_id: authUser.id, role: "member" });
-        await supabase.from("profiles").update({ clan_id: dbClan.id }).eq("id", authUser.id);
+        await supabase.from("profiles").update({ clan_id: dbClan.id }).eq("user_id", authUser.id);
         const { count } = await supabase.from("clan_members").select("id", { count: "exact", head: true }).eq("clan_id", dbClan.id);
         const clanZones = (window.__zr_zones || []).filter(z => z.captured_by === dbClan.id);
         setSharedUser(u => ({
@@ -5821,7 +5821,7 @@ export default function ZoneRushApp() {
         }).select().single();
         if (newClan) {
           await supabase.from("clan_members").insert({ clan_id: newClan.id, user_id: authUser.id, role: "leader" });
-          await supabase.from("profiles").update({ clan_id: newClan.id, ae: sharedUser.ae - 500 }).eq("id", authUser.id);
+          await supabase.from("profiles").update({ clan_id: newClan.id, ae: sharedUser.ae - 500 }).eq("user_id", authUser.id);
           setSharedUser(u => ({
             ...u, ae: u.ae - 500,
             clan: { id: newClan.id, name, tag, motto: motto || "New clan!", color: TL, founded: "Mar 2026", memberRole: "Leader", treasury: 0, weeklyXP: 0, rank: 99, cpr: 0, zonesHeld: 0, totalMembers: 1, maxMembers: 20 }
