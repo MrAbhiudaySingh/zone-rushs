@@ -5327,13 +5327,19 @@ export default function ZoneRushApp() {
     // Fetch public data (no auth required)
     const fetchPublicData = async () => {
       try {
-        // Fetch missions
-        const { data: dbMissions } = await supabase.from("missions").select("*").eq("active", true).order("is_monthly", { ascending: true }).order("is_weekly", { ascending: true });
-        if (dbMissions?.length) {
-          setSharedMissions(dbMissions.filter(m => !m.is_monthly && !m.is_weekly).map(m => ({
-            id: m.id, title: m.title, cat: m.category, color: m.color, icon: m.icon,
-            type: m.type, reward: `${m.reward_ae} AE`, xp: `${m.reward_xp} XP`,
-            progress: 0, goal: m.goal, timer: "23h", week: false, month: false, _disabled: false,
+        // Fetch quest definitions from DB
+        const { data: dbQuests } = await supabase.from("quest_definitions").select("*").eq("is_active", true).order("sort_order");
+        if (dbQuests?.length) {
+          setSharedMissions(dbQuests.map(q => ({
+            id: q.id, title: q.title, description: q.description, cat: q.category,
+            icon: q.icon, type: q.tracking_type,
+            reward: `${q.aether_reward} AE`, xp: `${q.xp_reward} XP`,
+            aether_reward: q.aether_reward, xp_reward: q.xp_reward, shard_reward: q.shard_reward,
+            progress: 0, goal: q.target_value,
+            tier: q.tier, requires_clan: q.requires_clan,
+            color: q.tier === "daily" ? T : q.tier === "weekly" ? TB : TL,
+            timer: q.tier === "daily" ? "23h" : q.tier === "weekly" ? "This week" : "This month",
+            week: q.tier === "weekly", month: q.tier === "monthly", _disabled: false,
           })));
         }
 
