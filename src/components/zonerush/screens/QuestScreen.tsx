@@ -66,7 +66,7 @@ export function QuestScreen({ missions, events, styleEvent, onStyleEvent }: Ques
 
   const renderGroup = (quests) => {
     const groups = groupByCategory(quests);
-    return Object.entries(groups).map((cat: any, items: any) => (
+    return Object.entries(groups).map(([cat, items]: [string, any[]]) => (
       <div key={cat} style={{ marginBottom:16 }}>
         <div style={{ fontSize:13, fontWeight:800, color:TX, marginBottom:8, display:"flex", alignItems:"center", gap:6 }}>
           {CATEGORY_LABELS[cat] || cat}
