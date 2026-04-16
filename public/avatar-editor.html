@@ -898,20 +898,20 @@ const HAT_OPTS = [
 // WEAPONS - special: oversize frames for slash/thrust on some weapons
 const WEAPON_OPTS = [
   {id:'none',     label:'NONE',   icon:'—', path:null,               oversize:[]},
-  {id:'longsword',label:'LSWRD',  icon:'⚔️', path:'weapon/longsword/{a}.png', oversize:['slash','thrust']},
-  {id:'dagger',   label:'DAGR',   icon:'🗡️', path:'weapon/dagger/{a}.png',    oversize:[]},
-  {id:'mace',     label:'MACE',   icon:'🪓', path:'weapon/mace/{a}.png',      oversize:['slash']},
+  {id:'longsword',label:'LSWRD',  icon:'⚔️', path:'weapon/longsword/{a}.png', oversize:['slash','thrust'], shopId:'lpc_longsw'},
+  {id:'dagger',   label:'DAGR',   icon:'🗡️', path:'weapon/dagger/{a}.png',    oversize:[], shopId:'lpc_dagger'},
+  {id:'mace',     label:'MACE',   icon:'🪓', path:'weapon/mace/{a}.png',      oversize:['slash'], shopId:'lpc_mace'},
   {id:'waraxe',   label:'AXE',    icon:'🪓', path:'weapon/waraxe/{a}.png',    oversize:['slash']},
-  {id:'halberd',  label:'HALBD',  icon:'⚔️', path:'weapon/halberd/{a}.png',   oversize:['slash','thrust']},
-  {id:'spear',    label:'SPEAR',  icon:'🏹', path:'weapon/spear/{a}.png',     oversize:[]},
-  {id:'bow',      label:'BOW',    icon:'🏹', path:'weapon/bow/{a}.png',       oversize:[]},
-  {id:'staff',    label:'STAFF',  icon:'🪄', path:'weapon/staff/{a}.png',     oversize:[]},
+  {id:'halberd',  label:'HALBD',  icon:'⚔️', path:'weapon/halberd/{a}.png',   oversize:['slash','thrust'], shopId:'lpc_halberd'},
+  {id:'spear',    label:'SPEAR',  icon:'🏹', path:'weapon/spear/{a}.png',     oversize:[], shopId:'lpc_spear'},
+  {id:'bow',      label:'BOW',    icon:'🏹', path:'weapon/bow/{a}.png',       oversize:[], shopId:'lpc_bow'},
+  {id:'staff',    label:'STAFF',  icon:'🪄', path:'weapon/staff/{a}.png',     oversize:[], shopId:'lpc_staff'},
 ];
 
 // SHIELDS
 const SHIELD_OPTS = [
   {id:'none',  label:'NONE',  icon:'—', path:null},
-  {id:'round', label:'ROUND', icon:'🛡',path:'shield/round/{a}.png'},
+  {id:'round', label:'ROUND', icon:'🛡',path:'shield/round/{a}.png', shopId:'lpc_shield_round'},
 ];
 
 const SCENES = [
