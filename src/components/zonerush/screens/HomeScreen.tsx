@@ -938,15 +938,8 @@ function DenPreview() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// BOTTOM NAV
+// BOTTOM NAV (uses TABS from constants.ts)
 // ═══════════════════════════════════════════════════════════════════════════════
-const TABS = [
-  { id:"market",   icon:"🛒", label:"Market" },
-  { id:"missions", icon:"🎯", label:"Quests" },
-  { id:"home",     icon:"⚡", label:"Home",  center:true },
-  { id:"clan",     icon:"⚔️", label:"Clan" },
-  { id:"profile",  icon:"👤", label:"Profile" },
-];
 
 function BottomNav({ active, onSelect }: any) {
   return (
