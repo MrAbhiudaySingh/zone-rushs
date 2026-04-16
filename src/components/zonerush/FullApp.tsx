@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect, useRef, createContext, useContext, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { saveMoodEntry } from "@/server/mood";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ZONERUSH — Full Functional App (Player + Admin)
