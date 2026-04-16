@@ -30,7 +30,7 @@ function showToast(msg: string, type="success", duration=3000) {
 }
 
 function ToastContainer() {
-  const [toasts, setToasts] = useState([]);
+  const [toasts, setToasts] = useState<Toast[]>([]);
   useEffect(() => {
     const handler = (t: Toast) => {
       setToasts(ts => [...ts, t]);
@@ -59,7 +59,7 @@ function ToastContainer() {
 }
 
 // ─── ASSET PATHS ───────────────────────────────────────────────────────────────
-const IMG = {
+const IMG: Record<string, string> = {
   storyArt:   "/assets/story_chapter1.png",
   denNeon:    "/assets/den_neon.png",
   denRooftop: "/assets/den_rooftop.png",
@@ -87,7 +87,7 @@ const MONO  = "'Nunito','Nunito',monospace";
 const RARITY_COLOR: Record<string, string> = { common:"#8B9AB0", uncommon:TG, rare:TB, epic:TA, legendary:TY };
 
 // ─── DEFAULT DATA (empty — real data comes from DB) ──────────────────────────
-const USER = {
+const USER: any = {
   name:"Player", level:1,
   xp:0, xpNext:1000,
   ae:0, shards:0,
@@ -124,7 +124,7 @@ const SPRITE_IMG: Record<string,string> = {
 
 const ITEM_ICONS: Record<string,string> = { clothing:"👕", armor:"🛡️", arms:"🧤", footwear:"👢", headgear:"⛑️", weapon:"⚔️", shield:"🛡️", consumable:"🧪" };
 
-const SHOP_ITEMS = [
+const SHOP_ITEMS: any[] = [
   // ─── Arms ────
   { id:"lpc_gloves",       name:"Leather Gloves",        cat:"arms",     price:120,  rarity:"common",   img:null, icon:"🧤", owned:false, featured:false, avatarSlot:"arms", avatarOptionId:"gloves" },
   { id:"lpc_armplate",     name:"Plate Gauntlets",       cat:"arms",     price:350,  rarity:"uncommon", img:null, icon:"🛡", owned:false, featured:false, avatarSlot:"arms", avatarOptionId:"plate" },
@@ -152,7 +152,7 @@ const SHOP_ITEMS = [
   { id:"lpc_shield_item",  name:"Zone Shield (1h)",      cat:"consumable",price:250, rarity:"rare",     img:null, icon:"🔰", owned:false, featured:false },
 ];
 
-const INIT_SHOP_ITEMS = SHOP_ITEMS.map(item => ({
+const INIT_SHOP_ITEMS: any[] = SHOP_ITEMS.map(item => ({
   ...item,
   priceAE: item.price,
   type: item.rarity === "legendary" ? "limited" : "general",
@@ -166,12 +166,12 @@ const PROOF_SUBMISSIONS: ZRProof[] = [];
 
 const COMMUNITY_ITEMS: ZRShopItem[] = [];
 
-const STORY = { ch:0, title:"Coming Soon", sub:"Story quests are not yet available.", clues:0, total:0 };
-const WEEKLY = { done:0, total:0, days:0 };
+const STORY: any = { ch:0, title:"Coming Soon", sub:"Story quests are not yet available.", clues:0, total:0 };
+const WEEKLY: any = { done:0, total:0, days:0 };
 
 const STYLE_SUBMISSIONS_INIT: ZRStyleSub[] = [];
 
-const STYLE_EVENT_LIVE = {
+const STYLE_EVENT_LIVE: any = {
   phase:"submission", weekId:1,
   theme:"No active style event.",
   submissionEnds:"TBD", votingEnds:"TBD",
@@ -179,14 +179,14 @@ const STYLE_EVENT_LIVE = {
 };
 
 // ─── CLAN DATA ─────────────────────────────────────────────────────────────────
-const CL_USER = {
+const CL_USER: any = {
   name:"Player", level:1, ae:0, shards:0,
   clan:null,
 };
 
 const MEMBERS: any[] = [];
 
-const GAME_RULES = { ZONE_ATTACK_COOLDOWN_HOURS:24, WAR_DECLARE_COST_AE:200, ZONE_GEO_RADIUS_METRES:100 };
+const GAME_RULES: any = { ZONE_ATTACK_COOLDOWN_HOURS:24, WAR_DECLARE_COST_AE:200, ZONE_GEO_RADIUS_METRES:100 };
 const _now = Date.now();
 const _hAgo = (h: number) => new Date(_now - h * 3600000).toISOString();
 
@@ -429,7 +429,7 @@ function TabBar({ tabs, active, onSelect, style }: TabBarProps) {
           }}
         >
           {label}
-          {badge > 0 && (
+          {(badge ?? 0) > 0 && (
             <span style={{ background:TR, color:"#fff", fontSize:9, fontWeight:900, borderRadius:99, minWidth:16, height:16, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 4px" }}>
               {badge}
             </span>
@@ -468,8 +468,9 @@ function WellbeingOverlay({ onDone }: WellbeingOverlayProps) {
           {MOODS.map(m => (
             <button key={m.s} onClick={() => pickMood(m.s)} style={{
               display:"flex", flexDirection:"column", alignItems:"center", gap:8,
-              padding:"16px 12px", background:S1, border:`1.5px solid ${mood===m.s ? m.c : BR}`,
+              padding:"16px 12px", border:`1.5px solid ${mood===m.s ? m.c : BR}`,
               borderRadius:16, fontFamily:FONT, minWidth:60, transition:"all 0.2s",
+              background: mood===m.s ? `${m.c}15` : S1,
               transform: mood===m.s ? "scale(1.12)" : "scale(1)",
               background: mood===m.s ? `${m.c}15` : S1,
             }}>
@@ -588,7 +589,7 @@ function HudHeader({ user, onAdminAccess }: HudHeaderProps) {
   const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleLogoTap = () => {
     tapRef.current += 1;
-    clearTimeout(tapTimer.current);
+    if (tapTimer.current) clearTimeout(tapTimer.current);
     if (tapRef.current >= 7) { tapRef.current = 0; if (onAdminAccess) onAdminAccess(); return; }
     tapTimer.current = setTimeout(() => { tapRef.current = 0; }, 2000);
   };
@@ -957,7 +958,7 @@ function MissionCard({ m, idx=0 }: MissionCardProps) {
   // Check Google Fit connection for health_api quests
   useEffect(() => {
     if (m.type !== "health_api" || !ctx?.authUser) return;
-    supabase.from("google_fit_tokens").select("connected").eq("user_id", ctx.authUser.id).maybeSingle().then(({ data }) => {
+    supabase.from("google_fit_tokens").select("connected").eq("user_id", ctx.authUser.id).maybeSingle().then(({ data }: any) => {
       setFitConnected(!!data?.connected);
     });
   }, [m.type, ctx?.authUser]);
@@ -1439,7 +1440,7 @@ function StyleEventGallery({ event, onBack }: StyleEventGalleryProps) {
   const [submitTitle, setSubmitTitle] = useState("");
   const [submitNote, setSubmitNote] = useState("");
   const [submitDone, setSubmitDone] = useState(false);
-  const [submitImage, setSubmitImage] = useState(null);
+  const [submitImage, setSubmitImage] = useState<any>(null);
   const [submitImagePreview, setSubmitImagePreview] = useState(null);
   const fileInputRef = useRef(null);
 
@@ -2301,7 +2302,7 @@ function NoClanScreen({ user, canCreate, onBack }: NoClanScreenProps) {
 
 function ClanHub({ user, onBack }: ClanHubProps) {
   const ctx = useContext(AppContext);
-  const clan = user.clan;
+  const clan = user.clan!;
   const isLeader = clan.memberRole === "Leader";
   const isOfficer = isLeader || clan.memberRole === "Officer";
   const [cTab, setCTab] = useState("overview");
@@ -4420,7 +4421,7 @@ function ZoneMapScreen() {
     const fetchZones = async () => {
       const { data } = await supabase.from("zones").select("*, owner_clan:clans!zones_owner_clan_id_fkey(name, tag, color)");
       if (data) setZones(data);
-      else setZones(window.__zr_zones || []);
+      else setZones((window as any).__zr_zones || []);
     };
     fetchZones();
     const checkActive = async () => {
@@ -5037,7 +5038,7 @@ function ProfileScreen({ user, onAdminAccess }) {
   const [avatarDataUrl, setAvatarDataUrl] = useState(null);
   const handleAdminTap = () => {
     tapRef.current += 1;
-    clearTimeout(tapTimer.current);
+    if (tapTimer.current) clearTimeout(tapTimer.current);
     if (tapRef.current >= 7) { tapRef.current = 0; if (onAdminAccess) onAdminAccess(); return; }
     tapTimer.current = setTimeout(() => { tapRef.current = 0; }, 2000);
   };
@@ -5251,7 +5252,7 @@ function ProfileScreen({ user, onAdminAccess }) {
                 const ctx = useContext(AppContext);
                 useEffect(() => {
                   if (!ctx?.authUser) return;
-                  supabase.from("google_fit_tokens").select("connected").eq("user_id", ctx.authUser.id).maybeSingle().then(({ data }) => {
+                  supabase.from("google_fit_tokens").select("connected").eq("user_id", ctx.authUser.id).maybeSingle().then(({ data }: any) => {
                     setFitConnected(!!data?.connected);
                     setFitLoading(false);
                   });
@@ -5489,7 +5490,7 @@ export default function ZoneRushApp() {
 
   // Don't load stale demo data from localStorage — always start from defaults
   // Real data will be loaded from DB when authenticated
-  const [sharedUser, _setSharedUser] = useState({ ...USER });
+  const [sharedUser, _setSharedUser] = useState<any>({ ...USER });
   const setSharedUser = (updater) => {
     _setSharedUser(prev => {
       const next = typeof updater === "function" ? updater(prev) : updater;
@@ -5507,23 +5508,23 @@ export default function ZoneRushApp() {
       return next;
     });
   };
-  const [sharedMissions,   setSharedMissions]   = useState(MISSIONS);
-  const [sharedEvents,     setSharedEvents]     = useState(LIVE_EVENTS);
-  const [sharedShopItems,  setSharedShopItems]  = useState(
+  const [sharedMissions,   setSharedMissions]   = useState<any[]>(MISSIONS);
+  const [sharedEvents,     setSharedEvents]     = useState<any[]>(LIVE_EVENTS);
+  const [sharedShopItems,  setSharedShopItems]  = useState<any[]>(
     INIT_SHOP_ITEMS.map(it => ({
       ...it, price:it.priceAE, rarity:it.rarity,
       icon:(SHOP_ITEMS.find(s => s.id===it.id)||{}).icon||"🎁",
       owned: it.priceAE === 0, featured:["lpc_long","lpc_leather","lpc_plate"].includes(it.id),
     }))
   );
-  const [sharedStyleEvent, setSharedStyleEvent] = useState({
+  const [sharedStyleEvent, setSharedStyleEvent] = useState<any>({
     ...STYLE_EVENT_LIVE,
     gallery:[],
   });
-  const [sharedStyleSubs,  setSharedStyleSubs]  = useState(STYLE_SUBMISSIONS_INIT);
-  const [sharedProofs,     setSharedProofs]     = useState(PROOF_SUBMISSIONS);
+  const [sharedStyleSubs,  setSharedStyleSubs]  = useState<any[]>(STYLE_SUBMISSIONS_INIT);
+  const [sharedProofs,     setSharedProofs]     = useState<any[]>(PROOF_SUBMISSIONS);
   const [playerNotifs,     setPlayerNotifs]     = useState<ZRNotif[]>([]);
-  const [completedMissions, _setCompletedMissions] = useState(() => {
+  const [completedMissions, _setCompletedMissions] = useState<Set<string>>(() => {
     try { const s = localStorage.getItem("zr_completedMissions"); return s ? new Set(JSON.parse(s)) : new Set(); }
     catch { return new Set(); }
   });
@@ -5600,13 +5601,13 @@ export default function ZoneRushApp() {
         // Fetch zones (used by clan screens and map)
         const { data: dbZones } = await supabase.from("zones").select("*, owner_clan:clans!zones_owner_clan_id_fkey(name, tag, color)");
         if (dbZones?.length) {
-          window.__zr_zones = dbZones;
+          (window as any).__zr_zones = dbZones;
         }
 
         // Fetch clans (used by leaderboard and clan join)
         const { data: dbClans } = await supabase.from("clans").select("*").order("rank");
         if (dbClans?.length) {
-          window.__zr_clans = dbClans;
+          (window as any).__zr_clans = dbClans;
         }
 
         // Fetch style events
@@ -5633,8 +5634,8 @@ export default function ZoneRushApp() {
         // Fetch game config
         const { data: dbConfig } = await supabase.from("game_config").select("*");
         if (dbConfig?.length) {
-          window.__zr_config = {};
-          dbConfig.forEach(c => { window.__zr_config[c.key] = c.value; });
+          (window as any).__zr_config = {};
+          dbConfig.forEach(c => { (window as any).__zr_config[c.key] = c.value; });
         }
 
         setDbReady(true);
@@ -5693,7 +5694,7 @@ export default function ZoneRushApp() {
       if (membership?.clan) {
         const c = membership.clan;
         const { count: memberCount } = await supabase.from("clan_members").select("id", { count: "exact", head: true }).eq("clan_id", c.id);
-        const clanZones = (window.__zr_zones || []).filter(z => z.captured_by === c.id);
+        const clanZones = ((window as any).__zr_zones || []).filter(z => z.captured_by === c.id);
         _setSharedUser(u => ({
           ...u,
           clan: {
@@ -5763,7 +5764,7 @@ export default function ZoneRushApp() {
     fetchUserData();
   }, [authUser]);
 
-  const appCtx = {
+  const appCtx: any = {
     authUser, dbReady,
     sharedUser, setSharedUser,
     sharedMissions, setSharedMissions,
@@ -5846,7 +5847,7 @@ export default function ZoneRushApp() {
         supabase.from("user_inventory").insert({ user_id: authUser.id, item_id: id }).then(() => {});
         supabase.from("shop_items").update({ sold: undefined }).eq("id", id).then(() => {
           // Increment sold via raw increment isn't available, so we fetch+update
-          supabase.from("shop_items").select("sold").eq("id", id).single().then(({ data }) => {
+          supabase.from("shop_items").select("sold").eq("id", id).single().then(({ data }: any) => {
             if (data) supabase.from("shop_items").update({ sold: data.sold + 1 }).eq("id", id).then(() => {});
           });
         });
@@ -5861,13 +5862,13 @@ export default function ZoneRushApp() {
     },
     joinClan: async (name, tag, color) => {
       // Find clan in database
-      const dbClans = window.__zr_clans || [];
+      const dbClans = (window as any).__zr_clans || [];
       const dbClan = dbClans.find(c => c.name === name);
       if (authUser && dbClan) {
         await supabase.from("clan_members").insert({ clan_id: dbClan.id, user_id: authUser.id, role: "member" });
         await supabase.from("profiles").update({ clan_id: dbClan.id }).eq("user_id", authUser.id);
         const { count } = await supabase.from("clan_members").select("id", { count: "exact", head: true }).eq("clan_id", dbClan.id);
-        const clanZones = (window.__zr_zones || []).filter(z => z.captured_by === dbClan.id);
+        const clanZones = ((window as any).__zr_zones || []).filter(z => z.captured_by === dbClan.id);
         setSharedUser(u => ({
           ...u,
           clan: {
