@@ -28,7 +28,10 @@ import {
   MOODS, SUGGESTED_CLANS, TABS,
 } from "./constants";
 
-// ─── TOAST SYSTEM ──────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// Remaining components below — constants, toast, UI primitives, and AppContext
+// are now imported from split files above.
+// ═══════════════════════════════════════════════════════════════════════════════
 let _toastId = 0;
 const _toastListeners: ToastHandler[] = [];
 function showToast(msg: string, type="success", duration=3000) {
