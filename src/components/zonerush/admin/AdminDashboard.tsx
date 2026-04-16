@@ -1120,26 +1120,39 @@ function ZonesSection() {
 
 // ─── ECONOMY SECTION ───────────────────────────────────────────────────────────
 function EconomySection() {
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const [profilesRes, inventoryRes, shopRes] = await Promise.all([
+        supabase.from("profiles").select("aether, shards"),
+        supabase.from("user_inventory").select("id, listed_for_sale, sale_price_ae"),
+        supabase.from("shop_items").select("id, price_ae"),
+      ]);
+      const profiles = profilesRes.data || [];
+      const totalAE = profiles.reduce((s: number, p: any) => s + (p.aether || 0), 0);
+      const totalShards = profiles.reduce((s: number, p: any) => s + (p.shards || 0), 0);
+      const avgAE = profiles.length > 0 ? Math.round(totalAE / profiles.length) : 0;
+      const listings = (inventoryRes.data || []).filter((i: any) => i.listed_for_sale);
+      const marketVol = listings.reduce((s: number, i: any) => s + (i.sale_price_ae || 0), 0);
+
+      setStats({ totalAE, totalShards, avgAE, marketVol, listings: listings.length, players: profiles.length });
+      setLoading(false);
+    })();
+  }, []);
+
+  if (loading) return <div style={{ color:C.dim, fontFamily:ADM_MONO, padding:20 }}>Loading economy data...</div>;
+
   return (
     <div style={AA.secWrap}>
       <SectionTitle title="Economy Monitor" sub="Anti-inflation surveillance · no real-money transactions" />
       <div style={AA.kpiGrid}>{[
-        { label:"Total AE Supply",val:"2,418,340",delta:"+48,200 today",color:C.amber },
-        { label:"AE Sinks (spent)",val:"1,890,100",delta:"78% sink ratio",color:C.teal },
-        { label:"Shards in Circ.",val:"4,281",delta:"+12 this week",color:"#A78BFA" },
-        { label:"Marketplace Volume",val:"38,400 AE",delta:"47 trades today",color:C.amber },
-        { label:"Avg Player Balance",val:"1,940 AE",delta:"Healthy range",color:C.teal },
-        { label:"Rich:Poor Ratio",val:"8.2:1",delta:"⚠ Monitor",color:C.amber },
+        { label:"Total AE Supply", val:stats.totalAE.toLocaleString(), delta:`${stats.players} players`, color:C.amber },
+        { label:"Shards in Circ.", val:stats.totalShards.toLocaleString(), delta:"Across all players", color:"#A78BFA" },
+        { label:"Avg Player Balance", val:`${stats.avgAE.toLocaleString()} AE`, delta:stats.avgAE > 5000 ? "⚠ Monitor" : "Healthy range", color:C.teal },
+        { label:"Marketplace Listings", val:String(stats.listings), delta:`${stats.marketVol.toLocaleString()} AE total`, color:C.amber },
       ].map((k: any) => <KpiCard key={k.label} {...k} />)}</div>
-      <div style={AA.chartsRow}>
-        <div style={{ ...AA.chartCard, flex:2 }}><div style={AA.chartTitle}>AE Supply vs Sinks — 14 Days</div><DualLineChart data1={[2100,2180,2200,2240,2280,2300,2330,2350,2370,2390,2400,2410,2415,2418]} data2={[1600,1680,1720,1780,1820,1850,1870,1900,1920,1940,1960,1970,1980,1890]} color1={C.amber} color2={C.teal} /></div>
-        <div style={{ ...AA.chartCard, flex:1 }}><div style={AA.chartTitle}>AE Source Breakdown</div><DonutChart segments={[{ label:"Daily missions",val:44,color:C.teal },{ label:"Zone income",val:22,color:C.amber },{ label:"Weekly missions",val:18,color:"#A78BFA" },{ label:"Combat wins",val:10,color:C.red },{ label:"Story rewards",val:6,color:"#4DA6FF" }]} /></div>
-      </div>
-      <div style={AA.chartCard}><div style={AA.chartTitle}>Admin Economy Controls</div><div style={AA.ecoControls}>
-        {[{ label:"Daily mission AE multiplier",val:"1.0×" },{ label:"Shop price floor",val:"100 AE" },{ label:"Marketplace fee",val:"5%" },{ label:"Max player AE balance",val:"50,000 AE" }].map((c: any) => (
-          <div key={c.label} style={AA.ecoControlRow}><span style={AA.ecoControlLabel}>{c.label}</span><div style={AA.ecoControlRight}><span style={{ ...AA.mono, color:C.amber }}>{c.val}</span><button style={AA.tinyBtn}>Edit</button></div></div>
-        ))}
-      </div></div>
     </div>
   );
 }
