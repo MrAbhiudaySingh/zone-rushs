@@ -1,29 +1,41 @@
 // @ts-nocheck
 import { useState, useEffect, useRef, createContext, useContext, useCallback } from "react";
+import type { CSSProperties, ReactNode, FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { saveMoodEntry } from "@/server/mood";
+import type {
+  AppContextType, ZRUser, ZRMission, ZRShopItem, ZREvent, ZRStyleEvent, ZRStyleSub,
+  ZRProof, ZRNotif, ZRClan, ZRZone, ZRGalleryItem, Toast, ToastHandler, Mood,
+  WellbeingOverlayProps, ZoneAlertProps, HudHeaderProps, XpTrackProps, StatStripProps,
+  ChipProps, CardProps, SectionHeaderProps, ProgressBarProps, TabBarProps,
+  MissionCardProps, StoryCardProps, StyleEventGalleryProps, QuestScreenProps,
+  MarketScreenProps, ClanScreenProps, NoClanScreenProps, ClanHubProps,
+  WarTabProps, TreasuryTabProps, PlayerModalProps, AuthScreenProps,
+  AdminSectionTitleProps, KpiCardProps, StatusPillProps, StrengthBarProps,
+  AdminTableProps, MiniLineChartProps, DualLineChartProps, DonutChartProps,
+} from "./types";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ZONERUSH — Full Functional App (Player + Admin)
 // All interactions wired up with shared state management
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const AppContext = createContext(null);
+const AppContext = createContext<AppContextType | null>(null);
 
 // ─── TOAST SYSTEM ──────────────────────────────────────────────────────────────
 let _toastId = 0;
-const _toastListeners = [];
-function showToast(msg, type="success", duration=3000) {
-  const t = { id:++_toastId, msg, type, duration };
-  _toastListeners.forEach(fn => fn(t));
+const _toastListeners: ToastHandler[] = [];
+function showToast(msg: string, type="success", duration=3000) {
+  const t: Toast = { id:++_toastId, msg, type, duration };
+  _toastListeners.forEach((fn: any) => fn(t));
 }
 
 function ToastContainer() {
-  const [toasts, setToasts] = useState([]);
+  const [toasts, setToasts] = useState<Toast[]>([]);
   useEffect(() => {
-    const handler = (t) => {
-      setToasts(ts => [...ts, t]);
-      setTimeout(() => setToasts(ts => ts.filter(x => x.id !== t.id)), t.duration);
+    const handler = (t: Toast) => {
+      setToasts((ts: any) => [...ts, t]);
+      setTimeout(() => setToasts((ts: any) => ts.filter((x: any) => x.id !== t.id)), t.duration);
     };
     _toastListeners.push(handler);
     return () => { const i = _toastListeners.indexOf(handler); if (i>=0) _toastListeners.splice(i,1); };
@@ -31,7 +43,7 @@ function ToastContainer() {
   if (!toasts.length) return null;
   return (
     <div style={{ position:"fixed", top:16, left:"50%", transform:"translateX(-50%)", zIndex:9999, display:"flex", flexDirection:"column", gap:8, maxWidth:380, width:"100%", padding:"0 16px", pointerEvents:"none" }}>
-      {toasts.map(t => (
+      {toasts.map((t: any) => (
         <div key={t.id} style={{
           padding:"14px 18px", borderRadius:16,
           background: t.type==="success" ? "rgba(6,255,148,0.95)" : t.type==="error" ? "rgba(255,71,87,0.95)" : t.type==="info" ? "rgba(0,180,255,0.95)" : "rgba(255,209,102,0.95)",
@@ -48,7 +60,7 @@ function ToastContainer() {
 }
 
 // ─── ASSET PATHS ───────────────────────────────────────────────────────────────
-const IMG = {
+const IMG: Record<string, string> = {
   storyArt:   "/assets/story_chapter1.png",
   denNeon:    "/assets/den_neon.png",
   denRooftop: "/assets/den_rooftop.png",
@@ -73,10 +85,10 @@ const FONT  = "'Nunito',system-ui,sans-serif";
 const MONO  = "'Nunito','Nunito',monospace";
 
 // Rarity colors — vibrant, distinct
-const RARITY_COLOR = { common:"#8B9AB0", uncommon:TG, rare:TB, epic:TA, legendary:TY };
+const RARITY_COLOR: Record<string, string> = { common:"#8B9AB0", uncommon:TG, rare:TB, epic:TA, legendary:TY };
 
 // ─── DEFAULT DATA (empty — real data comes from DB) ──────────────────────────
-const USER = {
+const USER: any = {
   name:"Player", level:1,
   xp:0, xpNext:1000,
   ae:0, shards:0,
@@ -85,11 +97,11 @@ const USER = {
   clan:null,
 };
 
-const MISSIONS = [];
+const MISSIONS: ZRMission[] = [];
 
-const MONTHLY_MISSIONS = [];
+const MONTHLY_MISSIONS: ZRMission[] = [];
 
-const LIVE_EVENTS = [];
+const LIVE_EVENTS: ZREvent[] = [];
 
 // Sprite preview images bundled locally from LPC repo
 const SPRITE_IMG: Record<string,string> = {
@@ -113,7 +125,7 @@ const SPRITE_IMG: Record<string,string> = {
 
 const ITEM_ICONS: Record<string,string> = { clothing:"👕", armor:"🛡️", arms:"🧤", footwear:"👢", headgear:"⛑️", weapon:"⚔️", shield:"🛡️", consumable:"🧪" };
 
-const SHOP_ITEMS = [
+const SHOP_ITEMS: any[] = [
   // ─── Arms ────
   { id:"lpc_gloves",       name:"Leather Gloves",        cat:"arms",     price:120,  rarity:"common",   img:null, icon:"🧤", owned:false, featured:false, avatarSlot:"arms", avatarOptionId:"gloves" },
   { id:"lpc_armplate",     name:"Plate Gauntlets",       cat:"arms",     price:350,  rarity:"uncommon", img:null, icon:"🛡", owned:false, featured:false, avatarSlot:"arms", avatarOptionId:"plate" },
@@ -141,7 +153,7 @@ const SHOP_ITEMS = [
   { id:"lpc_shield_item",  name:"Zone Shield (1h)",      cat:"consumable",price:250, rarity:"rare",     img:null, icon:"🔰", owned:false, featured:false },
 ];
 
-const INIT_SHOP_ITEMS = SHOP_ITEMS.map(item => ({
+const INIT_SHOP_ITEMS: any[] = SHOP_ITEMS.map((item: any) => ({
   ...item,
   priceAE: item.price,
   type: item.rarity === "legendary" ? "limited" : "general",
@@ -151,16 +163,16 @@ const INIT_SHOP_ITEMS = SHOP_ITEMS.map(item => ({
   soulBound: item.cat === "consumable",
 }));
 
-const PROOF_SUBMISSIONS = [];
+const PROOF_SUBMISSIONS: ZRProof[] = [];
 
-const COMMUNITY_ITEMS = [];
+const COMMUNITY_ITEMS: ZRShopItem[] = [];
 
-const STORY = { ch:0, title:"Coming Soon", sub:"Story quests are not yet available.", clues:0, total:0 };
-const WEEKLY = { done:0, total:0, days:0 };
+const STORY: any = { ch:0, title:"Coming Soon", sub:"Story quests are not yet available.", clues:0, total:0 };
+const WEEKLY: any = { done:0, total:0, days:0 };
 
-const STYLE_SUBMISSIONS_INIT = [];
+const STYLE_SUBMISSIONS_INIT: ZRStyleSub[] = [];
 
-const STYLE_EVENT_LIVE = {
+const STYLE_EVENT_LIVE: any = {
   phase:"submission", weekId:1,
   theme:"No active style event.",
   submissionEnds:"TBD", votingEnds:"TBD",
@@ -168,22 +180,22 @@ const STYLE_EVENT_LIVE = {
 };
 
 // ─── CLAN DATA ─────────────────────────────────────────────────────────────────
-const CL_USER = {
+const CL_USER: any = {
   name:"Player", level:1, ae:0, shards:0,
   clan:null,
 };
 
-const MEMBERS = [];
+const MEMBERS: any[] = [];
 
-const GAME_RULES = { ZONE_ATTACK_COOLDOWN_HOURS:24, WAR_DECLARE_COST_AE:200, ZONE_GEO_RADIUS_METRES:100 };
+const GAME_RULES: any = { ZONE_ATTACK_COOLDOWN_HOURS:24, WAR_DECLARE_COST_AE:200, ZONE_GEO_RADIUS_METRES:100 };
 const _now = Date.now();
-const _hAgo = (h) => new Date(_now - h * 3600000).toISOString();
+const _hAgo = (h: number) => new Date(_now - h * 3600000).toISOString();
 
-function clanZoneOnCooldown(zone) {
+function clanZoneOnCooldown(zone: any) {
   if (!zone.lastAttackedAt) return false;
   return (_now - new Date(zone.lastAttackedAt).getTime()) < GAME_RULES.ZONE_ATTACK_COOLDOWN_HOURS * 3600000;
 }
-function clanCooldownRemaining(zone) {
+function clanCooldownRemaining(zone: any) {
   if (!zone.lastAttackedAt) return null;
   const rem = GAME_RULES.ZONE_ATTACK_COOLDOWN_HOURS * 3600000 - (_now - new Date(zone.lastAttackedAt).getTime());
   if (rem <= 0) return null;
@@ -191,11 +203,11 @@ function clanCooldownRemaining(zone) {
   return `${h}h ${m}m`;
 }
 
-const ZONES = [];
-const ATTACKABLE_ZONES = [];
-const WAR_LOG = [];
-const ENEMY_CLANS = [];
-const TREASURY_LOG = [];
+const ZONES: any[] = [];
+const ATTACKABLE_ZONES: any[] = [];
+const WAR_LOG: any[] = [];
+const ENEMY_CLANS: any[] = [];
+const TREASURY_LOG: ZRTreasuryEntry[] = [];
 
 // Moods for wellbeing overlay
 const MOODS = [
@@ -315,7 +327,7 @@ function GlobalStyles() {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // Pill chip — currency / tags
-function Chip({ color, bg, icon, label, onClick, style }) {
+function Chip({ color, bg, icon, label, onClick, style }: ChipProps) {
   return (
     <div
       onClick={onClick}
@@ -337,7 +349,7 @@ function Chip({ color, bg, icon, label, onClick, style }) {
 }
 
 // Colourful card — each one gets a vibrant top gradient stripe
-function Card({ children, style, accent, gradient, onClick, className }) {
+function Card({ children, style, accent, gradient, onClick, className }: CardProps) {
   return (
     <div
       onClick={onClick}
@@ -360,7 +372,7 @@ function Card({ children, style, accent, gradient, onClick, className }) {
 }
 
 // Section header
-function SectionHeader({ title, action, onAction }) {
+function SectionHeader({ title, action, onAction }: SectionHeaderProps) {
   return (
     <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
       <span style={{ fontSize:17, fontWeight:900, color:TX, letterSpacing:"-0.3px" }}>{title}</span>
@@ -374,7 +386,7 @@ function SectionHeader({ title, action, onAction }) {
 }
 
 // Animated progress bar with shimmer
-function ProgressBar({ value, max, color, height=6 }) {
+function ProgressBar({ value, max, color, height=6 }: ProgressBarProps) {
   const pct = Math.min(100, (value / max) * 100);
   return (
     <div style={{ height, background:"rgba(255,255,255,0.06)", borderRadius:99, overflow:"hidden", position:"relative" }}>
@@ -392,7 +404,7 @@ function ProgressBar({ value, max, color, height=6 }) {
 }
 
 // Segmented tab control — colourful active state
-function TabBar({ tabs, active, onSelect, style }) {
+function TabBar({ tabs, active, onSelect, style }: TabBarProps) {
   return (
     <div style={{
       display:"flex", gap:4,
@@ -401,7 +413,7 @@ function TabBar({ tabs, active, onSelect, style }) {
       border:`1.5px solid ${BR}`,
       ...style,
     }}>
-      {tabs.map(([id, label, badge]) => (
+      {tabs.map(([id, label, badge]: [string, string, number?]) => (
         <button
           key={id}
           onClick={() => onSelect(id)}
@@ -418,7 +430,7 @@ function TabBar({ tabs, active, onSelect, style }) {
           }}
         >
           {label}
-          {badge > 0 && (
+          {(badge ?? 0) > 0 && (
             <span style={{ background:TR, color:"#fff", fontSize:9, fontWeight:900, borderRadius:99, minWidth:16, height:16, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 4px" }}>
               {badge}
             </span>
@@ -432,15 +444,15 @@ function TabBar({ tabs, active, onSelect, style }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // WELLBEING OVERLAY
 // ═══════════════════════════════════════════════════════════════════════════════
-function WellbeingOverlay({ onDone }) {
+function WellbeingOverlay({ onDone }: WellbeingOverlayProps) {
   const [phase, setPhase] = useState("ask");
-  const [mood, setMood] = useState(null);
+  const [mood, setMood] = useState<number | null>(null);
   const [freeText, setFreeText] = useState("");
   const [wantTalk, setWantTalk] = useState(false);
   const [outreach, setOutreach] = useState(false);
   const [consentShare, setConsentShare] = useState(false);
 
-  const pickMood = (score) => {
+  const pickMood = (score: number) => {
     setMood(score);
     if (score <= 2) { setTimeout(() => setPhase("comfort"), 300); }
     else { setTimeout(() => onDone(score, null, false), 600); }
@@ -454,11 +466,12 @@ function WellbeingOverlay({ onDone }) {
         <div style={{ fontSize:24, fontWeight:900, color:TX, marginBottom:8, letterSpacing:"-0.5px" }}>Good afternoon, {USER.name}.</div>
         <div style={{ fontSize:14, color:TM, marginBottom:36, lineHeight:1.6 }}>How are you feeling right now?</div>
         <div style={{ display:"flex", gap:8, justifyContent:"center", marginBottom:32, flexWrap:"wrap" }}>
-          {MOODS.map(m => (
+          {MOODS.map((m: any) => (
             <button key={m.s} onClick={() => pickMood(m.s)} style={{
               display:"flex", flexDirection:"column", alignItems:"center", gap:8,
-              padding:"16px 12px", background:S1, border:`1.5px solid ${mood===m.s ? m.c : BR}`,
+              padding:"16px 12px", border:`1.5px solid ${mood===m.s ? m.c : BR}`,
               borderRadius:16, fontFamily:FONT, minWidth:60, transition:"all 0.2s",
+              background: mood===m.s ? `${m.c}15` : S1,
               transform: mood===m.s ? "scale(1.12)" : "scale(1)",
               background: mood===m.s ? `${m.c}15` : S1,
             }}>
@@ -537,11 +550,11 @@ function WellbeingOverlay({ onDone }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // ZONE ALERT BANNER
 // ═══════════════════════════════════════════════════════════════════════════════
-function ZoneAlert({ onDismiss }) {
+function ZoneAlert({ onDismiss }: ZoneAlertProps) {
   const ctx = useContext(AppContext);
   const [secs, setSecs] = useState(1458);
   useEffect(() => {
-    const t = setInterval(() => setSecs(s => Math.max(0, s - 1)), 1000);
+    const t = setInterval(() => setSecs((s: any) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(t);
   }, []);
   const mm = String(Math.floor(secs / 60)).padStart(2, "0");
@@ -572,12 +585,12 @@ function ZoneAlert({ onDismiss }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // HUD HEADER — hero gradient with floating orbs + 7-tap admin access
 // ═══════════════════════════════════════════════════════════════════════════════
-function HudHeader({ user, onAdminAccess }) {
-  const tapRef = useRef(0);
-  const tapTimer = useRef(null);
+function HudHeader({ user, onAdminAccess }: HudHeaderProps) {
+  const tapRef = useRef<number>(0);
+  const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleLogoTap = () => {
     tapRef.current += 1;
-    clearTimeout(tapTimer.current);
+    if (tapTimer.current) clearTimeout(tapTimer.current);
     if (tapRef.current >= 7) { tapRef.current = 0; if (onAdminAccess) onAdminAccess(); return; }
     tapTimer.current = setTimeout(() => { tapRef.current = 0; }, 2000);
   };
@@ -631,7 +644,7 @@ function HudHeader({ user, onAdminAccess }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // XP BAR — animated with glow
 // ═══════════════════════════════════════════════════════════════════════════════
-function XpTrack({ user }) {
+function XpTrack({ user }: XpTrackProps) {
   const pct = (user.xp / user.xpNext) * 100;
   return (
     <div style={{ padding:"14px 16px 0" }}>
@@ -661,11 +674,11 @@ function XpTrack({ user }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // STAT STRIP — colourful scrollable stat cards
 // ═══════════════════════════════════════════════════════════════════════════════
-function StatStrip({ weekly }) {
+function StatStrip({ weekly }: StatStripProps) {
   const ctx = useContext(AppContext);
   const user = ctx?.sharedUser || USER;
   const completedCount = ctx?.completedMissions?.size || 0;
-  const userZones = user.clan ? (ZONES.filter(z => z.capturedBy === user.clan?.name).length) : 0;
+  const userZones = user.clan ? (ZONES.filter((z: any) => z.capturedBy === user.clan?.name).length) : 0;
 
   const STATS = [
     { icon:"⚡", val:user.xp.toLocaleString(), lbl:"XP", c:TG },
@@ -679,7 +692,7 @@ function StatStrip({ weekly }) {
   const pct = weeklyDone / weekly.total;
   return (
     <div style={{ display:"flex", gap:8, padding:"14px 16px 0", overflowX:"auto" }}>
-      {STATS.map((s, i) => (
+      {STATS.map((s: any, i: number) => (
         <div key={s.lbl} className="card-entry" style={{
           flex:"0 0 auto", display:"flex", flexDirection:"column", alignItems:"center", gap:5,
           padding:"14px 16px", background:S1, border:`1.5px solid ${s.c}30`,
@@ -726,7 +739,7 @@ function StatStrip({ weekly }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // STREAK CARD — fire animation, orange gradient
 // ═══════════════════════════════════════════════════════════════════════════════
-function StreakCard({ user }) {
+function StreakCard({ user }: any) {
   return (
     <div className="card-entry" style={{
       margin:"14px 16px 0",
@@ -754,7 +767,7 @@ function StreakCard({ user }) {
       </div>
 
       <div style={{ display:"flex", gap:5, marginBottom:14, position:"relative" }}>
-        {[1,2,3,4,5,6,7].map(d => {
+        {[1,2,3,4,5,6,7].map((d: any) => {
           const done = d < user.streak, curr = d === user.streak;
           return (
             <div key={d} style={{
@@ -786,7 +799,7 @@ function StreakCard({ user }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // SQUAD UP CARD
 // ═══════════════════════════════════════════════════════════════════════════════
-function SquadUpCard({ user, onNavigateClan }) {
+function SquadUpCard({ user, onNavigateClan }: any) {
   const [jName, setJName] = useState("");
   const canCreate = user.level >= 5;
   const lvlToGo = Math.max(0, 5 - user.level);
@@ -843,11 +856,11 @@ function SquadUpCard({ user, onNavigateClan }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // LIVE EVENTS STRIP
 // ═══════════════════════════════════════════════════════════════════════════════
-function LiveEventsStrip({ events, onViewAll }) {
+function LiveEventsStrip({ events, onViewAll }: any) {
   return (
     <div style={{ margin:"14px 16px 0" }}>
       <SectionHeader title="⚡ Live Events" action="See All →" onAction={onViewAll} />
-      {events.map((ev, i) => (
+      {events.map((ev: any, i: number) => (
         <div key={ev.id} className="card-entry" style={{
           display:"flex", alignItems:"center", gap:12, padding:"16px",
           background:`linear-gradient(135deg, ${ev.color}20, ${ev.color}06)`,
@@ -873,7 +886,7 @@ function LiveEventsStrip({ events, onViewAll }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // STYLE EVENT BANNER
 // ═══════════════════════════════════════════════════════════════════════════════
-function StyleEventBanner({ event, onOpen }) {
+function StyleEventBanner({ event, onOpen }: any) {
   const isVoting = event.phase === "voting";
   return (
     <div onClick={onOpen} style={{
@@ -900,13 +913,13 @@ function StyleEventBanner({ event, onOpen }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // MARKET SHORTCUT
 // ═══════════════════════════════════════════════════════════════════════════════
-function MarketShortcut({ onOpen }) {
-  const featured = SHOP_ITEMS.filter(i => i.featured).slice(0, 3);
+function MarketShortcut({ onOpen }: any) {
+  const featured = SHOP_ITEMS.filter((i: any) => i.featured).slice(0, 3);
   return (
     <div style={{ margin:"14px 16px 0" }}>
       <SectionHeader title="🏪 Market" action="Browse →" onAction={onOpen} />
       <div style={{ display:"flex", gap:8 }}>
-        {featured.map((item, i) => {
+        {featured.map((item: any, i: number) => {
           const rc = RARITY_COLOR[item.rarity];
           return (
             <button key={item.id} onClick={onOpen} className="card-entry" style={{
@@ -932,7 +945,7 @@ function MarketShortcut({ onOpen }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // MISSION CARD — colourful gradient accent, illustrated feel
 // ═══════════════════════════════════════════════════════════════════════════════
-function MissionCard({ m, idx=0 }) {
+function MissionCard({ m, idx=0 }: MissionCardProps) {
   const ctx = useContext(AppContext);
   const [submitting, setSubmitting] = useState(false);
   const [completed, setCompleted] = useState(() => ctx?.completedMissions?.has(m.id) || false);
@@ -946,7 +959,7 @@ function MissionCard({ m, idx=0 }) {
   // Check Google Fit connection for health_api quests
   useEffect(() => {
     if (m.type !== "health_api" || !ctx?.authUser) return;
-    supabase.from("google_fit_tokens").select("connected").eq("user_id", ctx.authUser.id).maybeSingle().then(({ data }) => {
+    supabase.from("google_fit_tokens").select("connected").eq("user_id", ctx.authUser.id).maybeSingle().then(({ data }: any) => {
       setFitConnected(!!data?.connected);
     });
   }, [m.type, ctx?.authUser]);
@@ -1250,7 +1263,7 @@ function MissionCard({ m, idx=0 }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORY CARD
 // ═══════════════════════════════════════════════════════════════════════════════
-function StoryCard({ story }) {
+function StoryCard({ story }: StoryCardProps) {
   const ctx = useContext(AppContext);
   const [investigating, setInvestigating] = useState(false);
 
@@ -1286,7 +1299,7 @@ function StoryCard({ story }) {
       <div style={{ fontSize:12, color:TM, marginBottom:14, lineHeight:1.5, position:"relative" }}>{story.sub}</div>
 
       <div style={{ display:"flex", gap:5, marginBottom:12, position:"relative" }}>
-        {Array.from({ length: story.total }).map((_, i) => (
+        {Array.from({ length: story.total }).map((_: any, i: number) => (
           <div key={i} style={{
             flex:1, height:5, borderRadius:99,
             background: i < story.clues ? `linear-gradient(90deg, ${T}, ${TG})` : "rgba(255,255,255,0.08)",
@@ -1327,7 +1340,7 @@ function DenPreview() {
       </div>
       <div style={{ padding:"12px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", background:S1 }}>
         <div style={{ display:"flex", gap:6 }}>
-          {["neon","rooftop"].map(b => (
+          {["neon","rooftop"].map((b: any) => (
             <button key={b} onClick={() => setBg(b)} style={{
               padding:"6px 12px", borderRadius:10, border:`1.5px solid ${bg===b ? T : BR}`,
               background: bg===b ? `${T}18` : "none", color: bg===b ? T : TM, fontSize:11, fontWeight:800, fontFamily:FONT,
@@ -1354,7 +1367,7 @@ const TABS = [
   { id:"profile",  icon:"👤", label:"Profile" },
 ];
 
-function BottomNav({ active, onSelect }) {
+function BottomNav({ active, onSelect }: any) {
   return (
     <div style={{
       position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)",
@@ -1370,7 +1383,7 @@ function BottomNav({ active, onSelect }) {
         padding:"10px 6px",
         boxShadow:`0 -2px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)`,
       }}>
-        {TABS.map(t => {
+        {TABS.map((t: any) => {
           const on = active === t.id;
           if (t.center) return (
             <button key={t.id} onClick={() => onSelect(t.id)} style={{
@@ -1419,16 +1432,16 @@ function BottomNav({ active, onSelect }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // STYLE EVENT GALLERY
 // ═══════════════════════════════════════════════════════════════════════════════
-function StyleEventGallery({ event, onBack }) {
+function StyleEventGallery({ event, onBack }: StyleEventGalleryProps) {
   const ctx = useContext(AppContext);
-  const [myVote, setMyVote] = useState(null);
+  const [myVote, setMyVote] = useState<string | null>(null);
   const [voteConfirm, setVoteConfirm] = useState(false);
   const [gallery, setGallery] = useState(event.gallery);
   const [seView, setSeView] = useState("gallery");
   const [submitTitle, setSubmitTitle] = useState("");
   const [submitNote, setSubmitNote] = useState("");
   const [submitDone, setSubmitDone] = useState(false);
-  const [submitImage, setSubmitImage] = useState(null);
+  const [submitImage, setSubmitImage] = useState<any>(null);
   const [submitImagePreview, setSubmitImagePreview] = useState(null);
   const fileInputRef = useRef(null);
 
@@ -1441,7 +1454,7 @@ function StyleEventGallery({ event, onBack }) {
     reader.onload = (ev) => setSubmitImagePreview(ev.target.result);
     reader.readAsDataURL(file);
   };
-  const [mySubmission, setMySubmission] = useState(event.gallery.find(g => g.isMine) || null);
+  const [mySubmission, setMySubmission] = useState(event.gallery.find((g: any) => g.isMine) || null);
 
   useEffect(() => {
     setGallery(ctx?.sharedStyleEvent?.gallery || event.gallery);
@@ -1450,7 +1463,7 @@ function StyleEventGallery({ event, onBack }) {
   const handleVote = (id) => {
     if (myVote) return;
     setMyVote(id);
-    setGallery(g => g.map(s => s.id === id ? { ...s, votes: s.votes + 1 } : s));
+    setGallery(g => g.map((s: any) => s.id === id ? { ...s, votes: s.votes + 1 } : s));
     setVoteConfirm(true);
     setTimeout(() => setVoteConfirm(false), 2000);
   };
@@ -1490,7 +1503,7 @@ function StyleEventGallery({ event, onBack }) {
           if (inserted) {
             // Add to style subs for admin review
             if (ctx?.setSharedStyleSubs) {
-              ctx.setSharedStyleSubs(ss => [...ss, {
+              ctx.setSharedStyleSubs((ss: any) => [...ss, {
                 id: inserted.id, userId: ctx.authUser.id, userName: ctx.sharedUser?.name || "You",
                 title: submitTitle.trim(), votes: 0, status: "pending",
                 submittedAt: new Date().toLocaleDateString("en-GB", { month: "short", day: "numeric" }),
@@ -1585,7 +1598,7 @@ function StyleEventGallery({ event, onBack }) {
         </div>
       ) : (
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, padding:"0 16px" }}>
-          {sorted.map(s => {
+          {sorted.map((s: any) => {
             const hasVoted = !!myVote;
             const isMyVote = myVote === s.id;
             return (
@@ -1624,17 +1637,17 @@ function StyleEventGallery({ event, onBack }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUEST SCREEN
 // ═══════════════════════════════════════════════════════════════════════════════
-function QuestScreen({ missions, events, styleEvent, onStyleEvent }) {
+function QuestScreen({ missions, events, styleEvent, onStyleEvent }: QuestScreenProps) {
   const ctx = useContext(AppContext);
   const [qTab, setQTab] = useState("daily");
 
-  const daily  = missions.filter(m => m.tier === "daily" && !m._disabled);
-  const weekly = missions.filter(m => m.tier === "weekly" && !m._disabled);
-  const monthly = missions.filter(m => m.tier === "monthly" && !m._disabled);
+  const daily  = missions.filter((m: any) => m.tier === "daily" && !m._disabled);
+  const weekly = missions.filter((m: any) => m.tier === "weekly" && !m._disabled);
+  const monthly = missions.filter((m: any) => m.tier === "monthly" && !m._disabled);
 
-  const dailyCompleted = daily.filter(m => ctx?.completedMissions?.has(m.id)).length;
-  const weeklyCompleted = weekly.filter(m => ctx?.completedMissions?.has(m.id)).length;
-  const monthlyCompleted = monthly.filter(m => ctx?.completedMissions?.has(m.id)).length;
+  const dailyCompleted = daily.filter((m: any) => ctx?.completedMissions?.has(m.id)).length;
+  const weeklyCompleted = weekly.filter((m: any) => ctx?.completedMissions?.has(m.id)).length;
+  const monthlyCompleted = monthly.filter((m: any) => ctx?.completedMissions?.has(m.id)).length;
 
   // Calculate time remaining
   const now = new Date();
@@ -1648,7 +1661,7 @@ function QuestScreen({ missions, events, styleEvent, onStyleEvent }) {
   // Group quests by category
   const groupByCategory = (quests) => {
     const groups = {};
-    quests.forEach(q => {
+    quests.forEach((q: any) => {
       const cat = q.cat || "general";
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(q);
@@ -1674,14 +1687,14 @@ function QuestScreen({ missions, events, styleEvent, onStyleEvent }) {
 
   const renderGroup = (quests) => {
     const groups = groupByCategory(quests);
-    return Object.entries(groups).map(([cat, items]) => (
+    return Object.entries(groups).map((cat: any, items: any) => (
       <div key={cat} style={{ marginBottom:16 }}>
         <div style={{ fontSize:13, fontWeight:800, color:TX, marginBottom:8, display:"flex", alignItems:"center", gap:6 }}>
           {CATEGORY_LABELS[cat] || cat}
-          <span style={{ fontSize:11, color:TM, fontWeight:600 }}>({items.filter(m => ctx?.completedMissions?.has(m.id)).length}/{items.length})</span>
+          <span style={{ fontSize:11, color:TM, fontWeight:600 }}>({items.filter((m: any) => ctx?.completedMissions?.has(m.id)).length}/{items.length})</span>
         </div>
         <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-          {items.map((m, i) => <MissionCard key={m.id} m={m} idx={i} />)}
+          {items.map((m: any, i: number) => <MissionCard key={m.id} m={m} idx={i} />)}
         </div>
       </div>
     ));
@@ -1777,7 +1790,7 @@ function QuestScreen({ missions, events, styleEvent, onStyleEvent }) {
                 <span style={{ color:TL }}>›</span>
               </div>
             )}
-            {events.map(ev => {
+            {events.map((ev: any) => {
               const pct = ev.maxParticipants ? (ev.participants / ev.maxParticipants) * 100 : 30;
               return (
                 <div key={ev.id} style={{ background:S1, border:`1px solid ${ev.color}40`, borderRadius:16, padding:"14px 16px", borderLeft:`3px solid ${ev.color}` }}>
@@ -1815,28 +1828,28 @@ function QuestScreen({ missions, events, styleEvent, onStyleEvent }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // MARKET SCREEN
 // ═══════════════════════════════════════════════════════════════════════════════
-function MarketScreen({ user }) {
+function MarketScreen({ user }: MarketScreenProps) {
   const ctx = useContext(AppContext);
   const [mTab, setMTab] = useState("shop");
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("all");
   const allShopItems = ctx?.sharedShopItems || SHOP_ITEMS;
-  const activeShop = allShopItems.filter(i => i.active !== false);
+  const activeShop = allShopItems.filter((i: any) => i.active !== false);
   const [owned, setOwned] = useState(new Set(
-    activeShop.filter(i => i.owned).map(i => i.id).concat(COMMUNITY_ITEMS.filter(i => i.owned).map(i => i.id))
+    activeShop.filter((i: any) => i.owned).map((i: any) => i.id).concat(COMMUNITY_ITEMS.filter((i: any) => i.owned).map((i: any) => i.id))
   ));
-  const [cart, setCart] = useState(null);
-  const [sellModal, setSellModal] = useState(null);
+  const [cart, setCart] = useState<any>(null);
+  const [sellModal, setSellModal] = useState<any>(null);
   const [sellPrice, setSellPrice] = useState("");
   const marketplaceListings = ctx?.marketplaceListings || [];
 
-  const shopItems = activeShop.filter(i => !i.designer && !i._isMarketListing && (i.rarity === "common" || i.rarity === "uncommon") && (!search || i.name.toLowerCase().includes(search.toLowerCase())) && (catFilter === "all" || i.cat === catFilter || (catFilter === "armor" && (i.cat === "armor" || i.cat === "arms")) || (catFilter === "clothing" && (i.cat === "clothing" || i.cat === "armor")) ));
+  const shopItems = activeShop.filter((i: any) => !i.designer && !i._isMarketListing && (i.rarity === "common" || i.rarity === "uncommon") && (!search || i.name.toLowerCase().includes(search.toLowerCase())) && (catFilter === "all" || i.cat === catFilter || (catFilter === "armor" && (i.cat === "armor" || i.cat === "arms")) || (catFilter === "clothing" && (i.cat === "clothing" || i.cat === "armor")) ));
   const community = [
     ...COMMUNITY_ITEMS,
-    ...allShopItems.filter(i => i.designer && i.active !== false),
-    ...marketplaceListings.filter(l => l.seller !== (ctx?.sharedUser?.name || ""))
-  ].filter(i => !search || i.name.toLowerCase().includes(search.toLowerCase()));
-  const inventory = [...activeShop.filter(i => owned.has(i.id)), ...COMMUNITY_ITEMS.filter(i => owned.has(i.id))];
+    ...allShopItems.filter((i: any) => i.designer && i.active !== false),
+    ...marketplaceListings.filter((l: any) => l.seller !== (ctx?.sharedUser?.name || ""))
+  ].filter((i: any) => !search || i.name.toLowerCase().includes(search.toLowerCase()));
+  const inventory = [...activeShop.filter((i: any) => owned.has(i.id)), ...COMMUNITY_ITEMS.filter((i: any) => owned.has(i.id))];
 
   const buy = (item) => {
     const price = item.price || item.priceAE || 0;
@@ -1904,7 +1917,7 @@ function MarketScreen({ user }) {
           <>
             {/* Category filter chips */}
             <div style={{ display:"flex", gap:6, overflowX:"auto", marginBottom:12, paddingBottom:4 }}>
-              {[["all","All"],["clothing","Clothing"],["armor","Armor"],["arms","Arms"],["weapon","Weapons"],["shield","Shields"],["footwear","Footwear"],["consumable","Items"]].map(([k,l]) => (
+              {[["all","All"],["clothing","Clothing"],["armor","Armor"],["arms","Arms"],["weapon","Weapons"],["shield","Shields"],["footwear","Footwear"],["consumable","Items"]].map((k: any, l: any) => (
                 <button key={k} onClick={() => setCatFilter(k)} style={{
                   padding:"6px 14px", borderRadius:99, fontSize:11, fontWeight:700, fontFamily:FONT, whiteSpace:"nowrap",
                   background: catFilter===k ? T : "rgba(255,255,255,0.06)", border: catFilter===k ? `1px solid ${T}` : `1px solid ${BR}`,
@@ -1916,7 +1929,7 @@ function MarketScreen({ user }) {
               <>
                 <div style={{ fontSize:14, fontWeight:700, color:TX, marginBottom:10 }}>⭐ Featured</div>
                 <div style={{ display:"flex", gap:8, overflowX:"auto", marginBottom:16 }}>
-                  {shopItems.filter(i=>i.featured).map(item => (
+                  {shopItems.filter(i=>i.featured).map((item: any) => (
                     <ShopItemCard key={item.id} item={item} owned={owned.has(item.id)} onBuy={() => setCart(item)} featured />
                   ))}
                 </div>
@@ -1924,7 +1937,7 @@ function MarketScreen({ user }) {
             )}
             <div style={{ fontSize:14, fontWeight:700, color:TX, marginBottom:10 }}>All Items</div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-              {shopItems.filter(i=>!i.featured).map(item => (
+              {shopItems.filter(i=>!i.featured).map((item: any) => (
                 <ShopItemCard key={item.id} item={item} owned={owned.has(item.id)} onBuy={() => setCart(item)} />
               ))}
             </div>
@@ -1953,13 +1966,13 @@ function MarketScreen({ user }) {
             </button>
 
             {/* Player marketplace listings */}
-            {marketplaceListings.filter(l => l.seller !== (ctx?.sharedUser?.name || "")).length > 0 && (
+            {marketplaceListings.filter((l: any) => l.seller !== (ctx?.sharedUser?.name || "")).length > 0 && (
               <>
                 <div style={{ fontSize:14, fontWeight:700, color:TA, marginBottom:10, display:"flex", alignItems:"center", gap:6 }}>
                   <span>🏷️</span> Player Marketplace
                 </div>
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
-                  {marketplaceListings.filter(l => l.seller !== (ctx?.sharedUser?.name || "")).map(item => (
+                  {marketplaceListings.filter((l: any) => l.seller !== (ctx?.sharedUser?.name || "")).map((item: any) => (
                     <MarketplaceListingCard key={item._inventoryId || item.id} item={item} onBuy={() => setCart(item)} />
                   ))}
                 </div>
@@ -1969,11 +1982,11 @@ function MarketScreen({ user }) {
             {/* Community designs */}
             <div style={{ fontSize:14, fontWeight:700, color:TX, marginBottom:10 }}>👗 Style Challenge Winners</div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-              {[...COMMUNITY_ITEMS, ...allShopItems.filter(i => i.designer && i.active !== false)].filter(i => !search || i.name.toLowerCase().includes(search.toLowerCase())).map(item => (
+              {[...COMMUNITY_ITEMS, ...allShopItems.filter((i: any) => i.designer && i.active !== false)].filter((i: any) => !search || i.name.toLowerCase().includes(search.toLowerCase())).map((item: any) => (
                 <CommunityItemCard key={item.id} item={item} owned={owned.has(item.id)} onBuy={() => setCart({ ...item, price: item.price || item.priceAE || 200 })} />
               ))}
             </div>
-            {[...COMMUNITY_ITEMS, ...allShopItems.filter(i => i.designer && i.active !== false)].length === 0 && marketplaceListings.length === 0 && (
+            {[...COMMUNITY_ITEMS, ...allShopItems.filter((i: any) => i.designer && i.active !== false)].length === 0 && marketplaceListings.length === 0 && (
               <div style={{ padding:"60px 20px", textAlign:"center", color:TM }}>
                 <div style={{ fontSize:40, marginBottom:12 }}>👗</div>
                 <div style={{ fontSize:15, fontWeight:700, color:TX, marginBottom:6 }}>No community designs yet</div>
@@ -1996,7 +2009,7 @@ function MarketScreen({ user }) {
                 🏷️ Sell items you own on the marketplace! Set your own price and other players can buy them.
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-                {inventory.map(item => {
+                {inventory.map((item: any) => {
                   const isListed = ctx?.listedItems?.has(item.id);
                   const listingPrice = ctx?.listingPrices?.[item.id];
                   return (
@@ -2089,7 +2102,7 @@ function MarketScreen({ user }) {
 }
 
 // Marketplace listing card for community tab
-function MarketplaceListingCard({ item, onBuy }) {
+function MarketplaceListingCard({ item, onBuy }: any) {
   const rc = RARITY_COLOR[item.rarity] || TM;
   return (
     <div style={{ background:S1, border:`1px solid ${TA}30`, borderRadius:16, overflow:"hidden" }}>
@@ -2105,7 +2118,7 @@ function MarketplaceListingCard({ item, onBuy }) {
   );
 }
 
-function SpritePreview({ src, size=48 }) {
+function SpritePreview({ src, size=48 }: any) {
   const canvasRef = useRef(null);
   useEffect(() => {
     if (!src || !canvasRef.current) return;
@@ -2125,7 +2138,7 @@ function SpritePreview({ src, size=48 }) {
   return <canvas ref={canvasRef} width={size} height={size} style={{ imageRendering:"pixelated", width:size, height:size }} />;
 }
 
-function ShopItemCard({ item, owned, onBuy, featured, forceOwned }) {
+function ShopItemCard({ item, owned, onBuy, featured, forceOwned }: any) {
   const isOwned = owned || forceOwned;
   const rc = RARITY_COLOR[item.rarity];
   const RARITY_LABEL = { common:"Common", uncommon:"Uncommon", rare:"Rare", epic:"Epic", legendary:"Legendary" };
@@ -2158,7 +2171,7 @@ function ShopItemCard({ item, owned, onBuy, featured, forceOwned }) {
   );
 }
 
-function CommunityItemCard({ item, owned, onBuy }) {
+function CommunityItemCard({ item, owned, onBuy }: any) {
   return (
     <div style={{ background:S1, border:`1px solid ${TL}30`, borderRadius:16, overflow:"hidden" }}>
       <div style={{ height:3, background:TL }} />
@@ -2180,7 +2193,7 @@ function CommunityItemCard({ item, owned, onBuy }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // CLAN SCREEN
 // ═══════════════════════════════════════════════════════════════════════════════
-function ClanScreen({ userOverride, onBack }) {
+function ClanScreen({ userOverride, onBack }: ClanScreenProps) {
   const user = userOverride || CL_USER;
   const canCreate = user.level >= 5;
   const inClan = !!user.clan;
@@ -2188,9 +2201,9 @@ function ClanScreen({ userOverride, onBack }) {
   return <ClanHub user={user} onBack={onBack} />;
 }
 
-const SUGGESTED_CLANS = [];
+const SUGGESTED_CLANS: any[] = [];
 
-function NoClanScreen({ user, canCreate, onBack }) {
+function NoClanScreen({ user, canCreate, onBack }: NoClanScreenProps) {
   const ctx = useContext(AppContext);
   const [joinQuery, setJoinQuery] = useState("");
   const lvlToGo = Math.max(0, 5 - user.level);
@@ -2215,7 +2228,7 @@ function NoClanScreen({ user, canCreate, onBack }) {
           </div>
           <div style={{ fontSize:11, fontWeight:700, color:TM, marginBottom:10, textTransform:"uppercase", letterSpacing:"0.5px" }}>Suggested</div>
           <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-            {SUGGESTED_CLANS.map(c => (
+            {SUGGESTED_CLANS.map((c: any) => (
               <div key={c.name} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", background:"rgba(255,255,255,0.03)", border:`1px solid ${BR}`, borderRadius:12 }}>
                 <div style={{ width:40, height:40, borderRadius:10, background:`${c.color}20`, border:`1px solid ${c.color}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:800, color:c.color, fontFamily:MONO, flexShrink:0 }}>{c.tag}</div>
                 <div style={{ flex:1 }}>
@@ -2288,9 +2301,9 @@ function NoClanScreen({ user, canCreate, onBack }) {
   );
 }
 
-function ClanHub({ user, onBack }) {
+function ClanHub({ user, onBack }: ClanHubProps) {
   const ctx = useContext(AppContext);
-  const clan = user.clan;
+  const clan = user.clan!;
   const isLeader = clan.memberRole === "Leader";
   const isOfficer = isLeader || clan.memberRole === "Officer";
   const [cTab, setCTab] = useState("overview");
@@ -2343,7 +2356,7 @@ function ClanHub({ user, onBack }) {
 
         {/* Tab bar */}
         <div style={{ display:"flex", borderTop:`1px solid ${BR}`, overflowX:"auto" }}>
-          {CLAN_TABS.map(t => (
+          {CLAN_TABS.map((t: any) => (
             <button key={t.id} onClick={() => setCTab(t.id)} style={{
               flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3,
               padding:"10px 4px 0", background:"none", border:"none", fontFamily:FONT, minWidth:52,
@@ -2386,7 +2399,7 @@ function ClanHub({ user, onBack }) {
   );
 }
 
-function OverviewTab({ clan, isLeader }) {
+function OverviewTab({ clan, isLeader }: any) {
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
       {/* Stats grid */}
@@ -2396,7 +2409,7 @@ function OverviewTab({ clan, isLeader }) {
           { val:clan.zonesHeld,             lbl:"Zones",   icon:"◈" },
           { val:`${clan.cpr}`,              lbl:"CPR",     icon:"⚡" },
           { val:`${(clan.treasury/1000).toFixed(1)}k`, lbl:"AE", icon:"◎" },
-        ].map(s => (
+        ].map((s: any) => (
           <div key={s.lbl} style={{ background:S1, border:`1px solid ${BR}`, borderRadius:14, padding:"12px 8px", display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <span style={{ fontSize:16 }}>{s.icon}</span>
             <span style={{ fontSize:16, fontWeight:800, color:TX, fontFamily:MONO }}>{s.val}</span>
@@ -2418,7 +2431,7 @@ function OverviewTab({ clan, isLeader }) {
       {/* Leaderboard */}
       <Card>
         <div style={{ fontSize:14, fontWeight:700, color:TX, marginBottom:12 }}>Campus Leaderboard</div>
-        {ENEMY_CLANS.map(ec => (
+        {ENEMY_CLANS.map((ec: any) => (
           <div key={ec.name} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", background: ec.isUs ? `${clan.color}0A` : "rgba(255,255,255,0.02)", border:`1px solid ${ec.isUs ? `${clan.color}30` : BR}`, borderRadius:12, marginBottom:6 }}>
             <span style={{ fontSize:13, fontWeight:800, color: ec.rank<=2 ? TA : TM, fontFamily:MONO, width:22 }}>#{ec.rank}</span>
             <div style={{ width:36, height:36, borderRadius:10, background:`${ec.color}20`, border:`1px solid ${ec.color}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:800, color:ec.color, fontFamily:MONO }}>{ec.tag}</div>
@@ -2435,7 +2448,7 @@ function OverviewTab({ clan, isLeader }) {
         <Card>
           <div style={{ fontSize:14, fontWeight:700, color:TX, marginBottom:12 }}>⚙️ Leader Controls</div>
           <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-            {["✏️ Edit Clan Info", "📢 Post Announcement"].map(l => (
+            {["✏️ Edit Clan Info", "📢 Post Announcement"].map((l: any) => (
               <button key={l} style={{ padding:"11px 16px", background:"rgba(255,255,255,0.03)", border:`1px solid ${BR}`, borderRadius:12, color:TM, fontSize:13, fontWeight:600, fontFamily:FONT, textAlign:"left" }}>{l}</button>
             ))}
             <button style={{ padding:"11px 16px", background:"rgba(239,68,68,0.06)", border:`1px solid rgba(239,68,68,0.3)`, borderRadius:12, color:TR, fontSize:13, fontWeight:600, fontFamily:FONT, textAlign:"left" }}>🚪 Disband Clan</button>
@@ -2446,7 +2459,7 @@ function OverviewTab({ clan, isLeader }) {
   );
 }
 
-function MembersTab({ clan, isLeader, isOfficer }) {
+function MembersTab({ clan, isLeader, isOfficer }: any) {
   const [sort, setSort] = useState("xp");
   const sorted = [...MEMBERS].sort((a,b) => sort==="xp" ? b.xp-a.xp : sort==="level" ? b.level-a.level : b.zones-a.zones);
   const statusColor = { online:TG, away:TA, offline:TD };
@@ -2463,12 +2476,12 @@ function MembersTab({ clan, isLeader, isOfficer }) {
 
       <div style={{ display:"flex", alignItems:"center", gap:8 }}>
         <span style={{ fontSize:11, color:TM, fontWeight:700 }}>Sort:</span>
-        {[["xp","XP"],["level","Level"],["zones","Zones"]].map(([k,l]) => (
+        {[["xp","XP"],["level","Level"],["zones","Zones"]].map((k: any, l: any) => (
           <button key={k} onClick={() => setSort(k)} style={{ padding:"5px 12px", background: sort===k ? `${TG}15` : "rgba(255,255,255,0.03)", border:`1px solid ${sort===k ? `${TG}50` : BR}`, borderRadius:99, fontSize:11, fontWeight:600, color: sort===k ? TG : TM, fontFamily:FONT }}>{l}</button>
         ))}
       </div>
 
-      {sorted.map((m, i) => (
+      {sorted.map((m: any, i: number) => (
         <div key={m.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", background: m.isMe ? `${TG}05` : S1, border:`1px solid ${m.isMe ? `${TG}30` : BR}`, borderRadius:16 }}>
           <span style={{ fontSize:12, fontWeight:800, color: i<3 ? TA : TM, fontFamily:MONO, width:22, textAlign:"center" }}>#{i+1}</span>
           <div style={{ position:"relative", flexShrink:0 }}>
@@ -2507,9 +2520,9 @@ function MembersTab({ clan, isLeader, isOfficer }) {
   );
 }
 
-function ZonesTab({ clan, isLeader, isOfficer }) {
-  const [selectedZone, setSelectedZone] = useState(null);
-  const totalIncome = ZONES.reduce((s, z) => s + z.income, 0);
+function ZonesTab({ clan, isLeader, isOfficer }: any) {
+  const [selectedZone, setSelectedZone] = useState<any>(null);
+  const totalIncome = ZONES.reduce((s: any, z: number) => s + z.income, 0);
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
@@ -2524,7 +2537,7 @@ function ZonesTab({ clan, isLeader, isOfficer }) {
         <button style={{ padding:"10px 16px", background:`linear-gradient(135deg, ${T}, ${TG})`, border:"none", borderRadius:12, color:"#fff", fontSize:13, fontWeight:700 }}>Attack Zone</button>
       </div>
 
-      {ZONES.map(z => (
+      {ZONES.map((z: any) => (
         <div key={z.id} onClick={() => setSelectedZone(selectedZone?.id===z.id ? null : z)} style={{
           background:S1, border:`1px solid ${z.contested ? "rgba(239,68,68,0.4)" : BR}`, borderRadius:16, padding:14, cursor:"pointer", position:"relative", overflow:"hidden",
           animation: z.contested ? "contestPulse 2.5s ease-in-out infinite" : "none",
@@ -2558,7 +2571,7 @@ function ZonesTab({ clan, isLeader, isOfficer }) {
           </div>
           {selectedZone?.id===z.id && (
             <div style={{ display:"flex", gap:8, marginTop:12, paddingTop:10, borderTop:`1px solid ${BR}`, flexWrap:"wrap" }}>
-              {["🛡️ Reinforce (+10 AE)", "⬆️ Upgrade Zone", ...(z.contested ? ["⚔️ Defend Now!"] : [])].map(l => (
+              {["🛡️ Reinforce (+10 AE)", "⬆️ Upgrade Zone", ...(z.contested ? ["⚔️ Defend Now!"] : [])].map((l: any) => (
                 <button key={l} style={{ padding:"8px 12px", background: l.includes("Defend") ? `${TR}10` : "rgba(255,255,255,0.03)", border:`1px solid ${l.includes("Defend") ? `${TR}30` : BR}`, borderRadius:10, fontSize:12, fontWeight:600, color: l.includes("Defend") ? TR : TM, fontFamily:FONT }}>{l}</button>
               ))}
             </div>
@@ -2569,9 +2582,9 @@ function ZonesTab({ clan, isLeader, isOfficer }) {
   );
 }
 
-function WarTab({ clan, isLeader, isOfficer }) {
+function WarTab({ clan, isLeader, isOfficer }: WarTabProps) {
   const ctx = useContext(AppContext);
-  const [selectedZone, setSelectedZone] = useState(null);
+  const [selectedZone, setSelectedZone] = useState<any>(null);
   const [declared, setDeclared] = useState(false);
   const [defending, setDefending] = useState(new Set());
   const canDeclare = selectedZone && !clanZoneOnCooldown(selectedZone);
@@ -2597,7 +2610,7 @@ function WarTab({ clan, isLeader, isOfficer }) {
           </div>
           <span style={{ fontSize:11, color:TR, fontWeight:700 }}>{ZONES.filter(z=>z.contested).length} live</span>
         </div>
-        {ZONES.filter(z=>z.contested).map(z => (
+        {ZONES.filter(z=>z.contested).map((z: any) => (
           <div key={z.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 14px", background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.3)", borderRadius:12, marginBottom:8, animation:"contestPulse 2.5s ease-in-out infinite" }}>
             <div>
               <div style={{ fontSize:14, fontWeight:700, color:TX, marginBottom:2 }}>{z.name}</div>
@@ -2627,7 +2640,7 @@ function WarTab({ clan, isLeader, isOfficer }) {
             🛡️ Each zone has one attack slot per 24 hours. <strong style={{ color:TA }}>If another clan already attacked today, you must wait.</strong>
           </div>
           <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:14 }}>
-            {ATTACKABLE_ZONES.map(z => {
+            {ATTACKABLE_ZONES.map((z: any) => {
               const onCd = clanZoneOnCooldown(z);
               const rem = clanCooldownRemaining(z);
               const isSel = selectedZone?.id===z.id;
@@ -2678,7 +2691,7 @@ function WarTab({ clan, isLeader, isOfficer }) {
       {/* War log */}
       <Card>
         <div style={{ fontSize:14, fontWeight:700, color:TX, marginBottom:12 }}>📜 War Log</div>
-        {WAR_LOG.map(w => (
+        {WAR_LOG.map((w: any) => (
           <div key={w.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 0", borderBottom:`1px solid ${BR}` }}>
             <div style={{ width:38, height:38, borderRadius:10, background: w.result==="victory" ? `${TG}15` : w.result==="ongoing" ? `${TR}15` : "rgba(100,116,139,0.15)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
               <span style={{ fontSize:16 }}>{w.type==="attack" ? "⚔️" : "🛡️"}</span>
@@ -2700,12 +2713,12 @@ function WarTab({ clan, isLeader, isOfficer }) {
   );
 }
 
-function TreasuryTab({ clan, isLeader }) {
+function TreasuryTab({ clan, isLeader }: TreasuryTabProps) {
   const ctx = useContext(AppContext);
   const [donateAmt, setDonateAmt] = useState("");
-  const totalIncome = ZONES.reduce((s, z) => s + z.income, 0);
+  const totalIncome = ZONES.reduce((s: any, z: number) => s + z.income, 0);
   const clanData = ctx?.sharedUser?.clan || clan;
-  const treasuryBalance = clanData.treasury || TREASURY_LOG.reduce((s, t) => s + t.amount, 0);
+  const treasuryBalance = clanData.treasury || TREASURY_LOG.reduce((s: any, t: number) => s + t.amount, 0);
 
   const handleDonate = () => {
     const amt = parseInt(donateAmt);
@@ -2738,7 +2751,7 @@ function TreasuryTab({ clan, isLeader }) {
         <Card>
           <div style={{ fontSize:14, fontWeight:700, color:TX, marginBottom:12 }}>⚙️ Spend Treasury</div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-            {[["🛡️","Reinforce Zone",200],["⬆️","Upgrade Zone",800],["⚔️","War Declaration",200],["📢","Clan Broadcast",100]].map(([icon,lbl,cost]) => (
+            {[["🛡️","Reinforce Zone",200],["⬆️","Upgrade Zone",800],["⚔️","War Declaration",200],["📢","Clan Broadcast",100]].map((icon: any, lbl: any, cost: any) => (
               <button key={lbl} style={{ display:"flex", flexDirection:"column", alignItems:"flex-start", gap:4, padding:"12px", background:"rgba(255,255,255,0.03)", border:`1px solid ${BR}`, borderRadius:12, fontFamily:FONT }}>
                 <span style={{ fontSize:20 }}>{icon}</span>
                 <span style={{ fontSize:12, fontWeight:700, color:TX }}>{lbl}</span>
@@ -2751,7 +2764,7 @@ function TreasuryTab({ clan, isLeader }) {
 
       <Card>
         <div style={{ fontSize:14, fontWeight:700, color:TX, marginBottom:12 }}>📋 Transactions</div>
-        {TREASURY_LOG.map(t => (
+        {TREASURY_LOG.map((t: any) => (
           <div key={t.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 0", borderBottom:`1px solid ${BR}` }}>
             <div style={{ width:8, height:8, borderRadius:"50%", background: t.type==="income" ? TG : TR, flexShrink:0 }} />
             <div style={{ flex:1 }}>
@@ -2801,7 +2814,7 @@ const ADM_FONT = "'IBM Plex Sans',system-ui,sans-serif";
 const ADM_MONO = "'IBM Plex Mono',monospace";
 
 // ─── STYLES ────────────────────────────────────────────────────────────────────
-const AA = {
+const AA: Record<string, any> = {
   // ── LOGIN ──
   loginRoot: { position:"relative", minHeight:"100dvh", background:ADM_BG, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:ADM_FONT, overflow:"hidden" },
   loginBg:   { position:"fixed", inset:0, background:`radial-gradient(ellipse 60% 60% at 50% 0%, rgba(0,212,168,0.05), transparent 60%), ${ADM_BG}` },
@@ -3114,7 +3127,7 @@ function AdminGlobalStyles() {
 }
 
 // ─── ADMIN HELPER COMPONENTS ───────────────────────────────────────────────────
-function AdminSectionTitle({ title, sub }) {
+function AdminSectionTitle({ title, sub }: AdminSectionTitleProps) {
   return (
     <div style={AA.sectionTitle}>
       <div style={AA.sectionTitleTxt}>{title}</div>
@@ -3125,7 +3138,7 @@ function AdminSectionTitle({ title, sub }) {
 // Alias for backward compat
 const SectionTitle = AdminSectionTitle;
 
-function KpiCard({ label, val, delta, color }) {
+function KpiCard({ label, val, delta, color }: KpiCardProps) {
   return (
     <div style={AA.kpiCard}>
       <div style={{ ...AA.kpiVal, color }}>{val}</div>
@@ -3135,12 +3148,12 @@ function KpiCard({ label, val, delta, color }) {
   );
 }
 
-function StatusPill({ status }) {
-  const map = { active:C.teal, flagged:C.red, warned:C.amber, inactive:C.dim, pending:C.amber, reviewing:C.amber, resolved:C.teal };
+function StatusPill({ status }: StatusPillProps) {
+  const map: Record<string, string> = { active:C.teal, flagged:C.red, warned:C.amber, inactive:C.dim, pending:C.amber, reviewing:C.amber, resolved:C.teal };
   return <span style={{ ...AA.statusPillEl, color:map[status]||C.dim, borderColor:(map[status]||C.dim)+"44" }}>{status}</span>;
 }
 
-function StrengthBar({ val }) {
+function StrengthBar({ val }: StrengthBarProps) {
   const c = val > 70 ? C.teal : val > 40 ? C.amber : C.red;
   return (
     <div style={{ width:80 }}>
@@ -3152,19 +3165,19 @@ function StrengthBar({ val }) {
   );
 }
 
-function AdminTable({ cols, rows }) {
+function AdminTable({ cols, rows }: AdminTableProps) {
   return (
     <div style={AA.tableWrap}>
       <table style={AA.table}>
         <thead>
           <tr>
-            {cols.map(c => <th key={c} style={AA.th}>{c}</th>)}
+            {cols.map((c: any) => <th key={c} style={AA.th}>{c}</th>)}
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, i) => (
+          {rows.map((row: any, i: number) => (
             <tr key={i} style={AA.tr}>
-              {row.map((cell, j) => <td key={j} style={AA.td}>{cell}</td>)}
+              {row.map((cell: any, j: number) => <td key={j} style={AA.td}>{cell}</td>)}
             </tr>
           ))}
         </tbody>
@@ -3176,10 +3189,10 @@ function AdminTable({ cols, rows }) {
 const Table = AdminTable;
 
 // ─── CHART COMPONENTS ──────────────────────────────────────────────────────────
-function MiniLineChart({ data, color, min, max, label }) {
+function MiniLineChart({ data, color, min, max, label }: MiniLineChartProps) {
   const h = 80, w = 400, pad = 10;
   const lo = min ?? Math.min(...data), hi = max ?? Math.max(...data);
-  const pts = data.map((v, i) => {
+  const pts = data.map((v: any, i: number) => {
     const x = pad + (i / (data.length - 1)) * (w - pad * 2);
     const y = h - pad - ((v - lo) / (hi - lo || 1)) * (h - pad * 2);
     return `${x},${y}`;
@@ -3199,11 +3212,11 @@ function MiniLineChart({ data, color, min, max, label }) {
   );
 }
 
-function DualLineChart({ data1, data2, color1, color2 }) {
+function DualLineChart({ data1, data2, color1, color2 }: DualLineChartProps) {
   const h = 80, w = 400, pad = 10;
   const allVals = [...data1, ...data2];
   const lo = Math.min(...allVals), hi = Math.max(...allVals);
-  const pts = (data) => data.map((v, i) => {
+  const pts = (data) => data.map((v: any, i: number) => {
     const x = pad + (i / (data.length - 1)) * (w - pad * 2);
     const y = h - pad - ((v - lo) / (hi - lo || 1)) * (h - pad * 2);
     return `${x},${y}`;
@@ -3228,16 +3241,16 @@ function DualLineChart({ data1, data2, color1, color2 }) {
   );
 }
 
-function polarToCartesian(cx, cy, r, deg) {
+function polarToCartesian(cx: number, cy: number, r: number, deg: number) {
   const rad = (deg * Math.PI) / 180;
   return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
 }
 
-function DonutChart({ segments }) {
-  const total = segments.reduce((s, seg) => s + seg.val, 0);
+function DonutChart({ segments }: DonutChartProps) {
+  const total = segments.reduce((s: any, seg: number) => s + seg.val, 0);
   let acc = -90;
   const r = 60, cx = 90, cy = 90;
-  const slices = segments.map(seg => {
+  const slices = segments.map((seg: any) => {
     const angle = (seg.val / total) * 360;
     const start = acc;
     acc += angle;
@@ -3249,13 +3262,13 @@ function DonutChart({ segments }) {
   return (
     <div style={{ display:"flex", alignItems:"center", gap:16 }}>
       <svg width={180} height={180} viewBox="0 0 180 180">
-        {slices.map((sl,i) => <path key={i} d={sl.d} fill={sl.color} opacity={0.85} />)}
+        {slices.map((sl: any, i: number) => <path key={i} d={sl.d} fill={sl.color} opacity={0.85} />)}
         <circle cx={cx} cy={cy} r={38} fill="#0A0F1C" />
         <text x={cx} y={cy-5} textAnchor="middle" fill={ADM_TX} fontSize={11} fontWeight={800}>{total}%</text>
         <text x={cx} y={cy+12} textAnchor="middle" fill={C.dim} fontSize={9}>total</text>
       </svg>
       <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-        {segments.map(s => (
+        {segments.map((s: any) => (
           <div key={s.label} style={{ display:"flex", alignItems:"center", gap:7 }}>
             <div style={{ width:8, height:8, borderRadius:2, background:s.color, flexShrink:0 }} />
             <span style={{ fontSize:11, color:C.dim }}>{s.label}</span>
@@ -3267,11 +3280,11 @@ function DonutChart({ segments }) {
   );
 }
 
-function BarChart({ data }) {
-  const max = Math.max(...data.map(d => d.val));
+function BarChart({ data }: any) {
+  const max = Math.max(...data.map((d: any) => d.val));
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:8, marginTop:8 }}>
-      {data.map(d => (
+      {data.map((d: any) => (
         <div key={d.label} style={{ display:"flex", alignItems:"center", gap:10 }}>
           <span style={{ fontSize:11, color:C.dim, width:80, flexShrink:0 }}>{d.label}</span>
           <div style={{ flex:1, height:6, background:"#1A2438", borderRadius:99, overflow:"hidden" }}>
@@ -3291,7 +3304,7 @@ const DEMO_CREDS = [
   { user:"mod@campus.ac.uk",        pass:"CE_MOD_2026",    role:"moderator"  },
 ];
 
-function AdminRoot({ onExitAdmin }) {
+function AdminRoot({ onExitAdmin }: any) {
   const [authed, setAuthed]   = useState(false);
   const [role,   setRole]     = useState(null);
   const handleLogout = () => { setAuthed(false); setRole(null); if (onExitAdmin) onExitAdmin(); };
@@ -3300,7 +3313,7 @@ function AdminRoot({ onExitAdmin }) {
     : <AdminLogin onAuth={(r) => { setRole(r); setAuthed(true); }} onCancel={onExitAdmin} />;
 }
 
-function AdminLogin({ onAuth, onCancel }) {
+function AdminLogin({ onAuth, onCancel }: any) {
   const [email, setEmail]   = useState("");
   const [pass,  setPass]    = useState("");
   const [err,   setErr]     = useState("");
@@ -3313,7 +3326,7 @@ function AdminLogin({ onAuth, onCancel }) {
   }, []);
 
   const attempt = () => {
-    const match = DEMO_CREDS.find(c => c.user === email && c.pass === pass);
+    const match = DEMO_CREDS.find((c: any) => c.user === email && c.pass === pass);
     if (match) {
       onAuth(match.role);
     } else {
@@ -3401,7 +3414,7 @@ const SECTIONS = [
   { id:"config",      icon:"⚙️", label:"Config",        roles:["admin"] },
 ];
 
-function AdminDashboard({ role, onLogout }) {
+function AdminDashboard({ role, onLogout }: any) {
   const [section, setSection] = useState("overview");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [time, setTime] = useState(new Date());
@@ -3411,8 +3424,8 @@ function AdminDashboard({ role, onLogout }) {
     return () => clearInterval(t);
   }, []);
 
-  const visibleSections = SECTIONS.filter(s => s.roles.includes(role));
-  const current = visibleSections.find(s => s.id === section) || visibleSections[0];
+  const visibleSections = SECTIONS.filter((s: any) => s.roles.includes(role));
+  const current = visibleSections.find((s: any) => s.id === section) || visibleSections[0];
 
   return (
     <>
@@ -3442,7 +3455,7 @@ function AdminDashboard({ role, onLogout }) {
           )}
 
           <nav style={AA.sidebarNav}>
-            {visibleSections.map(s => (
+            {visibleSections.map((s: any) => (
               <button key={s.id} style={{ ...AA.navItem, ...(section === s.id ? AA.navItemOn : {}) }} onClick={() => setSection(s.id)} title={s.label}>
                 <span style={AA.navIcon}>{s.icon}</span>
                 {sidebarOpen && <span style={AA.navLabel}>{s.label}</span>}
@@ -3497,7 +3510,7 @@ function AdminDashboard({ role, onLogout }) {
 
 function LiveBadge() {
   const [pulse, setPulse] = useState(true);
-  useEffect(() => { const t = setInterval(() => setPulse(p => !p), 1200); return () => clearInterval(t); }, []);
+  useEffect(() => { const t = setInterval(() => setPulse((p: any) => !p), 1200); return () => clearInterval(t); }, []);
   return (
     <div style={AA.liveBadge}>
       <div style={{ ...AA.liveDot, opacity: pulse ? 1 : 0.3 }} />
@@ -3519,7 +3532,7 @@ function OverviewSection() {
           { label:"AE in Circulation",  val:"2.4M",   delta:"+48K today",  color:C.amber, icon:"◎" },
           { label:"Missions Today",     val:"892",    delta:"+12% vs avg", color:C.teal,  icon:"🎯" },
           { label:"Crisis Flags",       val:"2",      delta:"⚠ Review now",color:C.red,   icon:"💚" },
-        ].map(k => <KpiCard key={k.label} {...k} />)}
+        ].map((k: any) => <KpiCard key={k.label} {...k} />)}
       </div>
       <div style={AA.chartsRow}>
         <div style={{ ...AA.chartCard, flex:2 }}>
@@ -3548,7 +3561,7 @@ function OverviewSection() {
               { svc:"Push (FCM)",        status:"warn", ms:210  },
               { svc:"Health API",        status:"ok",   ms:89   },
               { svc:"Media CDN",         status:"ok",   ms:31   },
-            ].map(h => (
+            ].map((h: any) => (
               <div key={h.svc} style={AA.healthRow2}>
                 <div style={{ ...AA.statusPip, background: h.status === "ok" ? C.teal : C.amber }} />
                 <span style={AA.healthSvc}>{h.svc}</span>
@@ -3579,7 +3592,7 @@ function ActivityFeed() {
   ];
   return (
     <div style={AA.feedList}>
-      {events.map((e,i) => (
+      {events.map((e: any, i: number) => (
         <div key={i} style={{ ...AA.feedRow, ...(e.flag ? AA.feedRowAlert : {}) }}>
           <span style={AA.feedTime}>{e.t}</span>
           <div style={{ ...AA.feedDot, background:e.color }} />
@@ -3592,26 +3605,26 @@ function ActivityFeed() {
 }
 
 // ─── PLAYERS SECTION ───────────────────────────────────────────────────────────
-const MOCK_PLAYERS = [];
+const MOCK_PLAYERS: any[] = [];
 
 function PlayersSection() {
   const ctx = useContext(AppContext);
   const [players,  setPlayers]  = useState(MOCK_PLAYERS);
   const [search,   setSearch]   = useState("");
   const [filter,   setFilter]   = useState("all");
-  const [selected, setSelected] = useState(null);
-  const [confirmBan, setConfirmBan] = useState(null);
+  const [selected, setSelected] = useState<any>(null);
+  const [confirmBan, setConfirmBan] = useState<any>(null);
 
-  const filtered = players.filter(p => {
+  const filtered = players.filter((p: any) => {
     const q = search.toLowerCase();
     const matchQ = !q || p.name.toLowerCase().includes(q) || String(p.id).includes(q);
     const matchF = filter === "all" || (filter === "flagged" && p.flag) || (filter === "inactive" && p.status === "inactive");
     return matchQ && matchF;
   });
 
-  const banPlayer = (id) => { setPlayers(ps => ps.map(p => p.id === id ? { ...p, status:"banned", flag:false } : p)); setConfirmBan(null); setSelected(null); };
-  const warnPlayer = (id) => { setPlayers(ps => ps.map(p => p.id === id ? { ...p, status:"warned" } : p)); setSelected(null); };
-  const unflagPlayer = (id) => { setPlayers(ps => ps.map(p => p.id === id ? { ...p, flag:false, status:"active" } : p)); };
+  const banPlayer = (id) => { setPlayers((ps: any) => ps.map((p: any) => p.id === id ? { ...p, status:"banned", flag:false } : p)); setConfirmBan(null); setSelected(null); };
+  const warnPlayer = (id) => { setPlayers((ps: any) => ps.map((p: any) => p.id === id ? { ...p, status:"warned" } : p)); setSelected(null); };
+  const unflagPlayer = (id) => { setPlayers((ps: any) => ps.map((p: any) => p.id === id ? { ...p, flag:false, status:"active" } : p)); };
 
   return (
     <div style={AA.secWrap}>
@@ -3619,13 +3632,13 @@ function PlayersSection() {
       <div style={AA.toolBar}>
         <input style={AA.searchInput} placeholder="Search name or ID..." value={search} onChange={e=>setSearch(e.target.value)} />
         <div style={AA.filterRow}>
-          {["all","flagged","inactive"].map(f => (
+          {["all","flagged","inactive"].map((f: any) => (
             <button key={f} style={{ ...AA.filterBtn, ...(filter===f?AA.filterBtnOn:{}) }} onClick={() => setFilter(f)}>{f.toUpperCase()}</button>
           ))}
         </div>
         <button style={AA.exportBtn}>↓ Export CSV</button>
       </div>
-      <Table cols={["ID","Name","Level","XP","AE","Streak","Clan","Status","Actions"]} rows={filtered.map(p => [
+      <Table cols={["ID","Name","Level","XP","AE","Streak","Clan","Status","Actions"]} rows={filtered.map((p: any) => [
         <span style={AA.monoSm}>#{p.id}</span>,
         <span style={AA.playerName}>{p.name}</span>,
         <span style={{ ...AA.mono, color:C.teal }}>Lv {p.level}</span>,
@@ -3658,7 +3671,7 @@ function PlayersSection() {
   );
 }
 
-function PlayerModal({ player, onClose, onWarn, onBan }) {
+function PlayerModal({ player, onClose, onWarn, onBan }: PlayerModalProps) {
   const ctx = useContext(AppContext);
   return (
     <div style={AA.modalOverlay} onClick={onClose}>
@@ -3671,7 +3684,7 @@ function PlayerModal({ player, onClose, onWarn, onBan }) {
           <button style={AA.modalClose} onClick={onClose}>✕</button>
         </div>
         <div style={AA.modalGrid}>
-          {[["Level",`Lv ${player.level}`],["XP",player.xp.toLocaleString()],["AE Balance",player.ae.toLocaleString()],["Streak",`${player.streak} days`],["Clan",player.clan||"None"],["Status",player.status]].map(([k,v]) => (
+          {[["Level",`Lv ${player.level}`],["XP",player.xp.toLocaleString()],["AE Balance",player.ae.toLocaleString()],["Streak",`${player.streak} days`],["Clan",player.clan||"None"],["Status",player.status]].map((k: any, v: any) => (
             <div key={k} style={AA.modalStat}><div style={AA.modalStatLbl}>{k}</div><div style={AA.modalStatVal}>{v}</div></div>
           ))}
         </div>
@@ -3703,13 +3716,13 @@ const CRISIS_FLAGS = [
 
 function WellbeingSection() {
   const [crisisFlags, setCrisisFlags] = useState(CRISIS_FLAGS);
-  const resolve = (id) => setCrisisFlags(fs => fs.map(f => f.id === id ? { ...f, resolved:true } : f));
+  const resolve = (id) => setCrisisFlags(fs => fs.map((f: any) => f.id === id ? { ...f, resolved:true } : f));
   return (
     <div style={AA.secWrap}>
       <SectionTitle title="Wellbeing Dashboard" sub="All data anonymised — no user identification without outreach consent" />
       <div style={AA.crisisBox}>
         <div style={AA.crisisHdr}><span style={AA.crisisTitle}>⚠ CRISIS FLAGS — Immediate Review Required</span><span style={AA.crisisCount}>{crisisFlags.filter(f=>!f.resolved).length} unresolved</span></div>
-        {crisisFlags.map(f => (
+        {crisisFlags.map((f: any) => (
           <div key={f.id} style={{ ...AA.crisisRow, ...(f.resolved ? AA.crisisRowResolved : {}) }}>
             <div style={AA.crisisLeft}>
               <div style={{ ...AA.crisisAnon, ...(f.resolved ? { color:C.dim } : {}) }}>{f.anon}</div>
@@ -3731,7 +3744,7 @@ function WellbeingSection() {
       <div style={AA.chartsRow}>
         <div style={{ ...AA.chartCard, flex:1 }}>
           <div style={AA.chartTitle}>Today's Mood Distribution (284 check-ins)</div>
-          <div style={AA.moodBars}>{MOOD_DIST.map(m => (<div key={m.label} style={AA.moodBar}><div style={AA.moodBarLbl}>{m.label}</div><div style={AA.moodBarTrack}><div style={{ ...AA.moodBarFill, width:`${m.pct}%`, background:m.color }} /></div><div style={{ ...AA.mono, fontSize:11, color:m.color, width:40 }}>{m.count}</div></div>))}</div>
+          <div style={AA.moodBars}>{MOOD_DIST.map((m: any) => (<div key={m.label} style={AA.moodBar}><div style={AA.moodBarLbl}>{m.label}</div><div style={AA.moodBarTrack}><div style={{ ...AA.moodBarFill, width:`${m.pct}%`, background:m.color }} /></div><div style={{ ...AA.mono, fontSize:11, color:m.color, width:40 }}>{m.count}</div></div>))}</div>
         </div>
         <div style={{ ...AA.chartCard, flex:1 }}>
           <div style={AA.chartTitle}>7-Day Mood Trend</div>
@@ -3745,7 +3758,7 @@ function WellbeingSection() {
 }
 
 // ─── ZONES SECTION ─────────────────────────────────────────────────────────────
-const ADMIN_GAME_RULES = { ZONE_ATTACK_COOLDOWN_HOURS:24, ZONE_CAPTURE_MINS_STANDARD:3, ZONE_CAPTURE_MINS_LANDMARK:5, CLAN_CREATE_MIN_LEVEL:5, CLAN_MAX_MEMBERS:20, CLAN_CREATE_COST_AE:500, WAR_DECLARE_COST_AE:200, COMBAT_OPPONENT_COOLDOWN_HOURS:4, COMBAT_MAX_INCOMING:3, COMBAT_LEVEL_RANGE:5 };
+const ADMIN_GAME_RULES: Record<string, number> = { ZONE_ATTACK_COOLDOWN_HOURS:24, ZONE_CAPTURE_MINS_STANDARD:3, ZONE_CAPTURE_MINS_LANDMARK:5, CLAN_CREATE_MIN_LEVEL:5, CLAN_MAX_MEMBERS:20, CLAN_CREATE_COST_AE:500, WAR_DECLARE_COST_AE:200, COMBAT_OPPONENT_COOLDOWN_HOURS:4, COMBAT_MAX_INCOMING:3, COMBAT_LEVEL_RANGE:5 };
 
 function zoneOnCooldown(zone) {
   if (!zone.lastAttackedAt) return false;
@@ -3781,7 +3794,7 @@ function ZonesSection() {
         <div style={{ ...AA.chartCard, flex:2 }}><div style={AA.chartTitle}>Zone Income by Owner (AE/day)</div><BarChart data={[{ label:"Nocturne",val:240,color:"#A78BFA" },{ label:"IronVeil",val:160,color:"#95A5A6" },{ label:"BlazeThorn",val:60,color:C.red },{ label:"SolarEdge",val:55,color:C.amber }]} /></div>
       </div>
       <div style={AA.ruleCallout}><span style={AA.ruleCalloutIcon}>🛡️</span><div><span style={AA.ruleCalloutTitle}>Attack cooldown: </span><span style={AA.ruleCalloutBody}>Each zone can only be attacked once every {ADMIN_GAME_RULES.ZONE_ATTACK_COOLDOWN_HOURS}h.</span></div></div>
-      <Table cols={["ID","Zone","Type","Owner","Strength","Income","Tier","Status","Attack Slot","Actions"]} rows={MOCK_ZONES.map(z => { const onCd = zoneOnCooldown(z); const remaining = cooldownRemaining(z); return [
+      <Table cols={["ID","Zone","Type","Owner","Strength","Income","Tier","Status","Attack Slot","Actions"]} rows={MOCK_ZONES.map((z: any) => { const onCd = zoneOnCooldown(z); const remaining = cooldownRemaining(z); return [
         <span style={AA.monoSm}>Z{z.id}</span>,<span style={AA.playerName}>{z.name}</span>,<span style={{ color:C.dim, textTransform:"capitalize" }}>{z.type}</span>,<span style={{ color:z.owner?"#A78BFA":C.dim }}>{z.owner||"Unclaimed"}</span>,<StrengthBar val={z.strength} />,<span style={{ ...AA.mono, color:C.amber }}>+{z.income}</span>,<span style={AA.mono}>T{z.tier}</span>,<span style={{ color:z.contested?C.red:C.teal, fontSize:11, fontWeight:700 }}>{z.contested?"CONTESTED":"Active"}</span>,
         onCd ? <div><div style={AA.cdUsed}>🔒 {z.attackedTodayBy||"Attacked"}</div><div style={AA.cdTimer}>{remaining} left</div></div> : <span style={AA.cdOpen}>✓ Open</span>,
         <div style={AA.actionBtns}><button style={AA.tinyBtn} onClick={()=>setSel(z)}>Manage</button>{onCd && <button style={{ ...AA.tinyBtn, ...AA.tinyBtnAmber }}>Reset CD</button>}</div>,
@@ -3813,13 +3826,13 @@ function EconomySection() {
         { label:"Marketplace Volume",val:"38,400 AE",delta:"47 trades today",color:C.amber },
         { label:"Avg Player Balance",val:"1,940 AE",delta:"Healthy range",color:C.teal },
         { label:"Rich:Poor Ratio",val:"8.2:1",delta:"⚠ Monitor",color:C.amber },
-      ].map(k => <KpiCard key={k.label} {...k} />)}</div>
+      ].map((k: any) => <KpiCard key={k.label} {...k} />)}</div>
       <div style={AA.chartsRow}>
         <div style={{ ...AA.chartCard, flex:2 }}><div style={AA.chartTitle}>AE Supply vs Sinks — 14 Days</div><DualLineChart data1={[2100,2180,2200,2240,2280,2300,2330,2350,2370,2390,2400,2410,2415,2418]} data2={[1600,1680,1720,1780,1820,1850,1870,1900,1920,1940,1960,1970,1980,1890]} color1={C.amber} color2={C.teal} /></div>
         <div style={{ ...AA.chartCard, flex:1 }}><div style={AA.chartTitle}>AE Source Breakdown</div><DonutChart segments={[{ label:"Daily missions",val:44,color:C.teal },{ label:"Zone income",val:22,color:C.amber },{ label:"Weekly missions",val:18,color:"#A78BFA" },{ label:"Combat wins",val:10,color:C.red },{ label:"Story rewards",val:6,color:"#4DA6FF" }]} /></div>
       </div>
       <div style={AA.chartCard}><div style={AA.chartTitle}>Admin Economy Controls</div><div style={AA.ecoControls}>
-        {[{ label:"Daily mission AE multiplier",val:"1.0×" },{ label:"Shop price floor",val:"100 AE" },{ label:"Marketplace fee",val:"5%" },{ label:"Max player AE balance",val:"50,000 AE" }].map(c => (
+        {[{ label:"Daily mission AE multiplier",val:"1.0×" },{ label:"Shop price floor",val:"100 AE" },{ label:"Marketplace fee",val:"5%" },{ label:"Max player AE balance",val:"50,000 AE" }].map((c: any) => (
           <div key={c.label} style={AA.ecoControlRow}><span style={AA.ecoControlLabel}>{c.label}</span><div style={AA.ecoControlRight}><span style={{ ...AA.mono, color:C.amber }}>{c.val}</span><button style={AA.tinyBtn}>Edit</button></div></div>
         ))}
       </div></div>
@@ -3828,7 +3841,7 @@ function EconomySection() {
 }
 
 // ─── SHOP SECTION ──────────────────────────────────────────────────────────────
-const RARITY_COL = { common:C.dim, uncommon:"#27AE60", rare:"#4DA6FF", epic:"#A78BFA", legendary:"#F5A623" };
+const RARITY_COL: Record<string, string> = { common:C.dim, uncommon:"#27AE60", rare:"#4DA6FF", epic:"#A78BFA", legendary:"#F5A623" };
 const BLANK_ITEM = { name:"", cat:"headwear", priceAE:"", rarity:"common", type:"general", stock:"", soulBound:false };
 const CATS = ["headwear","eyewear","outerwear","equipment","furniture","clan","consumable","cosmetic"];
 const RARITIES = ["common","uncommon","rare","epic","legendary"];
@@ -3840,7 +3853,7 @@ function ShopSection() {
   const [form, setForm] = useState(BLANK_ITEM);
   const [filter, setFilter] = useState("all");
 
-  const filtered = filter === "all" ? items : items.filter(i => i.type === filter || (filter==="active" && i.active) || (filter==="inactive" && !i.active));
+  const filtered = filter === "all" ? items : items.filter((i: any) => i.type === filter || (filter==="active" && i.active) || (filter==="inactive" && !i.active));
 
   const toggle = (id) => { if (ctx) ctx.toggleShopItem(id); };
 
@@ -3857,10 +3870,10 @@ function ShopSection() {
     <div style={AA.secWrap}>
       <SectionTitle title="Shop Manager" sub={`${items.filter(i=>i.active).length} active · ${items.filter(i=>i.type==="limited").length} limited`} />
       <div style={AA.toolBar}>
-        <div style={AA.filterRow}>{[["all","All"],["general","General"],["limited","Limited"],["active","Active"],["inactive","Inactive"]].map(([f,l]) => (<button key={f} style={{ ...AA.filterBtn, ...(filter===f?AA.filterBtnOn:{}) }} onClick={() => setFilter(f)}>{l}</button>))}</div>
+        <div style={AA.filterRow}>{[["all","All"],["general","General"],["limited","Limited"],["active","Active"],["inactive","Inactive"]].map((f: any, l: any) => (<button key={f} style={{ ...AA.filterBtn, ...(filter===f?AA.filterBtnOn:{}) }} onClick={() => setFilter(f)}>{l}</button>))}</div>
         <button style={{ ...AA.exportBtn, marginLeft:"auto" }} onClick={() => setShowAdd(true)}>+ Add Item</button>
       </div>
-      <Table cols={["Name","Cat","Price","Rarity","Type","Stock","Sold","Status","Actions"]} rows={filtered.map(item => { const stockOut = item.type==="limited" && item.stock !== null && item.sold >= item.stock; return [
+      <Table cols={["Name","Cat","Price","Rarity","Type","Stock","Sold","Status","Actions"]} rows={filtered.map((item: any) => { const stockOut = item.type==="limited" && item.stock !== null && item.sold >= item.stock; return [
         <span style={AA.playerName}>{item.name}</span>,<span style={{ color:C.dim, textTransform:"capitalize" }}>{item.cat}</span>,<span style={{ ...AA.mono, color:C.amber }}>{item.priceAE} AE</span>,
         <span style={{ fontSize:11, fontWeight:700, color:RARITY_COL[item.rarity]||C.dim }}>{item.rarity}</span>,
         <span style={{ fontSize:11, fontWeight:700, color:item.type==="limited"?C.amber:C.teal }}>{item.type==="limited"?"🔒 Limited":"∞ General"}</span>,
@@ -3876,8 +3889,8 @@ function ShopSection() {
             <div style={{ display:"flex", flexDirection:"column", gap:12, marginTop:4 }}>
               <div style={AA.fieldWrap}><label style={AA.fieldLabel}>ITEM NAME</label><input style={AA.fieldInput} placeholder="e.g. Midnight Jacket" value={form.name} onChange={e => setForm(f=>({...f, name:e.target.value}))} /></div>
               <div style={{ display:"flex", gap:10 }}>
-                <div style={{ ...AA.fieldWrap, flex:1 }}><label style={AA.fieldLabel}>CATEGORY</label><select style={{ ...AA.fieldInput, color:ADM_TX }} value={form.cat} onChange={e => setForm(f=>({...f, cat:e.target.value}))}>{CATS.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}</select></div>
-                <div style={{ ...AA.fieldWrap, flex:1 }}><label style={AA.fieldLabel}>RARITY</label><select style={{ ...AA.fieldInput, color:ADM_TX }} value={form.rarity} onChange={e => setForm(f=>({...f, rarity:e.target.value}))}>{RARITIES.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase()+r.slice(1)}</option>)}</select></div>
+                <div style={{ ...AA.fieldWrap, flex:1 }}><label style={AA.fieldLabel}>CATEGORY</label><select style={{ ...AA.fieldInput, color:ADM_TX }} value={form.cat} onChange={e => setForm(f=>({...f, cat:e.target.value}))}>{CATS.map((c: any) => <option key={c} value={c}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}</select></div>
+                <div style={{ ...AA.fieldWrap, flex:1 }}><label style={AA.fieldLabel}>RARITY</label><select style={{ ...AA.fieldInput, color:ADM_TX }} value={form.rarity} onChange={e => setForm(f=>({...f, rarity:e.target.value}))}>{RARITIES.map((r: any) => <option key={r} value={r}>{r.charAt(0).toUpperCase()+r.slice(1)}</option>)}</select></div>
               </div>
               <div style={AA.fieldWrap}><label style={AA.fieldLabel}>PRICE (AE)</label><input style={AA.fieldInput} type="number" placeholder="e.g. 350" value={form.priceAE} onChange={e => setForm(f=>({...f, priceAE:e.target.value}))} /></div>
               <div style={{ display:"flex", gap:10, marginTop:4 }}>
@@ -3893,7 +3906,7 @@ function ShopSection() {
 }
 
 // ─── MISSIONS SECTION ──────────────────────────────────────────────────────────
-const MISSION_TEMPLATES = [
+const MISSION_TEMPLATES: any[] = [
   { id:1, title:"Morning Walk", cat:"Health", type:"steps", reward:80, xp:40, active:true, completions:47 },
   { id:2, title:"Visit the Library", cat:"Territory", type:"checkin", reward:120, xp:60, active:true, completions:23 },
   { id:3, title:"Document Campus Art", cat:"Social", type:"photo", reward:100, xp:50, active:true, completions:18 },
@@ -3906,11 +3919,11 @@ function MissionsSection() {
   const ctx = useContext(AppContext);
   const [mTab, setMTab] = useState("templates");
   const [showNew, setShowNew] = useState(false);
-  const [viewProof, setViewProof] = useState(null);
+  const [viewProof, setViewProof] = useState<any>(null);
   const [rejectNote, setRejectNote] = useState("");
   const proofs = ctx?.sharedProofs || PROOF_SUBMISSIONS;
-  const pending = proofs.filter(p => p.status === "pending" || p.status === "flagged");
-  const resolved = proofs.filter(p => p.status === "approved" || p.status === "rejected");
+  const pending = proofs.filter((p: any) => p.status === "pending" || p.status === "flagged");
+  const resolved = proofs.filter((p: any) => p.status === "approved" || p.status === "rejected");
   const missions = ctx?.sharedMissions || MISSIONS;
 
   const approve = (id) => { if (ctx) ctx.approveProof(id); setViewProof(null); };
@@ -3926,15 +3939,15 @@ function MissionsSection() {
       </div>
       {mTab === "templates" && <>
         <div style={AA.toolBar}><span style={{ color:C.dim, fontSize:12 }}>{MISSION_TEMPLATES.filter(m=>m.active).length} active · changes reflect instantly</span><button style={AA.exportBtn} onClick={() => setShowNew(true)}>+ New Mission</button></div>
-        <Table cols={["ID","Title","Category","Type","AE","XP","Completions","Status","Actions"]} rows={MISSION_TEMPLATES.map(m => { const liveM = missions.find(lm => lm.title === m.title); const isDisabled = liveM?._disabled || !m.active; return [
+        <Table cols={["ID","Title","Category","Type","AE","XP","Completions","Status","Actions"]} rows={MISSION_TEMPLATES.map((m: any) => { const liveM = missions.find((lm: any) => lm.title === m.title); const isDisabled = liveM?._disabled || !m.active; return [
           <span style={AA.monoSm}>M{m.id}</span>,<span style={AA.playerName}>{m.title}</span>,<span style={{ color:C.dim }}>{m.cat}</span>,<span style={{ color:C.teal, textTransform:"capitalize", fontSize:11 }}>{m.type}</span>,<span style={{ ...AA.mono, color:C.amber }}>{m.reward}</span>,<span style={AA.mono}>{m.xp}</span>,<span style={{ ...AA.mono, color:C.teal }}>{m.completions}</span>,
           <span style={{ color:isDisabled?C.dim:C.teal, fontSize:11, fontWeight:700 }}>{isDisabled?"OFF":"ACTIVE"}</span>,
           <div style={AA.actionBtns}><button style={AA.tinyBtn}>Edit</button><button style={{ ...AA.tinyBtn, ...(!isDisabled?AA.tinyBtnRed:AA.tinyBtnGreen) }} onClick={() => liveM && toggleTemplate(liveM.id)}>{!isDisabled?"Disable":"Enable"}</button></div>,
         ]; })} />
       </>}
       {mTab === "proof" && <>
-        {pending.length > 0 && <><div style={AA.proofQueueLabel}>⏳ Awaiting Review — {pending.length}</div>{pending.map(s => <ProofCard key={s.id} sub={s} onView={() => { setViewProof(s); setRejectNote(""); }} />)}</>}
-        {resolved.length > 0 && <><div style={{ ...AA.proofQueueLabel, color:C.dim, marginTop:16 }}>✓ Resolved — {resolved.length}</div>{resolved.map(s => <ProofCard key={s.id} sub={s} resolved />)}</>}
+        {pending.length > 0 && <><div style={AA.proofQueueLabel}>⏳ Awaiting Review — {pending.length}</div>{pending.map((s: any) => <ProofCard key={s.id} sub={s} onView={() => { setViewProof(s); setRejectNote(""); }} />)}</>}
+        {resolved.length > 0 && <><div style={{ ...AA.proofQueueLabel, color:C.dim, marginTop:16 }}>✓ Resolved — {resolved.length}</div>{resolved.map((s: any) => <ProofCard key={s.id} sub={s} resolved />)}</>}
       </>}
       {viewProof && (
         <div style={AA.modalOverlay} onClick={() => setViewProof(null)}>
@@ -3955,7 +3968,7 @@ function MissionsSection() {
   );
 }
 
-function ProofCard({ sub, resolved, onView }) {
+function ProofCard({ sub, resolved, onView }: any) {
   const statusColor = { pending:C.amber, flagged:C.red, approved:C.teal, rejected:C.dim };
   const statusLabel = { pending:"Pending", flagged:"⚠ Flagged", approved:"✓ Approved", rejected:"Rejected" };
   return (
@@ -3975,10 +3988,10 @@ function ProofCard({ sub, resolved, onView }) {
 const REWARD_TYPES = [
   { id:"ae", label:"AE (Aether)", icon:"◎" },{ id:"xp", label:"XP", icon:"⚡" },{ id:"badge", label:"Exclusive Badge", icon:"🏅" },{ id:"item", label:"Shop Item Unlock", icon:"🎁" },{ id:"title", label:"Player Title", icon:"👑" },
 ];
-const EVENT_TYPE_COLOR = { territory:C.amber, sustainability:"#27AE60", social:"#4DA6FF", wellness:"#A78BFA", combat:C.red };
+const EVENT_TYPE_COLOR: Record<string, string> = { territory:C.amber, sustainability:"#27AE60", social:"#4DA6FF", wellness:"#A78BFA", combat:C.red };
 const RECIPIENT_LABELS = { all:"All completers", top1:"1st place only", top3:"Top 3", top10:"Top 10" };
 
-const MOCK_EVENTS_ADMIN = [
+const MOCK_EVENTS_ADMIN: any[] = [
   { id:1, title:"Freshers Capture Blitz", type:"territory", status:"active", desc:"Freshers-only zone capture competition.", startDate:"Feb 20", endDate:"Feb 27", eligibility:"Level 1–5 only", participants:84, maxParticipants:200, rewardRules:[{ type:"ae",amount:500,recipients:"top1",label:"500 AE → 1st" },{ type:"badge",badgeSlug:"fresher_champion",recipients:"top3",label:"Fresher Champion badge → top 3" }], granted:false },
   { id:2, title:"Campus Clean-Up Sprint", type:"sustainability", status:"scheduled", desc:"Complete 5 litter collection missions in 48 hours.", startDate:"Mar 1", endDate:"Mar 3", eligibility:"All players", participants:0, maxParticipants:null, rewardRules:[{ type:"ae",amount:300,recipients:"all",label:"300 AE → all completers" }], granted:false },
   { id:3, title:"Valentine's Social Surge", type:"social", status:"ended", desc:"Cross-department selfie challenge.", startDate:"Feb 13", endDate:"Feb 15", eligibility:"All players", participants:142, maxParticipants:null, rewardRules:[{ type:"ae",amount:200,recipients:"top1",label:"200 AE → most submissions" }], granted:true },
@@ -3988,19 +4001,19 @@ function EventsSection() {
   const ctx = useContext(AppContext);
   const [showCreate, setShowCreate] = useState(false);
   const [adminEvents, setAdminEvents] = useState(MOCK_EVENTS_ADMIN);
-  const [grantingId, setGrantingId] = useState(null);
+  const [grantingId, setGrantingId] = useState<any>(null);
   const [form, setForm] = useState({ title:"", type:"territory", desc:"", startDate:"", endDate:"", eligibility:"All players", maxParticipants:"", rewardRules:[] });
 
-  const active = adminEvents.filter(e => e.status === "active");
-  const scheduled = adminEvents.filter(e => e.status === "scheduled");
-  const ended = adminEvents.filter(e => e.status === "ended");
+  const active = adminEvents.filter((e: any) => e.status === "active");
+  const scheduled = adminEvents.filter((e: any) => e.status === "scheduled");
+  const ended = adminEvents.filter((e: any) => e.status === "ended");
 
-  const grantEvent = (id) => { setAdminEvents(evs => evs.map(e => e.id === id ? { ...e, granted:true } : e)); setGrantingId(null); };
-  const endEventNow = (id) => { setAdminEvents(evs => evs.map(e => e.id === id ? { ...e, status:"ended" } : e)); if (ctx) ctx.endEvent(id); };
+  const grantEvent = (id) => { setAdminEvents((evs: any) => evs.map((e: any) => e.id === id ? { ...e, granted:true } : e)); setGrantingId(null); };
+  const endEventNow = (id) => { setAdminEvents((evs: any) => evs.map((e: any) => e.id === id ? { ...e, status:"ended" } : e)); if (ctx) ctx.endEvent(id); };
   const createEvent = () => {
     if (!form.title.trim()) return;
     const newEv = { id:Date.now(), ...form, status:"active", participants:0, granted:false, color:EVENT_TYPE_COLOR[form.type]||C.amber };
-    setAdminEvents(evs => [...evs, newEv]);
+    setAdminEvents((evs: any) => [...evs, newEv]);
     if (ctx) ctx.addEvent({ id:newEv.id, title:form.title, type:form.type, status:"active", desc:form.desc, endDate:form.endDate, eligibility:form.eligibility, participants:0, maxParticipants:form.maxParticipants?parseInt(form.maxParticipants):null, reward:form.rewardRules.map(r=>r.label).join(" + ")||"TBD", color:EVENT_TYPE_COLOR[form.type]||C.amber });
     setForm({ title:"", type:"territory", desc:"", startDate:"", endDate:"", eligibility:"All players", maxParticipants:"", rewardRules:[] });
     setShowCreate(false);
@@ -4011,13 +4024,13 @@ function EventsSection() {
       <SectionTitle title="Limited Time Events" sub="Create and manage timed campus-wide events" />
       <div style={AA.toolBar}>
         <div style={{ ...AA.kpiGrid, gridTemplateColumns:"repeat(3,1fr)", width:"100%" }}>
-          {[{ label:"Active now",val:active.length,color:C.teal },{ label:"Scheduled",val:scheduled.length,color:C.amber },{ label:"Ended",val:ended.length,color:C.dim }].map(k => (<div key={k.label} style={AA.kpiCard}><div style={{ ...AA.kpiVal, color:k.color }}>{k.val}</div><div style={AA.kpiLabel}>{k.label}</div></div>))}
+          {[{ label:"Active now",val:active.length,color:C.teal },{ label:"Scheduled",val:scheduled.length,color:C.amber },{ label:"Ended",val:ended.length,color:C.dim }].map((k: any) => (<div key={k.label} style={AA.kpiCard}><div style={{ ...AA.kpiVal, color:k.color }}>{k.val}</div><div style={AA.kpiLabel}>{k.label}</div></div>))}
         </div>
         <button style={{ ...AA.exportBtn, whiteSpace:"nowrap", alignSelf:"flex-start" }} onClick={() => setShowCreate(true)}>+ Create Event</button>
       </div>
-      {active.length > 0 && <><div style={AA.proofQueueLabel}>⚡ Active Now</div>{active.map(ev => <EventCard key={ev.id} ev={ev} onGrant={() => setGrantingId(ev.id)} onEnd={() => endEventNow(ev.id)} />)}</>}
-      {scheduled.length > 0 && <><div style={{ ...AA.proofQueueLabel, color:C.amber, marginTop:12 }}>📅 Scheduled</div>{scheduled.map(ev => <EventCard key={ev.id} ev={ev} onEnd={() => endEventNow(ev.id)} />)}</>}
-      {ended.length > 0 && <><div style={{ ...AA.proofQueueLabel, color:C.dim, marginTop:12 }}>✓ Ended</div>{ended.map(ev => <EventCard key={ev.id} ev={ev} dim onGrant={() => setGrantingId(ev.id)} />)}</>}
+      {active.length > 0 && <><div style={AA.proofQueueLabel}>⚡ Active Now</div>{active.map((ev: any) => <EventCard key={ev.id} ev={ev} onGrant={() => setGrantingId(ev.id)} onEnd={() => endEventNow(ev.id)} />)}</>}
+      {scheduled.length > 0 && <><div style={{ ...AA.proofQueueLabel, color:C.amber, marginTop:12 }}>📅 Scheduled</div>{scheduled.map((ev: any) => <EventCard key={ev.id} ev={ev} onEnd={() => endEventNow(ev.id)} />)}</>}
+      {ended.length > 0 && <><div style={{ ...AA.proofQueueLabel, color:C.dim, marginTop:12 }}>✓ Ended</div>{ended.map((ev: any) => <EventCard key={ev.id} ev={ev} dim onGrant={() => setGrantingId(ev.id)} />)}</>}
       {showCreate && (
         <div style={AA.modalOverlay} onClick={() => setShowCreate(false)}>
           <div style={{ ...AA.modal, maxWidth:580, maxHeight:"92vh", overflowY:"auto" }} onClick={e => e.stopPropagation()}>
@@ -4037,7 +4050,7 @@ function EventsSection() {
   );
 }
 
-function EventCard({ ev, dim, onGrant, onEnd }) {
+function EventCard({ ev, dim, onGrant, onEnd }: any) {
   const tc = EVENT_TYPE_COLOR[ev.type] || C.dim;
   return (
     <div style={{ ...AA.eventCard, ...(dim?{ opacity:0.75 }:{}), borderLeftColor:tc }}>
@@ -4045,7 +4058,7 @@ function EventCard({ ev, dim, onGrant, onEnd }) {
         <div style={AA.eventCardLeft}><span style={{ ...AA.eventTypePill, color:tc, borderColor:tc+"55" }}>{ev.type.toUpperCase()}</span><div style={AA.eventCardTitle}>{ev.title}</div><div style={AA.eventCardDesc}>{ev.desc}</div></div>
         <div style={AA.eventCardRight}><div style={{ ...AA.eventStatusDot, background:ev.status==="active"?C.teal:ev.status==="scheduled"?C.amber:C.dim }} /><span style={{ fontSize:10, color:C.dim, fontFamily:ADM_MONO, textTransform:"uppercase" }}>{ev.status}</span></div>
       </div>
-      {ev.rewardRules && <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:10 }}>{ev.rewardRules.map((r,i) => <span key={i} style={AA.rewardRuleChip}>{REWARD_TYPES.find(t=>t.id===r.type)?.icon} {r.label}</span>)}</div>}
+      {ev.rewardRules && <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:10 }}>{ev.rewardRules.map((r: any, i: number) => <span key={i} style={AA.rewardRuleChip}>{REWARD_TYPES.find(t=>t.id===r.type)?.icon} {r.label}</span>)}</div>}
       <div style={AA.eventCardMeta}><span>📅 {ev.startDate} → {ev.endDate}</span><span>👥 {ev.participants}{ev.maxParticipants?`/${ev.maxParticipants}`:""}</span>{ev.granted && <span style={{ color:C.teal, fontWeight:700 }}>✓ Rewards granted</span>}</div>
       <div style={AA.actionBtns}>
         {ev.status==="active" && <button style={{ ...AA.tinyBtn, ...AA.tinyBtnRed }} onClick={onEnd}>End Now</button>}
@@ -4056,7 +4069,7 @@ function EventCard({ ev, dim, onGrant, onEnd }) {
 }
 
 // ─── STYLE EVENT SECTION ───────────────────────────────────────────────────────
-const STYLE_WEEKS = [
+const STYLE_WEEKS: any[] = [
   { id:12, status:"voting", theme:"Design a look for someone who just captured the library at midnight.", startDate:"Feb 17", voteEnd:"Feb 24", submissions:23, votes:184 },
   { id:11, status:"closed", theme:"What does the campus ghost wear?", startDate:"Feb 10", voteEnd:"Feb 17", submissions:31, votes:287, winner:"Priya M." },
 ];
@@ -4064,14 +4077,14 @@ const STYLE_WEEKS = [
 function StyleEventSection() {
   const ctx = useContext(AppContext);
   const [seTab, setSeTab] = useState("current");
-  const [viewSub, setViewSub] = useState(null);
+  const [viewSub, setViewSub] = useState<any>(null);
   const [rejectNote, setRejectNote] = useState("");
-  const [confirmPublish, setConfirmPublish] = useState(false);
+  const [confirmPublish, setConfirmPublish] = useState<boolean>(false);
 
   const subs = ctx?.sharedStyleSubs || STYLE_SUBMISSIONS_INIT;
-  const pending = subs.filter(s => s.status === "pending" || s.status === "flagged");
-  const approved = subs.filter(s => s.status === "approved");
-  const rejected = subs.filter(s => s.status === "rejected");
+  const pending = subs.filter((s: any) => s.status === "pending" || s.status === "flagged");
+  const approved = subs.filter((s: any) => s.status === "approved");
+  const rejected = subs.filter((s: any) => s.status === "rejected");
 
   const approveSub = (id) => { ctx?.approveStyleSub(id); setViewSub(null); };
   const rejectSub = (id, reason) => { ctx?.rejectStyleSub(id, reason); setViewSub(null); setRejectNote(""); };
@@ -4095,7 +4108,7 @@ function StyleEventSection() {
         <div style={{ ...AA.chartCard, marginBottom:12, borderColor:"rgba(0,212,168,0.2)" }}>
           <div style={AA.chartTitle}>⚡ Phase Control</div>
           <div style={{ display:"flex", gap:8, marginTop:8 }}>
-            {[{ id:"submission",label:"✏️ Submissions",color:C.amber },{ id:"voting",label:"🗳️ Voting",color:C.teal },{ id:"closed",label:"✓ Closed",color:C.dim }].map(p => (
+            {[{ id:"submission",label:"✏️ Submissions",color:C.amber },{ id:"voting",label:"🗳️ Voting",color:C.teal },{ id:"closed",label:"✓ Closed",color:C.dim }].map((p: any) => (
               <button key={p.id} onClick={() => ctx?.setStylePhase(p.id)} style={{ flex:1, padding:"9px 6px", borderRadius:4, fontSize:11, fontWeight:700, background:currentPhase===p.id?`${p.color}22`:ADM_S2, border:`1px solid ${currentPhase===p.id?p.color+"66":ADM_BR}`, color:currentPhase===p.id?p.color:C.dim }}>{p.label}</button>
             ))}
           </div>
@@ -4110,8 +4123,8 @@ function StyleEventSection() {
         </div>
       </>}
       {seTab === "submissions" && <>
-        {pending.length > 0 && <><div style={AA.proofQueueLabel}>⏳ Awaiting Review — {pending.length}</div>{pending.map(s => <StyleSubCard key={s.id} sub={s} onView={() => { setViewSub(s); setRejectNote(""); }} />)}</>}
-        {approved.length > 0 && <><div style={{ ...AA.proofQueueLabel, color:C.teal, marginTop:12 }}>✓ Approved ({approved.length})</div>{approved.map(s => <StyleSubCard key={s.id} sub={s} resolved />)}</>}
+        {pending.length > 0 && <><div style={AA.proofQueueLabel}>⏳ Awaiting Review — {pending.length}</div>{pending.map((s: any) => <StyleSubCard key={s.id} sub={s} onView={() => { setViewSub(s); setRejectNote(""); }} />)}</>}
+        {approved.length > 0 && <><div style={{ ...AA.proofQueueLabel, color:C.teal, marginTop:12 }}>✓ Approved ({approved.length})</div>{approved.map((s: any) => <StyleSubCard key={s.id} sub={s} resolved />)}</>}
       </>}
       {viewSub && (
         <div style={AA.modalOverlay} onClick={() => setViewSub(null)}>
@@ -4138,7 +4151,7 @@ function StyleEventSection() {
   );
 }
 
-function StyleSubCard({ sub, resolved, onView }) {
+function StyleSubCard({ sub, resolved, onView }: { sub: any; resolved?: boolean; onView?: () => void }) {
   const statusColor = { pending:C.amber, flagged:C.red, approved:C.teal, rejected:C.dim };
   const statusLabel = { pending:"Pending", flagged:"⚠ Flagged", approved:"✓ Live", rejected:"Rejected" };
   return (
@@ -4161,8 +4174,8 @@ function CombatSection() {
   return (
     <div style={AA.secWrap}>
       <SectionTitle title="Combat Log" sub="All duels, zone raids, and clan wars" />
-      <div style={{ ...AA.kpiGrid, gridTemplateColumns:"repeat(4,1fr)", marginBottom:16 }}>{[{ label:"Fights Today",val:"47",delta:"+8 vs avg",color:C.red },{ label:"Zone Raids",val:"12",delta:"4 zones changed",color:C.amber },{ label:"Clan Wars",val:"2",delta:"1 ongoing",color:C.red },{ label:"Items Dropped",val:"6",delta:"3 rare",color:"#A78BFA" }].map(k => <KpiCard key={k.label} {...k} />)}</div>
-      <Table cols={["ID","Challenger","Defender","Mode","Winner","Wager","Time"]} rows={COMBAT_LOG.map(c => [<span style={AA.monoSm}>#{c.id}</span>,<span style={AA.playerName}>{c.challenger}</span>,<span style={AA.playerName}>{c.defender}</span>,<span style={{ color:C.teal, fontSize:11, textTransform:"uppercase" }}>{c.mode.replace("_"," ")}</span>,<span style={{ color:C.amber, fontWeight:700 }}>{c.winner}</span>,<span style={AA.mono}>{c.wager>0?`${c.wager} AE`:"—"}</span>,<span style={AA.monoSm}>{c.time}</span>])} />
+      <div style={{ ...AA.kpiGrid, gridTemplateColumns:"repeat(4,1fr)", marginBottom:16 }}>{[{ label:"Fights Today",val:"47",delta:"+8 vs avg",color:C.red },{ label:"Zone Raids",val:"12",delta:"4 zones changed",color:C.amber },{ label:"Clan Wars",val:"2",delta:"1 ongoing",color:C.red },{ label:"Items Dropped",val:"6",delta:"3 rare",color:"#A78BFA" }].map((k: any) => <KpiCard key={k.label} {...k} />)}</div>
+      <Table cols={["ID","Challenger","Defender","Mode","Winner","Wager","Time"]} rows={COMBAT_LOG.map((c: any) => [<span style={AA.monoSm}>#{c.id}</span>,<span style={AA.playerName}>{c.challenger}</span>,<span style={AA.playerName}>{c.defender}</span>,<span style={{ color:C.teal, fontSize:11, textTransform:"uppercase" }}>{c.mode.replace("_"," ")}</span>,<span style={{ color:C.amber, fontWeight:700 }}>{c.winner}</span>,<span style={AA.mono}>{c.wager>0?`${c.wager} AE`:"—"}</span>,<span style={AA.monoSm}>{c.time}</span>])} />
     </div>
   );
 }
@@ -4175,7 +4188,7 @@ function ClansSection() {
   const [confirmDissolve, setConfirmDissolve] = useState(null);
 
   const dissolveClan = (tag) => {
-    setClans(cs => cs.filter(c => c.tag !== tag));
+    setClans(cs => cs.filter((c: any) => c.tag !== tag));
     setConfirmDissolve(null);
     showToast(`🛡️ Clan [${tag}] dissolved`, "error");
   };
@@ -4183,7 +4196,7 @@ function ClansSection() {
   return (
     <div style={AA.secWrap}>
       <SectionTitle title="Clan Management" sub={`${clans.length} active clans`} />
-      <Table cols={["Tag","Name","Leader","Members","Zones","CPR","Treasury","Flags","Actions"]} rows={clans.map(c => [
+      <Table cols={["Tag","Name","Leader","Members","Zones","CPR","Treasury","Flags","Actions"]} rows={clans.map((c: any) => [
         <span style={{ ...AA.mono, color:"#A78BFA" }}>[{c.tag}]</span>,<span style={AA.playerName}>{c.name}</span>,<span style={{ color:C.dim }}>{c.leader}</span>,<span style={AA.mono}>{c.members}</span>,<span style={{ ...AA.mono, color:C.teal }}>{c.zones}</span>,<span style={{ ...AA.mono, color:C.amber }}>{c.cpr}</span>,<span style={{ ...AA.mono, color:C.amber }}>{c.treasury.toLocaleString()} AE</span>,<span style={{ color:c.flags>0?C.red:C.dim, fontWeight:700 }}>{c.flags>0?`⚠ ${c.flags}`:"—"}</span>,
         <div style={AA.actionBtns}><button style={AA.tinyBtn} onClick={() => showToast(`📊 ${c.name}: ${c.members} members, ${c.zones} zones, CPR ${c.cpr}`, "info")}>View</button><button style={{ ...AA.tinyBtn, ...AA.tinyBtnRed }} onClick={() => setConfirmDissolve(c)}>Dissolve</button></div>,
       ])} />
@@ -4215,7 +4228,7 @@ function StorySection() {
   const [chapters, setChapters] = useState(CHAPTERS);
 
   const unlockChapter = (id) => {
-    setChapters(chs => chs.map(ch => ch.id === id ? { ...ch, status:"active" } : ch));
+    setChapters(chs => chs.map((ch: any) => ch.id === id ? { ...ch, status:"active" } : ch));
     showToast(`📖 Chapter ${id} unlocked! Players can now discover clues.`, "success");
   };
 
@@ -4224,7 +4237,7 @@ function StorySection() {
       <SectionTitle title="Story Quest Manager" sub="The Campus Chronicle — Season 1" />
       <div style={AA.chartsRow}>
         <div style={{ ...AA.chartCard, flex:1 }}><div style={AA.chartTitle}>Chapter Progress</div>
-          {chapters.map(ch => (<div key={ch.id} style={AA.chapterRow}><div style={AA.chapterLeft}><span style={{ ...AA.mono, color:ch.status==="active"?C.teal:ch.status==="draft"?C.amber:C.dim }}>Ch{ch.id}</span><div><div style={AA.chapterTitle}>{ch.title}</div><div style={AA.chapterMeta}>{ch.status==="active"?`${ch.cluesSolved}/${ch.totalClues} clues · ${ch.players} players`:ch.status==="locked"?"Locked":"Draft"}</div></div></div>
+          {chapters.map((ch: any) => (<div key={ch.id} style={AA.chapterRow}><div style={AA.chapterLeft}><span style={{ ...AA.mono, color:ch.status==="active"?C.teal:ch.status==="draft"?C.amber:C.dim }}>Ch{ch.id}</span><div><div style={AA.chapterTitle}>{ch.title}</div><div style={AA.chapterMeta}>{ch.status==="active"?`${ch.cluesSolved}/${ch.totalClues} clues · ${ch.players} players`:ch.status==="locked"?"Locked":"Draft"}</div></div></div>
             <div style={AA.actionBtns}>
               {ch.status==="active" && <button style={AA.tinyBtn} onClick={() => showToast(`📊 Ch${ch.id}: ${ch.cluesSolved}/${ch.totalClues} clues solved by ${ch.players} players`, "info")}>Monitor</button>}
               {ch.status==="locked" && <button style={{ ...AA.tinyBtn, ...AA.tinyBtnGreen }} onClick={() => unlockChapter(ch.id)}>Unlock</button>}
@@ -4251,7 +4264,7 @@ function ModerationSection() {
   const ACTION_LABELS = { warn:"⚠️ Warn", timeout:"⏱ Timeout", ban:"🚫 Ban" };
 
   const takeAction = (reportId, action) => {
-    setReports(rs => rs.map(r => r.id === reportId ? {
+    setReports(rs => rs.map((r: any) => r.id === reportId ? {
       ...r,
       status: "resolved",
       priorActions: [...r.priorActions, action],
@@ -4260,7 +4273,7 @@ function ModerationSection() {
   };
 
   const resolveReport = (reportId) => {
-    setReports(rs => rs.map(r => r.id === reportId ? { ...r, status:"resolved" } : r));
+    setReports(rs => rs.map((r: any) => r.id === reportId ? { ...r, status:"resolved" } : r));
     showToast(`✓ Report #${reportId} resolved — no action taken`, "success");
   };
 
@@ -4268,16 +4281,16 @@ function ModerationSection() {
     <div style={AA.secWrap}>
       <SectionTitle title="Moderation Queue" sub={`${reports.filter(r=>r.status!=="resolved").length} open · Warn → Timeout → Ban`} />
       <div style={AA.modLadder}>
-        {[{ step:1, icon:"⚠️", label:"Warn", color:C.amber },{ step:2, icon:"⏱", label:"Timeout", color:C.red },{ step:3, icon:"🚫", label:"Ban", color:C.red }].map((s,i) => (
+        {[{ step:1, icon:"⚠️", label:"Warn", color:C.amber },{ step:2, icon:"⏱", label:"Timeout", color:C.red },{ step:3, icon:"🚫", label:"Ban", color:C.red }].map((s: any, i: number) => (
           <div key={s.step} style={AA.modLadderItem}><div style={{ ...AA.modLadderIcon, borderColor:s.color+"44", color:s.color }}>{s.icon}</div><div style={AA.modLadderLabel}>{s.label}</div>{i<2 && <div style={AA.modLadderArrow}>→</div>}</div>
         ))}
       </div>
-      <Table cols={["#","Reporter","Reported","Reason","Severity","History","Status","Actions"]} rows={reports.map(r => {
+      <Table cols={["#","Reporter","Reported","Reason","Severity","History","Status","Actions"]} rows={reports.map((r: any) => {
         const next = nextAction(r.priorActions);
         return [
           <span style={AA.monoSm}>R{r.id}</span>,<span style={AA.monoSm}>{r.reporter}</span>,<span style={AA.playerName}>{r.reported}</span>,<span style={{ color:C.dim, fontSize:11 }}>{r.reason}</span>,
           <span style={{ color:{high:C.red,medium:C.amber,low:C.teal}[r.severity], fontSize:10, fontWeight:700, textTransform:"uppercase" }}>{r.severity}</span>,
-          <div style={{ display:"flex", gap:3 }}>{r.priorActions.length===0?<span style={{ color:C.dim, fontSize:10 }}>None</span>:r.priorActions.map((a,i) => <span key={i} style={{ fontSize:12 }}>{PRIOR_ICONS[a]}</span>)}</div>,
+          <div style={{ display:"flex", gap:3 }}>{r.priorActions.length===0?<span style={{ color:C.dim, fontSize:10 }}>None</span>:r.priorActions.map((a: any, i: number) => <span key={i} style={{ fontSize:12 }}>{PRIOR_ICONS[a]}</span>)}</div>,
           <StatusPill status={r.status} />,
           r.status !== "resolved" ? (
             <div style={AA.actionBtns}>
@@ -4299,7 +4312,7 @@ function ResearchSection() {
       <div style={AA.kpiGrid}>{[
         { label:"DAU Rate",val:"22.8%",delta:"Target: 30%",color:C.amber },{ label:"Cross-Dept Connect",val:"142",delta:"4.1/user",color:C.teal },{ label:"Avg Mood (30d)",val:"3.4/5",delta:"Slight decline",color:C.amber },
         { label:"Steps Logged/Day",val:"12,400",delta:"+34% vs control",color:C.teal },{ label:"Sustainability Acts",val:"891",delta:"This month",color:C.teal },{ label:"Story Engagement",val:"67%",delta:"Of active users",color:"#A78BFA" },
-      ].map(k => <KpiCard key={k.label} {...k} />)}</div>
+      ].map((k: any) => <KpiCard key={k.label} {...k} />)}</div>
       <div style={AA.chartsRow}>
         <div style={{ ...AA.chartCard, flex:2 }}><div style={AA.chartTitle}>Cross-Department Social Connections</div><MiniLineChart data={[12,18,24,31,40,52,68,80,96,112,126,142]} color="#A78BFA" /></div>
         <div style={{ ...AA.chartCard, flex:1 }}><div style={AA.chartTitle}>Wellbeing vs Engagement</div><div style={{ color:C.dim, fontSize:12, lineHeight:1.6 }}>Mood 4-5: avg 8.4 missions/week<br/>Mood 3: avg 5.2<br/>Mood 1-2: avg 2.1<br/><span style={{ color:C.amber }}>↑ r=0.71</span></div></div>
@@ -4316,15 +4329,15 @@ function ConfigSection() {
     { group:"Feature Flags", settings:[{ key:"combat",label:"Combat system",val:"ON" },{ key:"marketplace",label:"Marketplace",val:"ON" },{ key:"style_event",label:"Style events",val:"ON" },{ key:"maintenance",label:"Maintenance mode",val:"OFF" }] },
   ];
   const [groups, setGroups] = useState(initSettings);
-  const [editKey, setEditKey] = useState(null);
+  const [editKey, setEditKey] = useState<string | null>(null);
   const [editVal, setEditVal] = useState("");
 
   const startEdit = (key, val) => { setEditKey(key); setEditVal(val); };
   const saveEdit = () => {
     if (!editKey) return;
-    setGroups(gs => gs.map(g => ({
+    setGroups((gs: any) => gs.map((g: any) => ({
       ...g,
-      settings: g.settings.map(s => s.key === editKey ? { ...s, val: editVal } : s),
+      settings: g.settings.map((s: any) => s.key === editKey ? { ...s, val: editVal } : s),
     })));
     showToast(`✓ ${editKey} updated to "${editVal}"`, "success");
     setEditKey(null);
@@ -4332,11 +4345,11 @@ function ConfigSection() {
   };
 
   const toggleFlag = (key) => {
-    setGroups(gs => gs.map(g => ({
+    setGroups((gs: any) => gs.map((g: any) => ({
       ...g,
-      settings: g.settings.map(s => s.key === key ? { ...s, val: s.val === "ON" ? "OFF" : "ON" } : s),
+      settings: g.settings.map((s: any) => s.key === key ? { ...s, val: s.val === "ON" ? "OFF" : "ON" } : s),
     })));
-    const setting = groups.flatMap(g => g.settings).find(s => s.key === key);
+    const setting = groups.flatMap((g: any) => g.settings).find((s: any) => s.key === key);
     const newVal = setting?.val === "ON" ? "OFF" : "ON";
     showToast(`⚙️ ${key} set to ${newVal}`, newVal === "ON" ? "success" : "warning");
   };
@@ -4344,10 +4357,10 @@ function ConfigSection() {
   return (
     <div style={AA.secWrap}>
       <SectionTitle title="Platform Config" sub="Global settings — changes apply immediately" />
-      {groups.map(group => (
+      {groups.map((group: any) => (
         <div key={group.group} style={{ ...AA.chartCard, marginBottom:12 }}>
           <div style={AA.chartTitle}>{group.group}</div>
-          {group.settings.map(s => (
+          {group.settings.map((s: any) => (
             <div key={s.key} style={AA.ecoControlRow}>
               <div><div style={AA.ecoControlLabel}>{s.label}</div><div style={{ ...AA.monoSm, color:C.dim }}>{s.key}</div></div>
               <div style={AA.actionBtns}>
@@ -4382,7 +4395,7 @@ function ConfigSection() {
 // ZONE MAP SCREEN — Real GPS capture system
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function getDistanceMetres(lat1, lon1, lat2, lon2) {
+function getDistanceMetres(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371000;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
@@ -4393,10 +4406,10 @@ function getDistanceMetres(lat1, lon1, lat2, lon2) {
 function ZoneMapScreen() {
   const ctx = useContext(AppContext);
   const [zones, setZones] = useState([]);
-  const [userPos, setUserPos] = useState(null);
-  const [gpsError, setGpsError] = useState(null);
-  const [selectedZone, setSelectedZone] = useState(null);
-  const [capturing, setCapturing] = useState(null);
+  const [userPos, setUserPos] = useState<any>(null);
+  const [gpsError, setGpsError] = useState<string | null>(null);
+  const [selectedZone, setSelectedZone] = useState<any>(null);
+  const [capturing, setCapturing] = useState<any>(null);
   const [elapsed, setElapsed] = useState(0);
   const [filter, setFilter] = useState("all");
   const watchRef = useRef(null);
@@ -4409,7 +4422,7 @@ function ZoneMapScreen() {
     const fetchZones = async () => {
       const { data } = await supabase.from("zones").select("*, owner_clan:clans!zones_owner_clan_id_fkey(name, tag, color)");
       if (data) setZones(data);
-      else setZones(window.__zr_zones || []);
+      else setZones((window as any).__zr_zones || []);
     };
     fetchZones();
     const checkActive = async () => {
@@ -4450,7 +4463,7 @@ function ZoneMapScreen() {
 
   useEffect(() => {
     if (!capturing || !userPos) return;
-    const zone = zones.find(z => z.id === capturing.zoneId);
+    const zone = zones.find((z: any) => z.id === capturing.zoneId);
     if (!zone) return;
     const dist = getDistanceMetres(userPos.lat, userPos.lng, zone.latitude, zone.longitude);
     const inRange = dist <= GEO_RADIUS;
@@ -4473,7 +4486,7 @@ function ZoneMapScreen() {
 
   const completeCapture = async () => {
     if (!capturing) return;
-    const zone = zones.find(z => z.id === capturing.zoneId);
+    const zone = zones.find((z: any) => z.id === capturing.zoneId);
     const userClan = ctx?.sharedUser?.clan;
     if (ctx?.authUser && userClan) {
       await supabase.from("zones").update({ owner_clan_id: userClan.id, contest_status: "peaceful", last_capture_at: new Date().toISOString(), control_strength: 50 }).eq("id", capturing.zoneId);
@@ -4481,9 +4494,9 @@ function ZoneMapScreen() {
       const { count } = await supabase.from("zones").select("id", { count: "exact", head: true }).eq("owner_clan_id", userClan.id);
       await supabase.from("clans").update({ zones_held: count || 0 }).eq("id", userClan.id);
     }
-    setZones(zs => zs.map(z => z.id === capturing.zoneId ? { ...z, owner_clan_id: userClan?.id, owner_clan: userClan ? { name: userClan.name, tag: userClan.tag, color: userClan.color } : null, contest_status: "peaceful", last_capture_at: new Date().toISOString() } : z));
+    setZones(zs => zs.map((z: any) => z.id === capturing.zoneId ? { ...z, owner_clan_id: userClan?.id, owner_clan: userClan ? { name: userClan.name, tag: userClan.tag, color: userClan.color } : null, contest_status: "peaceful", last_capture_at: new Date().toISOString() } : z));
     if (ctx?.setSharedUser) {
-      ctx.setSharedUser(u => {
+      ctx.setSharedUser((u: any) => {
         const aeReward = zone?.aether_rate_per_hour || 25;
         let newXp = u.xp + 150, newLevel = u.level, newXpNext = u.xpNext;
         while (newXp >= newXpNext) { newXp -= newXpNext; newLevel++; newXpNext = Math.floor(newXpNext * 1.25); }
@@ -4508,7 +4521,7 @@ function ZoneMapScreen() {
       await supabase.from("zones").update({ contest_status: "contested" }).eq("id", zone.id);
     }
     setCapturing({ zoneId: zone.id, startedAt: now, pausedAt: null, totalPaused: 0, captureId });
-    setZones(zs => zs.map(z => z.id === zone.id ? { ...z, contest_status: "contested" } : z));
+    setZones(zs => zs.map((z: any) => z.id === zone.id ? { ...z, contest_status: "contested" } : z));
     showToast("⚔️ Capture started! Stay within 100m for 30 minutes.", "success");
   };
 
@@ -4517,21 +4530,21 @@ function ZoneMapScreen() {
       await supabase.from("zone_captures").update({ status: "cancelled" }).eq("id", capturing.captureId);
       await supabase.from("zones").update({ contest_status: "peaceful" }).eq("id", capturing.zoneId);
     }
-    setZones(zs => zs.map(z => z.id === capturing?.zoneId ? { ...z, contest_status: "peaceful" } : z));
+    setZones(zs => zs.map((z: any) => z.id === capturing?.zoneId ? { ...z, contest_status: "peaceful" } : z));
     setCapturing(null); setElapsed(0);
     showToast("Capture cancelled.", "info");
   };
 
-  const zonesWithDist = zones.map(z => ({
+  const zonesWithDist = zones.map((z: any) => ({
     ...z,
     distance: userPos ? getDistanceMetres(userPos.lat, userPos.lng, z.latitude, z.longitude) : null,
     inRange: userPos ? getDistanceMetres(userPos.lat, userPos.lng, z.latitude, z.longitude) <= GEO_RADIUS : false,
   })).sort((a, b) => (a.distance ?? 9999999) - (b.distance ?? 9999999));
 
   const filtered = filter === "all" ? zonesWithDist
-    : filter === "nearby" ? zonesWithDist.filter(z => z.distance !== null && z.distance <= 500)
-    : filter === "capturable" ? zonesWithDist.filter(z => z.inRange && z.owner_clan_id !== ctx?.sharedUser?.clan?.id)
-    : zonesWithDist.filter(z => z.zone_type === filter);
+    : filter === "nearby" ? zonesWithDist.filter((z: any) => z.distance !== null && z.distance <= 500)
+    : filter === "capturable" ? zonesWithDist.filter((z: any) => z.inRange && z.owner_clan_id !== ctx?.sharedUser?.clan?.id)
+    : zonesWithDist.filter((z: any) => z.zone_type === filter);
 
   const ZONE_ICONS = { landmark:"🏛️", arena:"🏟️", residential:"🏠", standard:"📍" };
   const ZONE_COLORS = { landmark:TY, arena:TA, residential:T, standard:TB };
@@ -4546,7 +4559,7 @@ function ZoneMapScreen() {
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
           <div>
             <div style={{ fontSize:22, fontWeight:900, color:TX, letterSpacing:"-0.5px" }}>Zone Map</div>
-            <div style={{ fontSize:12, color:TM }}>{zones.length} zones · {zonesWithDist.filter(z => z.inRange).length} in range</div>
+            <div style={{ fontSize:12, color:TM }}>{zones.length} zones · {zonesWithDist.filter((z: any) => z.inRange).length} in range</div>
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <div style={{ width:10, height:10, borderRadius:"50%", background: userPos ? TG : gpsError ? TR : TY, boxShadow: userPos ? `0 0 8px ${TG}` : "none", animation: !userPos && !gpsError ? "pulse 1.5s infinite" : "none" }} />
@@ -4564,7 +4577,7 @@ function ZoneMapScreen() {
                 <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                   <span style={{ fontSize:20 }}>⚔️</span>
                   <div>
-                    <div style={{ fontSize:14, fontWeight:800, color:TX }}>{zones.find(z => z.id === capturing.zoneId)?.name || "Zone"}</div>
+                    <div style={{ fontSize:14, fontWeight:800, color:TX }}>{zones.find((z: any) => z.id === capturing.zoneId)?.name || "Zone"}</div>
                     <div style={{ fontSize:11, color: capturing.pausedAt ? TY : TA, fontWeight:700 }}>{capturing.pausedAt ? "⏸ PAUSED — Return to zone" : "CAPTURING..."}</div>
                   </div>
                 </div>
@@ -4589,7 +4602,7 @@ function ZoneMapScreen() {
             { id:"landmark", label:"Landmarks", icon:"🏛️" },
             { id:"arena", label:"Arenas", icon:"🏟️" },
             { id:"residential", label:"Residential", icon:"🏠" },
-          ].map(f => (
+          ].map((f: any) => (
             <button key={f.id} onClick={() => setFilter(f.id)} style={{
               padding:"7px 14px", borderRadius:99, border:`1.5px solid ${filter === f.id ? `${T}60` : BR}`,
               background: filter === f.id ? `${T}15` : "rgba(255,255,255,0.03)",
@@ -4603,7 +4616,7 @@ function ZoneMapScreen() {
       </div>
 
       <div style={{ padding:"0 16px", display:"flex", flexDirection:"column", gap:8 }}>
-        {filtered.map(z => {
+        {filtered.map((z: any) => {
           const isOwned = z.owner_clan_id === ctx?.sharedUser?.clan?.id;
           const isSel = selectedZone?.id === z.id;
           const zColor = ZONE_COLORS[z.zone_type] || TB;
@@ -4725,7 +4738,7 @@ function HomeScreen() {
         {notifs.length > 0 && !wellbeing && (
           <div style={{ position:"fixed", top:0, left:0, right:0, zIndex:999, background: notifs[0].type==="rejected" ? `rgba(239,68,68,0.95)` : `rgba(16,185,129,0.95)`, padding:"12px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", backdropFilter:"blur(8px)", gap:12 }}>
             <span style={{ fontSize:12, fontWeight:700, color:"#fff", flex:1 }}>{notifs[0].msg}</span>
-            <button onClick={() => ctx?.setPlayerNotifs(ns => ns.slice(1))} style={{ background:"none", border:"none", color:"#fff", fontSize:14, cursor:"pointer", padding:0 }}>✕</button>
+            <button onClick={() => ctx?.setPlayerNotifs((ns: any) => ns.slice(1))} style={{ background:"none", border:"none", color:"#fff", fontSize:14, cursor:"pointer", padding:0 }}>✕</button>
           </div>
         )}
 
@@ -4749,7 +4762,7 @@ function HomeScreen() {
         <div style={{ position:"absolute", inset:0, background:"linear-gradient(160deg, #0a1628 0%, #0d2240 40%, #102a1a 100%)" }} />
 
         {/* Stars */}
-        {[...Array(28)].map((_,i) => (
+        {[...Array(28)].map((_: any, i: number) => (
           <div key={i} style={{
             position:"absolute",
             left:`${(i*37+11)%95}%`, top:`${(i*19+7)%55}%`,
@@ -4845,7 +4858,7 @@ function HomeScreen() {
         {/* Participants badge */}
         <div style={{ position:"absolute", bottom:18, right:16, display:"flex", alignItems:"center", gap:5 }}>
           <div style={{ display:"flex" }}>
-            {["🟡","🔵","🟢"].map((e,i) => (
+            {["🟡","🔵","🟢"].map((e: any, i: number) => (
               <div key={i} style={{ width:22, height:22, borderRadius:"50%", background:S2, border:`2px solid ${BG}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, marginLeft:i>0?-8:0 }}>{e}</div>
             ))}
           </div>
@@ -4871,7 +4884,7 @@ function HomeScreen() {
             </div>
           </div>
           <div style={{ display:"flex", gap:3 }}>
-            {[1,2,3,4,5,6,7].map(d => (
+            {[1,2,3,4,5,6,7].map((d: any) => (
               <div key={d} style={{
                 flex:1, height:5, borderRadius:99,
                 background: d <= user.streak ? `linear-gradient(90deg,${TA},#FFB830)` : "rgba(255,255,255,0.08)",
@@ -4929,7 +4942,7 @@ function HomeScreen() {
       <div style={{ padding:"14px 16px 0" }}>
         <SectionHeader title="Today's Missions" action="See All →" onAction={() => setTab("missions")} />
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-          {missions.filter(m => m.tier === "daily" && !m._disabled).slice(0, 5).map((m, i) => <MissionCard key={m.id} m={m} idx={i} />)}
+          {missions.filter((m: any) => m.tier === "daily" && !m._disabled).slice(0, 5).map((m: any, i: number) => <MissionCard key={m.id} m={m} idx={i} />)}
         </div>
       </div>
 
@@ -4937,7 +4950,7 @@ function HomeScreen() {
       {liveEvents.length > 0 && (
         <div style={{ margin:"14px 16px 0" }}>
           <SectionHeader title="⚡ Live Events" action="See All →" onAction={() => setTab("missions")} />
-          {liveEvents.map(ev => (
+          {liveEvents.map((ev: any) => (
             <div key={ev.id} style={{
               borderRadius:24, overflow:"hidden", position:"relative", height:140,
               boxShadow:`0 8px 32px ${ev.color}25`,
@@ -5017,16 +5030,16 @@ function HomeScreen() {
 // ═══════════════════════════════════════════════════════════════════════════════
 // PROFILE SCREEN
 // ═══════════════════════════════════════════════════════════════════════════════
-function ProfileScreen({ user, onAdminAccess }) {
+function ProfileScreen({ user, onAdminAccess }: any) {
   const ctx = useContext(AppContext);
-  const tapRef = useRef(0);
-  const tapTimer = useRef(null);
+  const tapRef = useRef<number>(0);
+  const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const iframeRef = useRef(null);
   const [showAvatarEditor, setShowAvatarEditor] = useState(false);
   const [avatarDataUrl, setAvatarDataUrl] = useState(null);
   const handleAdminTap = () => {
     tapRef.current += 1;
-    clearTimeout(tapTimer.current);
+    if (tapTimer.current) clearTimeout(tapTimer.current);
     if (tapRef.current >= 7) { tapRef.current = 0; if (onAdminAccess) onAdminAccess(); return; }
     tapTimer.current = setTimeout(() => { tapRef.current = 0; }, 2000);
   };
@@ -5034,7 +5047,7 @@ function ProfileScreen({ user, onAdminAccess }) {
   // Collect owned item IDs from shop context
   const getOwnedIds = () => {
     const allItems = ctx?.sharedShopItems || SHOP_ITEMS;
-    return allItems.filter(i => i.owned).map(i => i.id);
+    return allItems.filter((i: any) => i.owned).map((i: any) => i.id);
   };
 
   // Send owned items to iframe when it loads
@@ -5145,7 +5158,7 @@ function ProfileScreen({ user, onAdminAccess }) {
           { icon:"🛡️", val:user.shields, lbl:"Shields", c:TG },
           { icon:"🥈", val:user.combatRank, lbl:"Combat Rank", c:TB },
           { icon:"🌱", val:user.influenceRank, lbl:"Influence", c:TG },
-        ].map(s => (
+        ].map((s: any) => (
           <div key={s.lbl} style={{ background:S1, border:`1.5px solid ${s.c}30`, borderRadius:18, padding:"14px 10px", display:"flex", flexDirection:"column", alignItems:"center", gap:5, boxShadow:`0 4px 16px ${s.c}12` }}>
             <span style={{ fontSize:20 }}>{s.icon}</span>
             <span style={{ fontSize:14, fontWeight:900, color:s.c }}>{s.val}</span>
@@ -5199,7 +5212,7 @@ function ProfileScreen({ user, onAdminAccess }) {
             const { data: clan } = await supabase.from("clans").select("id").eq("leader_id", uid).maybeSingle();
             if (clan) unlocked.add("clan_leader");
 
-            setAchievements(prev => prev.map(a => ({ ...a, unlocked: unlocked.has(a.key) })));
+            setAchievements(prev => prev.map((a: any) => ({ ...a, unlocked: unlocked.has(a.key) })));
           })();
         }, [ctx?.authUser]);
 
@@ -5207,7 +5220,7 @@ function ProfileScreen({ user, onAdminAccess }) {
           <div style={{ padding:"0 16px", marginBottom:16 }}>
             <SectionHeader title="🏆 Achievements" />
             <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:4 }}>
-              {achievements.map(a => (
+              {achievements.map((a: any) => (
                 <div key={a.name} style={{
                   flex:"0 0 100px", display:"flex", flexDirection:"column", alignItems:"center", gap:6,
                   padding:"14px 8px", background: a.unlocked ? `${TY}08` : "rgba(255,255,255,0.02)",
@@ -5235,12 +5248,12 @@ function ProfileScreen({ user, onAdminAccess }) {
             <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
               {/* Google Fit Connection */}
               {(() => {
-                const [fitConnected, setFitConnected] = useState(false);
+                const [fitConnected, setFitConnected] = useState<boolean>(false);
                 const [fitLoading, setFitLoading] = useState(true);
                 const ctx = useContext(AppContext);
                 useEffect(() => {
                   if (!ctx?.authUser) return;
-                  supabase.from("google_fit_tokens").select("connected").eq("user_id", ctx.authUser.id).maybeSingle().then(({ data }) => {
+                  supabase.from("google_fit_tokens").select("connected").eq("user_id", ctx.authUser.id).maybeSingle().then(({ data }: any) => {
                     setFitConnected(!!data?.connected);
                     setFitLoading(false);
                   });
@@ -5312,7 +5325,7 @@ function ProfileScreen({ user, onAdminAccess }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // AUTH SCREEN — Signup / Login
 // ═══════════════════════════════════════════════════════════════════════════════
-function AuthScreen({ onAuth }) {
+function AuthScreen({ onAuth }: AuthScreenProps) {
   const [mode, setMode] = useState("signup"); // "signup" | "login"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -5324,7 +5337,7 @@ function AuthScreen({ onAuth }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSignup = async (e) => {
+  const handleSignup = async (e: any) => {
     e.preventDefault();
     setError("");
     if (!name.trim() || !rollNumber.trim() || !year || !course.trim()) {
@@ -5357,7 +5370,7 @@ function AuthScreen({ onAuth }) {
     setLoading(false);
   };
 
-  const handleLogin = async (e) => {
+  const handleLogin = async (e: any) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -5389,7 +5402,7 @@ function AuthScreen({ onAuth }) {
 
         {/* Tab toggle */}
         <div style={{ display:"flex", gap:0, marginBottom:24, borderRadius:10, overflow:"hidden", border:`1.5px solid ${BR}` }}>
-          {["signup","login"].map(m => (
+          {["signup","login"].map((m: any) => (
             <button key={m} onClick={() => { setMode(m); setError(""); }} style={{
               flex:1, padding:"10px 0", background:mode===m ? T : "transparent",
               color:mode===m ? BG : TM, fontWeight:800, fontSize:13, border:"none",
@@ -5474,11 +5487,11 @@ function AuthScreen({ onAuth }) {
 
 export default function ZoneRushApp() {
   const [dbReady, setDbReady] = useState(false);
-  const [authUser, setAuthUser] = useState(null);
+  const [authUser, setAuthUser] = useState<any>(null);
 
   // Don't load stale demo data from localStorage — always start from defaults
   // Real data will be loaded from DB when authenticated
-  const [sharedUser, _setSharedUser] = useState({ ...USER });
+  const [sharedUser, _setSharedUser] = useState<any>({ ...USER });
   const setSharedUser = (updater) => {
     _setSharedUser(prev => {
       const next = typeof updater === "function" ? updater(prev) : updater;
@@ -5496,23 +5509,23 @@ export default function ZoneRushApp() {
       return next;
     });
   };
-  const [sharedMissions,   setSharedMissions]   = useState(MISSIONS);
-  const [sharedEvents,     setSharedEvents]     = useState(LIVE_EVENTS);
-  const [sharedShopItems,  setSharedShopItems]  = useState(
-    INIT_SHOP_ITEMS.map(it => ({
+  const [sharedMissions,   setSharedMissions]   = useState<any[]>(MISSIONS);
+  const [sharedEvents,     setSharedEvents]     = useState<any[]>(LIVE_EVENTS);
+  const [sharedShopItems,  setSharedShopItems]  = useState<any[]>(
+    INIT_SHOP_ITEMS.map((it: any) => ({
       ...it, price:it.priceAE, rarity:it.rarity,
-      icon:(SHOP_ITEMS.find(s => s.id===it.id)||{}).icon||"🎁",
+      icon:(SHOP_ITEMS.find((s: any) => s.id===it.id)||{}).icon||"🎁",
       owned: it.priceAE === 0, featured:["lpc_long","lpc_leather","lpc_plate"].includes(it.id),
     }))
   );
-  const [sharedStyleEvent, setSharedStyleEvent] = useState({
+  const [sharedStyleEvent, setSharedStyleEvent] = useState<any>({
     ...STYLE_EVENT_LIVE,
     gallery:[],
   });
-  const [sharedStyleSubs,  setSharedStyleSubs]  = useState(STYLE_SUBMISSIONS_INIT);
-  const [sharedProofs,     setSharedProofs]     = useState(PROOF_SUBMISSIONS);
-  const [playerNotifs,     setPlayerNotifs]     = useState([]);
-  const [completedMissions, _setCompletedMissions] = useState(() => {
+  const [sharedStyleSubs,  setSharedStyleSubs]  = useState<any[]>(STYLE_SUBMISSIONS_INIT);
+  const [sharedProofs,     setSharedProofs]     = useState<any[]>(PROOF_SUBMISSIONS);
+  const [playerNotifs,     setPlayerNotifs]     = useState<ZRNotif[]>([]);
+  const [completedMissions, _setCompletedMissions] = useState<Set<string>>(() => {
     try { const s = localStorage.getItem("zr_completedMissions"); return s ? new Set(JSON.parse(s)) : new Set(); }
     catch { return new Set(); }
   });
@@ -5523,10 +5536,10 @@ export default function ZoneRushApp() {
       return next;
     });
   };
-  const [joinedEvents, setJoinedEvents] = useState(new Set());
-  const [marketplaceListings, setMarketplaceListings] = useState([]);
-  const [listedItems, setListedItems] = useState(new Set());
-  const [listingPrices, setListingPrices] = useState({});
+  const [joinedEvents, setJoinedEvents] = useState<Set<string | number>>(new Set());
+  const [marketplaceListings, setMarketplaceListings] = useState<any[]>([]);
+  const [listedItems, setListedItems] = useState<Set<string>>(new Set());
+  const [listingPrices, setListingPrices] = useState<Record<string, number>>({});
 
   // ── Fetch data from Supabase on mount ──
   useEffect(() => {
@@ -5544,7 +5557,7 @@ export default function ZoneRushApp() {
         // Fetch quest definitions from DB
         const { data: dbQuests } = await supabase.from("quest_definitions").select("*").eq("is_active", true).order("sort_order");
         if (dbQuests?.length) {
-          setSharedMissions(dbQuests.map(q => ({
+          setSharedMissions(dbQuests.map((q: any) => ({
             id: q.id, title: q.title, description: q.description, cat: q.category,
             icon: q.icon, type: q.tracking_type,
             reward: `${q.aether_reward} AE`, xp: `${q.xp_reward} XP`,
@@ -5560,7 +5573,7 @@ export default function ZoneRushApp() {
         // Fetch shop items
         const { data: dbShop } = await supabase.from("shop_items").select("*").order("created_at");
         if (dbShop?.length) {
-          setSharedShopItems(dbShop.map(it => ({
+          setSharedShopItems(dbShop.map((it: any) => ({
             id: it.id, name: it.name, cat: it.category, price: it.price_ae, priceAE: it.price_ae,
             rarity: it.rarity, icon: it.icon, type: it.item_type, stock: it.stock,
             sold: it.sold, active: it.active, soulBound: it.soul_bound,
@@ -5571,7 +5584,7 @@ export default function ZoneRushApp() {
         // Fetch events
         const { data: dbEvents } = await supabase.from("events").select("*").eq("status", "active");
         if (dbEvents?.length) {
-          setSharedEvents(dbEvents.map(e => ({
+          setSharedEvents(dbEvents.map((e: any) => ({
             id: e.id, title: e.title, type: e.type, status: e.status,
             desc: e.description, endDate: e.end_date ? new Date(e.end_date).toLocaleDateString("en-GB", { month:"short", day:"numeric" }) : "",
             reward: e.reward, participants: 0, maxParticipants: e.max_participants,
@@ -5581,7 +5594,7 @@ export default function ZoneRushApp() {
           for (const e of dbEvents) {
             supabase.from("event_participants").select("id", { count: "exact", head: true }).eq("event_id", e.id)
               .then(({ count }) => {
-                if (count !== null) setSharedEvents(es => es.map(ev => ev.id === e.id ? { ...ev, participants: count } : ev));
+                if (count !== null) setSharedEvents((es: any) => es.map((ev: any) => ev.id === e.id ? { ...ev, participants: count } : ev));
               });
           }
         }
@@ -5589,13 +5602,13 @@ export default function ZoneRushApp() {
         // Fetch zones (used by clan screens and map)
         const { data: dbZones } = await supabase.from("zones").select("*, owner_clan:clans!zones_owner_clan_id_fkey(name, tag, color)");
         if (dbZones?.length) {
-          window.__zr_zones = dbZones;
+          (window as any).__zr_zones = dbZones;
         }
 
         // Fetch clans (used by leaderboard and clan join)
         const { data: dbClans } = await supabase.from("clans").select("*").order("rank");
         if (dbClans?.length) {
-          window.__zr_clans = dbClans;
+          (window as any).__zr_clans = dbClans;
         }
 
         // Fetch style events
@@ -5605,7 +5618,7 @@ export default function ZoneRushApp() {
           // Fetch submissions for this style event
           const { data: dbStyleSubs } = await supabase.from("style_submissions").select("*").eq("style_event_id", se.id);
           if (dbStyleSubs?.length) {
-            setSharedStyleSubs(dbStyleSubs.map(s => ({
+            setSharedStyleSubs(dbStyleSubs.map((s: any) => ({
               id: s.id, userId: s.user_id, userName: "Player", title: s.title,
               votes: s.votes, status: s.status, submittedAt: new Date(s.submitted_at).toLocaleDateString("en-GB", { month:"short", day:"numeric" }),
               flagged: s.flagged,
@@ -5622,8 +5635,8 @@ export default function ZoneRushApp() {
         // Fetch game config
         const { data: dbConfig } = await supabase.from("game_config").select("*");
         if (dbConfig?.length) {
-          window.__zr_config = {};
-          dbConfig.forEach(c => { window.__zr_config[c.key] = c.value; });
+          (window as any).__zr_config = {};
+          dbConfig.forEach((c: any) => { (window as any).__zr_config[c.key] = c.value; });
         }
 
         setDbReady(true);
@@ -5682,7 +5695,7 @@ export default function ZoneRushApp() {
       if (membership?.clan) {
         const c = membership.clan;
         const { count: memberCount } = await supabase.from("clan_members").select("id", { count: "exact", head: true }).eq("clan_id", c.id);
-        const clanZones = (window.__zr_zones || []).filter(z => z.captured_by === c.id);
+        const clanZones = ((window as any).__zr_zones || []).filter((z: any) => z.captured_by === c.id);
         _setSharedUser(u => ({
           ...u,
           clan: {
@@ -5701,11 +5714,11 @@ export default function ZoneRushApp() {
       // Fetch quest progress from quest_progress table
       const { data: questProgress } = await supabase.from("quest_progress").select("*").eq("user_id", authUser.id);
       if (questProgress?.length) {
-        const completedIds = new Set(questProgress.filter(qp => qp.status === "completed" || qp.status === "claimed").map(qp => qp.quest_definition_id));
+        const completedIds = new Set(questProgress.filter((qp: any) => qp.status === "completed" || qp.status === "claimed").map((qp: any) => qp.quest_definition_id));
         _setCompletedMissions(completedIds);
         // Update mission progress values
-        setSharedMissions(ms => ms.map(m => {
-          const qp = questProgress.find(q => q.quest_definition_id === m.id);
+        setSharedMissions((ms: any) => ms.map((m: any) => {
+          const qp = questProgress.find((q: any) => q.quest_definition_id === m.id);
           return qp ? { ...m, progress: qp.current_value, _progressId: qp.id } : m;
         }));
       }
@@ -5713,20 +5726,20 @@ export default function ZoneRushApp() {
       // Fetch user inventory
       const { data: inventory } = await supabase.from("user_inventory").select("item_id").eq("user_id", authUser.id);
       if (inventory?.length) {
-        const ownedIds = new Set(inventory.map(i => i.item_id));
-        setSharedShopItems(items => items.map(it => ({ ...it, owned: ownedIds.has(it.id) })));
+        const ownedIds = new Set(inventory.map((i: any) => i.item_id));
+        setSharedShopItems(items => items.map((it: any) => ({ ...it, owned: ownedIds.has(it.id) })));
       }
 
       // Fetch user's event participations
       const { data: participations } = await supabase.from("event_participants").select("event_id").eq("user_id", authUser.id);
       if (participations?.length) {
-        setJoinedEvents(new Set(participations.map(p => p.event_id)));
+        setJoinedEvents(new Set(participations.map((p: any) => p.event_id)));
       }
 
       // Fetch marketplace listings (items listed for sale by all users)
       const { data: listings } = await supabase.from("user_inventory").select("*, item:shop_items(*), seller:profiles!user_inventory_user_id_fkey(display_name, id)").eq("listed_for_sale", true);
       if (listings?.length) {
-        const mapped = listings.filter(l => l.item && l.user_id !== authUser.id).map(l => ({
+        const mapped = listings.filter((l: any) => l.item && l.user_id !== authUser.id).map((l: any) => ({
           ...l.item, id: l.item.id, name: l.item.name, cat: l.item.category,
           price: l.sale_price_ae, rarity: l.item.rarity, icon: l.item.icon,
           seller: l.seller?.display_name || "Player", _isMarketListing: true,
@@ -5737,22 +5750,22 @@ export default function ZoneRushApp() {
       // Track user's own listed items
       const { data: myListings } = await supabase.from("user_inventory").select("item_id, sale_price_ae").eq("user_id", authUser.id).eq("listed_for_sale", true);
       if (myListings?.length) {
-        setListedItems(new Set(myListings.map(l => l.item_id)));
+        setListedItems(new Set(myListings.map((l: any) => l.item_id)));
         const prices = {};
-        myListings.forEach(l => { prices[l.item_id] = l.sale_price_ae; });
+        myListings.forEach((l: any) => { prices[l.item_id] = l.sale_price_ae; });
         setListingPrices(prices);
       }
 
       // Fetch notifications
       const { data: notifs } = await supabase.from("notifications").select("*").eq("user_id", authUser.id).eq("read", false).order("created_at", { ascending: false });
       if (notifs?.length) {
-        setPlayerNotifs(notifs.map(n => ({ id: n.id, type: n.type, msg: `${n.title}: ${n.body}` })));
+        setPlayerNotifs(notifs.map((n: any) => ({ id: n.id, type: n.type, msg: `${n.title}: ${n.body}` })));
       }
     };
     fetchUserData();
   }, [authUser]);
 
-  const appCtx = {
+  const appCtx: any = {
     authUser, dbReady,
     sharedUser, setSharedUser,
     sharedMissions, setSharedMissions,
@@ -5766,11 +5779,11 @@ export default function ZoneRushApp() {
     marketplaceListings, listedItems, listingPrices,
 
     listItemForSale: async (itemId, price) => {
-      setListedItems(s => new Set([...s, itemId]));
-      setListingPrices(p => ({ ...p, [itemId]: price }));
-      const item = sharedShopItems.find(i => i.id === itemId);
+      setListedItems((s: any) => new Set([...s, itemId]));
+      setListingPrices((p: any) => ({ ...p, [itemId]: price }));
+      const item = sharedShopItems.find((i: any) => i.id === itemId);
       if (item) {
-        setMarketplaceListings(ls => [...ls, {
+        setMarketplaceListings((ls: any) => [...ls, {
           ...item, price, seller: sharedUser.name, _isMarketListing: true,
           _inventoryId: "inv_" + itemId, _sellerId: authUser?.id,
         }]);
@@ -5780,16 +5793,16 @@ export default function ZoneRushApp() {
       }
     },
     unlistItem: async (itemId) => {
-      setListedItems(s => { const n = new Set(s); n.delete(itemId); return n; });
-      setListingPrices(p => { const n = { ...p }; delete n[itemId]; return n; });
-      setMarketplaceListings(ls => ls.filter(l => !(l.id === itemId && l._sellerId === authUser?.id)));
+      setListedItems((s: any) => { const n = new Set(s); n.delete(itemId); return n; });
+      setListingPrices((p: any) => { const n = { ...p }; delete n[itemId]; return n; });
+      setMarketplaceListings((ls: any) => ls.filter((l: any) => !(l.id === itemId && l._sellerId === authUser?.id)));
       if (authUser) {
         await supabase.from("user_inventory").update({ listed_for_sale: false, sale_price_ae: null }).eq("user_id", authUser.id).eq("item_id", itemId);
       }
     },
     buyMarketplaceListing: async (inventoryId, itemId, price, sellerId) => {
-      setMarketplaceListings(ls => ls.filter(l => l._inventoryId !== inventoryId));
-      setSharedUser(u => ({ ...u, ae: Math.max(0, u.ae - price) }));
+      setMarketplaceListings((ls: any) => ls.filter((l: any) => l._inventoryId !== inventoryId));
+      setSharedUser((u: any) => ({ ...u, ae: Math.max(0, u.ae - price) }));
       if (authUser) {
         await supabase.from("user_inventory").insert({ user_id: authUser.id, item_id: itemId });
         if (sellerId) {
@@ -5803,8 +5816,8 @@ export default function ZoneRushApp() {
 
     // ── User mutations ──
     completeMission: (id, ae, xp) => {
-      setCompletedMissions(s => new Set([...s, id]));
-      setSharedUser(u => {
+      setCompletedMissions((s: any) => new Set([...s, id]));
+      setSharedUser((u: any) => {
         let newXp = u.xp + xp;
         let newLevel = u.level;
         let newXpNext = u.xpNext;
@@ -5817,7 +5830,7 @@ export default function ZoneRushApp() {
       });
       // Write to quest_progress table
       if (authUser) {
-        const mission = sharedMissions.find(m => m.id === id);
+        const mission = sharedMissions.find((m: any) => m.id === id);
         const targetVal = mission?.goal || 1;
         supabase.from("quest_progress").upsert({
           user_id: authUser.id, quest_definition_id: id,
@@ -5828,36 +5841,36 @@ export default function ZoneRushApp() {
       }
     },
     purchaseItem: (id, price) => {
-      setSharedUser(u => ({ ...u, ae: Math.max(0, u.ae - price) }));
-      setSharedShopItems(is => is.map(i => i.id === id ? { ...i, sold:(i.sold||0)+1, owned: true } : i));
+      setSharedUser((u: any) => ({ ...u, ae: Math.max(0, u.ae - price) }));
+      setSharedShopItems((is: any) => is.map((i: any) => i.id === id ? { ...i, sold:(i.sold||0)+1, owned: true } : i));
       // Write to Supabase
       if (authUser) {
         supabase.from("user_inventory").insert({ user_id: authUser.id, item_id: id }).then(() => {});
         supabase.from("shop_items").update({ sold: undefined }).eq("id", id).then(() => {
           // Increment sold via raw increment isn't available, so we fetch+update
-          supabase.from("shop_items").select("sold").eq("id", id).single().then(({ data }) => {
+          supabase.from("shop_items").select("sold").eq("id", id).single().then(({ data }: any) => {
             if (data) supabase.from("shop_items").update({ sold: data.sold + 1 }).eq("id", id).then(() => {});
           });
         });
       }
     },
     joinEvent: (id) => {
-      setJoinedEvents(s => new Set([...s, id]));
-      setSharedEvents(es => es.map(e => e.id === id ? { ...e, participants:(e.participants||0)+1 } : e));
+      setJoinedEvents((s: any) => new Set([...s, id]));
+      setSharedEvents((es: any) => es.map((e: any) => e.id === id ? { ...e, participants:(e.participants||0)+1 } : e));
       if (authUser) {
         supabase.from("event_participants").insert({ event_id: id, user_id: authUser.id }).then(() => {});
       }
     },
     joinClan: async (name, tag, color) => {
       // Find clan in database
-      const dbClans = window.__zr_clans || [];
-      const dbClan = dbClans.find(c => c.name === name);
+      const dbClans = (window as any).__zr_clans || [];
+      const dbClan = dbClans.find((c: any) => c.name === name);
       if (authUser && dbClan) {
         await supabase.from("clan_members").insert({ clan_id: dbClan.id, user_id: authUser.id, role: "member" });
         await supabase.from("profiles").update({ clan_id: dbClan.id }).eq("user_id", authUser.id);
         const { count } = await supabase.from("clan_members").select("id", { count: "exact", head: true }).eq("clan_id", dbClan.id);
-        const clanZones = (window.__zr_zones || []).filter(z => z.captured_by === dbClan.id);
-        setSharedUser(u => ({
+        const clanZones = ((window as any).__zr_zones || []).filter((z: any) => z.captured_by === dbClan.id);
+        setSharedUser((u: any) => ({
           ...u,
           clan: {
             id: dbClan.id, name: dbClan.name, tag: dbClan.tag, motto: dbClan.motto, color: dbClan.color || color,
@@ -5869,10 +5882,10 @@ export default function ZoneRushApp() {
         }));
       } else {
         // Fallback: mock join
-        const existingClan = ENEMY_CLANS.find(c => c.name === name);
-        const suggestedClan = SUGGESTED_CLANS.find(c => c.name === name);
+        const existingClan = ENEMY_CLANS.find((c: any) => c.name === name);
+        const suggestedClan = SUGGESTED_CLANS.find((c: any) => c.name === name);
         const memberCount = suggestedClan?.members || 8;
-        setSharedUser(u => ({
+        setSharedUser((u: any) => ({
           ...u,
           clan: { id:tag.toLowerCase(), name, tag, motto:"New member!", color, founded:"Mar 2026", memberRole:"Member", treasury:existingClan ? 8000 : 0, weeklyXP:existingClan ? 6000 : 0, rank:existingClan?.rank || 99, cpr:existingClan?.cpr || 0, zonesHeld:existingClan?.zones || 0, totalMembers:memberCount + 1, maxMembers:20 }
         }));
@@ -5882,13 +5895,13 @@ export default function ZoneRushApp() {
       if (authUser && sharedUser.clan?.id) {
         await supabase.from("clan_members").delete().eq("user_id", authUser.id).eq("clan_id", sharedUser.clan.id);
       }
-      setSharedUser(u => ({ ...u, clan: null }));
+      setSharedUser((u: any) => ({ ...u, clan: null }));
       showToast("👋 You left the clan.", "info");
     },
     donateToClan: async (amount) => {
       const amt = Math.min(amount, sharedUser.ae);
       if (amt <= 0) return;
-      setSharedUser(u => ({
+      setSharedUser((u: any) => ({
         ...u,
         ae: u.ae - amt,
         clan: u.clan ? { ...u.clan, treasury: (u.clan.treasury || 0) + amt } : u.clan,
@@ -5907,7 +5920,7 @@ export default function ZoneRushApp() {
       setTimeout(() => {
         const success = Math.random() > 0.15; // 85% success rate
         if (success) {
-          setSharedUser(u => {
+          setSharedUser((u: any) => {
             let newXp = u.xp + 100, newLevel = u.level, newXpNext = u.xpNext;
             while (newXp >= newXpNext) { newXp -= newXpNext; newLevel++; newXpNext = Math.floor(newXpNext * 1.25); }
             return { ...u, ae: u.ae + 50, xp: newXp, level: newLevel, xpNext: newXpNext };
@@ -5919,7 +5932,7 @@ export default function ZoneRushApp() {
       }, 8000);
     },
     captureZone: () => {
-      setSharedUser(u => {
+      setSharedUser((u: any) => {
         let newXp = u.xp + 100, newLevel = u.level, newXpNext = u.xpNext;
         while (newXp >= newXpNext) { newXp -= newXpNext; newLevel++; newXpNext = Math.floor(newXpNext * 1.25); }
         return { ...u, ae: u.ae + 50, xp: newXp, level: newLevel, xpNext: newXpNext };
@@ -5929,7 +5942,7 @@ export default function ZoneRushApp() {
     defendZone: () => {
       showToast("🛡️ GPS lock verifying defense position...", "info");
       setTimeout(() => {
-        setSharedUser(u => {
+        setSharedUser((u: any) => {
           let newXp = u.xp + 120, newLevel = u.level, newXpNext = u.xpNext;
           while (newXp >= newXpNext) { newXp -= newXpNext; newLevel++; newXpNext = Math.floor(newXpNext * 1.25); }
           return { ...u, ae: u.ae + 80, xp: newXp, level: newLevel, xpNext: newXpNext };
@@ -5940,29 +5953,29 @@ export default function ZoneRushApp() {
 
     // ── Admin mutations ──
     approveStyleSub: (id) => {
-      setSharedStyleSubs(ss => ss.map(s => s.id === id ? { ...s, status:"approved", flagged:false } : s));
-      setSharedStyleEvent(ev => {
-        const sub = STYLE_SUBMISSIONS_INIT.find(s => s.id === id);
+      setSharedStyleSubs((ss: any) => ss.map((s: any) => s.id === id ? { ...s, status:"approved", flagged:false } : s));
+      setSharedStyleEvent((ev: any) => {
+        const sub = STYLE_SUBMISSIONS_INIT.find((s: any) => s.id === id);
         if (!sub) return ev;
-        if (ev.gallery.some(g => g.id === id)) return ev;
+        if (ev.gallery.some((g: any) => g.id === id)) return ev;
         return { ...ev, gallery: [...ev.gallery, { id, userName:sub.userName, title:sub.title, votes:sub.votes, isMine:false }] };
       });
     },
     rejectStyleSub: (id, reason) => {
-      setSharedStyleSubs(ss => ss.map(s => s.id === id ? { ...s, status:"rejected", rejectReason:reason } : s));
-      setSharedStyleEvent(ev => ({ ...ev, gallery: ev.gallery.filter(g => g.id !== id) }));
+      setSharedStyleSubs((ss: any) => ss.map((s: any) => s.id === id ? { ...s, status:"rejected", rejectReason:reason } : s));
+      setSharedStyleEvent((ev: any) => ({ ...ev, gallery: ev.gallery.filter((g: any) => g.id !== id) }));
     },
     approveProof: (id) => {
-      setSharedProofs(ps => ps.map(p => p.id===id ? { ...p, status:"approved" } : p));
-      const proof = sharedProofs.find(p => p.id===id);
+      setSharedProofs((ps: any) => ps.map((p: any) => p.id===id ? { ...p, status:"approved" } : p));
+      const proof = sharedProofs.find((p: any) => p.id===id);
       if (proof) {
-        setPlayerNotifs(ns => [...ns, { id:Date.now(), type:"reward", msg:`✓ "${proof.missionTitle}" approved! +${proof.reward} AE +${proof.xp} XP credited.` }]);
-        setSharedUser(u => {
+        setPlayerNotifs((ns: any) => [...ns, { id:Date.now(), type:"reward", msg:`✓ "${proof.missionTitle}" approved! +${proof.reward} AE +${proof.xp} XP credited.` }]);
+        setSharedUser((u: any) => {
           let newXp = u.xp + proof.xp, newLevel = u.level, newXpNext = u.xpNext;
           while (newXp >= newXpNext) { newXp -= newXpNext; newLevel++; newXpNext = Math.floor(newXpNext * 1.25); }
           return { ...u, ae: u.ae + proof.reward, xp: newXp, level: newLevel, xpNext: newXpNext };
         });
-        setCompletedMissions(s => new Set([...s, proof.missionId]));
+        setCompletedMissions((s: any) => new Set([...s, proof.missionId]));
         // Write to Supabase
         if (authUser) {
           supabase.from("proof_submissions").update({ status: "approved", reviewed_by: authUser.id, reviewed_at: new Date().toISOString() }).eq("id", id).then(() => {});
@@ -5970,28 +5983,28 @@ export default function ZoneRushApp() {
       }
     },
     rejectProof: (id, reason) => {
-      setSharedProofs(ps => ps.map(p => p.id===id ? { ...p, status:"rejected", rejectReason:reason } : p));
-      const proof = sharedProofs.find(p => p.id===id);
-      if (proof) setPlayerNotifs(ns => [...ns, { id:Date.now(), type:"rejected", msg:`⚠ "${proof.missionTitle}" rejected. Reason: ${reason || "See guidelines."}` }]);
+      setSharedProofs((ps: any) => ps.map((p: any) => p.id===id ? { ...p, status:"rejected", rejectReason:reason } : p));
+      const proof = sharedProofs.find((p: any) => p.id===id);
+      if (proof) setPlayerNotifs((ns: any) => [...ns, { id:Date.now(), type:"rejected", msg:`⚠ "${proof.missionTitle}" rejected. Reason: ${reason || "See guidelines."}` }]);
       if (authUser) {
         supabase.from("proof_submissions").update({ status: "rejected", reject_reason: reason, reviewed_by: authUser.id, reviewed_at: new Date().toISOString() }).eq("id", id).then(() => {});
       }
     },
     setStylePhase: (phase) => {
-      setSharedStyleEvent(ev => ({ ...ev, phase }));
+      setSharedStyleEvent((ev: any) => ({ ...ev, phase }));
       if (authUser) {
         supabase.from("style_events").update({ phase }).order("created_at", { ascending: false }).limit(1).then(() => {});
       }
     },
     toggleShopItem: (id) => {
-      setSharedShopItems(is => is.map(i => i.id===id ? { ...i, active:!i.active } : i));
+      setSharedShopItems((is: any) => is.map((i: any) => i.id===id ? { ...i, active:!i.active } : i));
       if (authUser) {
-        const item = sharedShopItems.find(i => i.id === id);
+        const item = sharedShopItems.find((i: any) => i.id === id);
         if (item) supabase.from("shop_items").update({ active: !item.active }).eq("id", id).then(() => {});
       }
     },
     addShopItem: (item) => {
-      setSharedShopItems(is => [...is, item]);
+      setSharedShopItems((is: any) => [...is, item]);
       if (authUser) {
         supabase.from("shop_items").insert({
           name: item.name, category: item.cat, price_ae: item.priceAE || item.price, rarity: item.rarity || "common",
@@ -6000,9 +6013,9 @@ export default function ZoneRushApp() {
         }).then(() => {});
       }
     },
-    toggleMission: (id) => setSharedMissions(ms => ms.map(m => m.id===id ? { ...m, _disabled:!m._disabled } : m)),
+    toggleMission: (id) => setSharedMissions((ms: any) => ms.map((m: any) => m.id===id ? { ...m, _disabled:!m._disabled } : m)),
     addEvent: (ev) => {
-      setSharedEvents(es => [...es, ev]);
+      setSharedEvents((es: any) => [...es, ev]);
       if (authUser) {
         supabase.from("events").insert({
           title: ev.title, type: ev.type || "territory", status: "active",
@@ -6012,15 +6025,15 @@ export default function ZoneRushApp() {
       }
     },
     endEvent: (id) => {
-      setSharedEvents(es => es.filter(e => e.id!==id));
+      setSharedEvents((es: any) => es.filter((e: any) => e.id!==id));
       if (authUser) {
         supabase.from("events").update({ status: "ended" }).eq("id", id).then(() => {});
       }
     },
     publishWinnerToShop: (sub) => {
       const newItem = { id:"c"+Date.now(), name:sub.title, cat:"cosmetic", price:200, priceAE:200, rarity:"epic", icon:"👗", owned:false, featured:true, type:"general", stock:null, sold:0, active:true, soulBound:false, designer:sub.userName, isWinner:true };
-      setSharedShopItems(is => [...is, newItem]);
-      setPlayerNotifs(ns => [...ns, { id:Date.now(), type:"shop", msg:`🏆 Style Event winner "${sub.title}" by ${sub.userName} is now in the Market!` }]);
+      setSharedShopItems((is: any) => [...is, newItem]);
+      setPlayerNotifs((ns: any) => [...ns, { id:Date.now(), type:"shop", msg:`🏆 Style Event winner "${sub.title}" by ${sub.userName} is now in the Market!` }]);
       if (authUser) {
         supabase.from("shop_items").insert({
           name: sub.title, category: "cosmetic", price_ae: 200, rarity: "epic", icon: "👗",
@@ -6029,7 +6042,7 @@ export default function ZoneRushApp() {
       }
     },
     submitProof: (proof) => {
-      setSharedProofs(ps => [...ps, proof]);
+      setSharedProofs((ps: any) => [...ps, proof]);
       showToast(`📋 New proof queued for admin review`, "info");
       if (authUser) {
         supabase.from("proof_submissions").insert({
@@ -6047,7 +6060,7 @@ export default function ZoneRushApp() {
         if (newClan) {
           await supabase.from("clan_members").insert({ clan_id: newClan.id, user_id: authUser.id, role: "leader" });
           await supabase.from("profiles").update({ clan_id: newClan.id, ae: sharedUser.ae - 500 }).eq("user_id", authUser.id);
-          setSharedUser(u => ({
+          setSharedUser((u: any) => ({
             ...u, ae: u.ae - 500,
             clan: { id: newClan.id, name, tag, motto: motto || "New clan!", color: TL, founded: "Mar 2026", memberRole: "Leader", treasury: 0, weeklyXP: 0, rank: 99, cpr: 0, zonesHeld: 0, totalMembers: 1, maxMembers: 20 }
           }));
@@ -6055,14 +6068,14 @@ export default function ZoneRushApp() {
           showToast(`❌ Clan creation failed: ${error?.message || "Unknown error"}`, "error");
         }
       } else {
-        setSharedUser(u => ({
+        setSharedUser((u: any) => ({
           ...u, ae: u.ae - 500,
           clan: { id:tag.toLowerCase(), name, tag, motto: motto || "New clan!", color:TL, founded:"Mar 2026", memberRole:"Leader", treasury:0, weeklyXP:0, rank:99, cpr:0, zonesHeld:0, totalMembers:1, maxMembers:20 }
         }));
       }
     },
     discoverClue: () => {
-      setSharedUser(u => {
+      setSharedUser((u: any) => {
         let newXp = u.xp + 80, newLevel = u.level, newXpNext = u.xpNext;
         while (newXp >= newXpNext) { newXp -= newXpNext; newLevel++; newXpNext = Math.floor(newXpNext * 1.25); }
         return { ...u, ae: u.ae + 150, xp: newXp, level: newLevel, xpNext: newXpNext };
