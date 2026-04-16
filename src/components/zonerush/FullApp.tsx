@@ -412,7 +412,7 @@ function TabBar({ tabs, active, onSelect, style }: TabBarProps) {
       border:`1.5px solid ${BR}`,
       ...style,
     }}>
-      {tabs.map(([id, label, badge]) => (
+      {tabs.map(([id, label, badge]: [string, string, number?]) => (
         <button
           key={id}
           onClick={() => onSelect(id)}
@@ -445,7 +445,7 @@ function TabBar({ tabs, active, onSelect, style }: TabBarProps) {
 // ═══════════════════════════════════════════════════════════════════════════════
 function WellbeingOverlay({ onDone }: WellbeingOverlayProps) {
   const [phase, setPhase] = useState("ask");
-  const [mood, setMood] = useState(null);
+  const [mood, setMood] = useState<number | null>(null);
   const [freeText, setFreeText] = useState("");
   const [wantTalk, setWantTalk] = useState(false);
   const [outreach, setOutreach] = useState(false);
@@ -1432,7 +1432,7 @@ function BottomNav({ active, onSelect }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 function StyleEventGallery({ event, onBack }: StyleEventGalleryProps) {
   const ctx = useContext(AppContext);
-  const [myVote, setMyVote] = useState(null);
+  const [myVote, setMyVote] = useState<string | null>(null);
   const [voteConfirm, setVoteConfirm] = useState(false);
   const [gallery, setGallery] = useState(event.gallery);
   const [seView, setSeView] = useState("gallery");
@@ -1836,8 +1836,8 @@ function MarketScreen({ user }: MarketScreenProps) {
   const [owned, setOwned] = useState(new Set(
     activeShop.filter(i => i.owned).map(i => i.id).concat(COMMUNITY_ITEMS.filter(i => i.owned).map(i => i.id))
   ));
-  const [cart, setCart] = useState(null);
-  const [sellModal, setSellModal] = useState(null);
+  const [cart, setCart] = useState<any>(null);
+  const [sellModal, setSellModal] = useState<any>(null);
   const [sellPrice, setSellPrice] = useState("");
   const marketplaceListings = ctx?.marketplaceListings || [];
 
@@ -2519,7 +2519,7 @@ function MembersTab({ clan, isLeader, isOfficer }) {
 }
 
 function ZonesTab({ clan, isLeader, isOfficer }) {
-  const [selectedZone, setSelectedZone] = useState(null);
+  const [selectedZone, setSelectedZone] = useState<any>(null);
   const totalIncome = ZONES.reduce((s, z) => s + z.income, 0);
 
   return (
@@ -2582,7 +2582,7 @@ function ZonesTab({ clan, isLeader, isOfficer }) {
 
 function WarTab({ clan, isLeader, isOfficer }: WarTabProps) {
   const ctx = useContext(AppContext);
-  const [selectedZone, setSelectedZone] = useState(null);
+  const [selectedZone, setSelectedZone] = useState<any>(null);
   const [declared, setDeclared] = useState(false);
   const [defending, setDefending] = useState(new Set());
   const canDeclare = selectedZone && !clanZoneOnCooldown(selectedZone);
@@ -2812,7 +2812,7 @@ const ADM_FONT = "'IBM Plex Sans',system-ui,sans-serif";
 const ADM_MONO = "'IBM Plex Mono',monospace";
 
 // ─── STYLES ────────────────────────────────────────────────────────────────────
-const AA = {
+const AA: Record<string, any> = {
   // ── LOGIN ──
   loginRoot: { position:"relative", minHeight:"100dvh", background:ADM_BG, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:ADM_FONT, overflow:"hidden" },
   loginBg:   { position:"fixed", inset:0, background:`radial-gradient(ellipse 60% 60% at 50% 0%, rgba(0,212,168,0.05), transparent 60%), ${ADM_BG}` },
@@ -3147,7 +3147,7 @@ function KpiCard({ label, val, delta, color }: KpiCardProps) {
 }
 
 function StatusPill({ status }: StatusPillProps) {
-  const map = { active:C.teal, flagged:C.red, warned:C.amber, inactive:C.dim, pending:C.amber, reviewing:C.amber, resolved:C.teal };
+  const map: Record<string, string> = { active:C.teal, flagged:C.red, warned:C.amber, inactive:C.dim, pending:C.amber, reviewing:C.amber, resolved:C.teal };
   return <span style={{ ...AA.statusPillEl, color:map[status]||C.dim, borderColor:(map[status]||C.dim)+"44" }}>{status}</span>;
 }
 
@@ -3610,8 +3610,8 @@ function PlayersSection() {
   const [players,  setPlayers]  = useState(MOCK_PLAYERS);
   const [search,   setSearch]   = useState("");
   const [filter,   setFilter]   = useState("all");
-  const [selected, setSelected] = useState(null);
-  const [confirmBan, setConfirmBan] = useState(null);
+  const [selected, setSelected] = useState<any>(null);
+  const [confirmBan, setConfirmBan] = useState<any>(null);
 
   const filtered = players.filter(p => {
     const q = search.toLowerCase();
@@ -3756,7 +3756,7 @@ function WellbeingSection() {
 }
 
 // ─── ZONES SECTION ─────────────────────────────────────────────────────────────
-const ADMIN_GAME_RULES = { ZONE_ATTACK_COOLDOWN_HOURS:24, ZONE_CAPTURE_MINS_STANDARD:3, ZONE_CAPTURE_MINS_LANDMARK:5, CLAN_CREATE_MIN_LEVEL:5, CLAN_MAX_MEMBERS:20, CLAN_CREATE_COST_AE:500, WAR_DECLARE_COST_AE:200, COMBAT_OPPONENT_COOLDOWN_HOURS:4, COMBAT_MAX_INCOMING:3, COMBAT_LEVEL_RANGE:5 };
+const ADMIN_GAME_RULES: Record<string, number> = { ZONE_ATTACK_COOLDOWN_HOURS:24, ZONE_CAPTURE_MINS_STANDARD:3, ZONE_CAPTURE_MINS_LANDMARK:5, CLAN_CREATE_MIN_LEVEL:5, CLAN_MAX_MEMBERS:20, CLAN_CREATE_COST_AE:500, WAR_DECLARE_COST_AE:200, COMBAT_OPPONENT_COOLDOWN_HOURS:4, COMBAT_MAX_INCOMING:3, COMBAT_LEVEL_RANGE:5 };
 
 function zoneOnCooldown(zone) {
   if (!zone.lastAttackedAt) return false;
@@ -3839,7 +3839,7 @@ function EconomySection() {
 }
 
 // ─── SHOP SECTION ──────────────────────────────────────────────────────────────
-const RARITY_COL = { common:C.dim, uncommon:"#27AE60", rare:"#4DA6FF", epic:"#A78BFA", legendary:"#F5A623" };
+const RARITY_COL: Record<string, string> = { common:C.dim, uncommon:"#27AE60", rare:"#4DA6FF", epic:"#A78BFA", legendary:"#F5A623" };
 const BLANK_ITEM = { name:"", cat:"headwear", priceAE:"", rarity:"common", type:"general", stock:"", soulBound:false };
 const CATS = ["headwear","eyewear","outerwear","equipment","furniture","clan","consumable","cosmetic"];
 const RARITIES = ["common","uncommon","rare","epic","legendary"];
@@ -3917,7 +3917,7 @@ function MissionsSection() {
   const ctx = useContext(AppContext);
   const [mTab, setMTab] = useState("templates");
   const [showNew, setShowNew] = useState(false);
-  const [viewProof, setViewProof] = useState(null);
+  const [viewProof, setViewProof] = useState<any>(null);
   const [rejectNote, setRejectNote] = useState("");
   const proofs = ctx?.sharedProofs || PROOF_SUBMISSIONS;
   const pending = proofs.filter(p => p.status === "pending" || p.status === "flagged");
@@ -3986,7 +3986,7 @@ function ProofCard({ sub, resolved, onView }) {
 const REWARD_TYPES = [
   { id:"ae", label:"AE (Aether)", icon:"◎" },{ id:"xp", label:"XP", icon:"⚡" },{ id:"badge", label:"Exclusive Badge", icon:"🏅" },{ id:"item", label:"Shop Item Unlock", icon:"🎁" },{ id:"title", label:"Player Title", icon:"👑" },
 ];
-const EVENT_TYPE_COLOR = { territory:C.amber, sustainability:"#27AE60", social:"#4DA6FF", wellness:"#A78BFA", combat:C.red };
+const EVENT_TYPE_COLOR: Record<string, string> = { territory:C.amber, sustainability:"#27AE60", social:"#4DA6FF", wellness:"#A78BFA", combat:C.red };
 const RECIPIENT_LABELS = { all:"All completers", top1:"1st place only", top3:"Top 3", top10:"Top 10" };
 
 const MOCK_EVENTS_ADMIN = [
@@ -3999,7 +3999,7 @@ function EventsSection() {
   const ctx = useContext(AppContext);
   const [showCreate, setShowCreate] = useState(false);
   const [adminEvents, setAdminEvents] = useState(MOCK_EVENTS_ADMIN);
-  const [grantingId, setGrantingId] = useState(null);
+  const [grantingId, setGrantingId] = useState<any>(null);
   const [form, setForm] = useState({ title:"", type:"territory", desc:"", startDate:"", endDate:"", eligibility:"All players", maxParticipants:"", rewardRules:[] });
 
   const active = adminEvents.filter(e => e.status === "active");
@@ -4075,9 +4075,9 @@ const STYLE_WEEKS = [
 function StyleEventSection() {
   const ctx = useContext(AppContext);
   const [seTab, setSeTab] = useState("current");
-  const [viewSub, setViewSub] = useState(null);
+  const [viewSub, setViewSub] = useState<any>(null);
   const [rejectNote, setRejectNote] = useState("");
-  const [confirmPublish, setConfirmPublish] = useState(false);
+  const [confirmPublish, setConfirmPublish] = useState<boolean>(false);
 
   const subs = ctx?.sharedStyleSubs || STYLE_SUBMISSIONS_INIT;
   const pending = subs.filter(s => s.status === "pending" || s.status === "flagged");
@@ -4149,7 +4149,7 @@ function StyleEventSection() {
   );
 }
 
-function StyleSubCard({ sub, resolved, onView }) {
+function StyleSubCard({ sub, resolved, onView }: { sub: any; resolved?: boolean; onView?: () => void }) {
   const statusColor = { pending:C.amber, flagged:C.red, approved:C.teal, rejected:C.dim };
   const statusLabel = { pending:"Pending", flagged:"⚠ Flagged", approved:"✓ Live", rejected:"Rejected" };
   return (
@@ -4327,7 +4327,7 @@ function ConfigSection() {
     { group:"Feature Flags", settings:[{ key:"combat",label:"Combat system",val:"ON" },{ key:"marketplace",label:"Marketplace",val:"ON" },{ key:"style_event",label:"Style events",val:"ON" },{ key:"maintenance",label:"Maintenance mode",val:"OFF" }] },
   ];
   const [groups, setGroups] = useState(initSettings);
-  const [editKey, setEditKey] = useState(null);
+  const [editKey, setEditKey] = useState<string | null>(null);
   const [editVal, setEditVal] = useState("");
 
   const startEdit = (key, val) => { setEditKey(key); setEditVal(val); };
@@ -4404,10 +4404,10 @@ function getDistanceMetres(lat1: number, lon1: number, lat2: number, lon2: numbe
 function ZoneMapScreen() {
   const ctx = useContext(AppContext);
   const [zones, setZones] = useState([]);
-  const [userPos, setUserPos] = useState(null);
-  const [gpsError, setGpsError] = useState(null);
-  const [selectedZone, setSelectedZone] = useState(null);
-  const [capturing, setCapturing] = useState(null);
+  const [userPos, setUserPos] = useState<any>(null);
+  const [gpsError, setGpsError] = useState<string | null>(null);
+  const [selectedZone, setSelectedZone] = useState<any>(null);
+  const [capturing, setCapturing] = useState<any>(null);
   const [elapsed, setElapsed] = useState(0);
   const [filter, setFilter] = useState("all");
   const watchRef = useRef(null);
@@ -5246,7 +5246,7 @@ function ProfileScreen({ user, onAdminAccess }) {
             <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
               {/* Google Fit Connection */}
               {(() => {
-                const [fitConnected, setFitConnected] = useState(false);
+                const [fitConnected, setFitConnected] = useState<boolean>(false);
                 const [fitLoading, setFitLoading] = useState(true);
                 const ctx = useContext(AppContext);
                 useEffect(() => {
@@ -5485,7 +5485,7 @@ function AuthScreen({ onAuth }: AuthScreenProps) {
 
 export default function ZoneRushApp() {
   const [dbReady, setDbReady] = useState(false);
-  const [authUser, setAuthUser] = useState(null);
+  const [authUser, setAuthUser] = useState<any>(null);
 
   // Don't load stale demo data from localStorage — always start from defaults
   // Real data will be loaded from DB when authenticated
@@ -5522,7 +5522,7 @@ export default function ZoneRushApp() {
   });
   const [sharedStyleSubs,  setSharedStyleSubs]  = useState(STYLE_SUBMISSIONS_INIT);
   const [sharedProofs,     setSharedProofs]     = useState(PROOF_SUBMISSIONS);
-  const [playerNotifs,     setPlayerNotifs]     = useState([]);
+  const [playerNotifs,     setPlayerNotifs]     = useState<ZRNotif[]>([]);
   const [completedMissions, _setCompletedMissions] = useState(() => {
     try { const s = localStorage.getItem("zr_completedMissions"); return s ? new Set(JSON.parse(s)) : new Set(); }
     catch { return new Set(); }
@@ -5534,10 +5534,10 @@ export default function ZoneRushApp() {
       return next;
     });
   };
-  const [joinedEvents, setJoinedEvents] = useState(new Set());
-  const [marketplaceListings, setMarketplaceListings] = useState([]);
-  const [listedItems, setListedItems] = useState(new Set());
-  const [listingPrices, setListingPrices] = useState({});
+  const [joinedEvents, setJoinedEvents] = useState<Set<string | number>>(new Set());
+  const [marketplaceListings, setMarketplaceListings] = useState<any[]>([]);
+  const [listedItems, setListedItems] = useState<Set<string>>(new Set());
+  const [listingPrices, setListingPrices] = useState<Record<string, number>>({});
 
   // ── Fetch data from Supabase on mount ──
   useEffect(() => {
