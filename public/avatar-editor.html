@@ -1208,18 +1208,19 @@ document.getElementById('scl').addEventListener('input',e=>{S.scale=+e.target.va
 // RANDOMIZE
 // ─────────────────────────────────────────
 function pick(a){return a[Math.floor(Math.random()*a.length)];}
+function ownedOnly(arr){return arr.filter(i=>!i.shopId||ownedShopItems.has(i.shopId));}
 function randomize(){
   S.sex       =Math.random()>.5?'male':'female';
   S.skin      =pick(SKIN_SW);
   S.hair      =pick(HAIR_STYLES.filter(h=>h.id!=='none'));
   S.hairColor =pick(HAIR_SW);
-  S.arms      =pick(ARMS_OPTS);
-  S.torso     =pick(TORSO_OPTS.filter(t=>t.id!=='none'));
-  S.legs      =pick(LEGS_OPTS.filter(l=>l.id!=='none'));
-  S.feet      =pick(FEET_OPTS);
-  S.hat       =pick(HAT_OPTS);
-  S.weapon    =pick(WEAPON_OPTS.filter(w=>w.id!=='none'));
-  S.shield    =pick(SHIELD_OPTS);
+  const oa=ownedOnly(ARMS_OPTS); S.arms=pick(oa.length?oa:[ARMS_OPTS[0]]);
+  const ot=ownedOnly(TORSO_OPTS.filter(t=>t.id!=='none')); S.torso=pick(ot.length?ot:[TORSO_OPTS[0]]);
+  const ol=ownedOnly(LEGS_OPTS.filter(l=>l.id!=='none')); S.legs=pick(ol.length?ol:[LEGS_OPTS[0]]);
+  const of2=ownedOnly(FEET_OPTS); S.feet=pick(of2.length?of2:[FEET_OPTS[0]]);
+  const oh=ownedOnly(HAT_OPTS); S.hat=pick(oh.length?oh:[HAT_OPTS[0]]);
+  const ow=ownedOnly(WEAPON_OPTS.filter(w=>w.id!=='none')); S.weapon=pick(ow.length?ow:[WEAPON_OPTS[0]]);
+  const os=ownedOnly(SHIELD_OPTS); S.shield=pick(os.length?os:[SHIELD_OPTS[0]]);
   S.clothColor=pick(CLOTH_SW);
   S.anim      =pick(Object.keys(ANIMS));
   S.scene     =pick(SCENES);
