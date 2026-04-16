@@ -639,6 +639,24 @@ function AdminLogin({ onAuth, onCancel }: any) {
   );
 }
 
+// ─── REALTIME REFRESH HOOK ──────────────────────────────────────────────────────
+function useAdminRealtime() {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => setTick(t => t + 1))
+      .on("postgres_changes", { event: "*", schema: "public", table: "quest_progress" }, () => setTick(t => t + 1))
+      .on("postgres_changes", { event: "*", schema: "public", table: "zone_captures" }, () => setTick(t => t + 1))
+      .on("postgres_changes", { event: "*", schema: "public", table: "mood_entries" }, () => setTick(t => t + 1))
+      .on("postgres_changes", { event: "*", schema: "public", table: "clans" }, () => setTick(t => t + 1))
+      .on("postgres_changes", { event: "*", schema: "public", table: "events" }, () => setTick(t => t + 1))
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+  return tick;
+}
+
 // ─── MAIN DASHBOARD ────────────────────────────────────────────────────────────
 const SECTIONS = [
   { id:"overview",    icon:"◈",  label:"Overview",      roles:["admin","researcher","moderator"] },
@@ -662,6 +680,7 @@ function AdminDashboard({ role, onLogout }: any) {
   const [section, setSection] = useState("overview");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [time, setTime] = useState(new Date());
+  const realtimeTick = useAdminRealtime();
 
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000);
@@ -724,26 +743,26 @@ function AdminDashboard({ role, onLogout }: any) {
               <span style={AA.topBreadcrumb}>Campus Engage / Admin / {current.label}</span>
             </div>
             <div style={AA.topRight}>
-              <LiveBadge />
+              <LiveBadge key={realtimeTick} />
               <div style={AA.topTime}>{time.toLocaleDateString("en-GB", { weekday:"short", day:"numeric", month:"short" })}</div>
             </div>
           </div>
 
           <div style={AA.content}>
-            {section === "overview"   && <OverviewSection />}
-            {section === "players"    && <PlayersSection />}
-            {section === "wellbeing"  && <WellbeingSection />}
-            {section === "zones"      && <ZonesSection />}
-            {section === "economy"    && <EconomySection />}
+            {section === "overview"   && <OverviewSection key={realtimeTick} />}
+            {section === "players"    && <PlayersSection key={realtimeTick} />}
+            {section === "wellbeing"  && <WellbeingSection key={realtimeTick} />}
+            {section === "zones"      && <ZonesSection key={realtimeTick} />}
+            {section === "economy"    && <EconomySection key={realtimeTick} />}
             {section === "shop"       && <ShopSection />}
             {section === "missions"   && <MissionsSection />}
-            {section === "events"     && <EventsSection />}
+            {section === "events"     && <EventsSection key={realtimeTick} />}
             {section === "styleevent" && <StyleEventSection />}
-            {section === "combat"     && <CombatSection />}
-            {section === "clans"      && <ClansSection />}
-            {section === "story"      && <StorySection />}
+            {section === "combat"     && <CombatSection key={realtimeTick} />}
+            {section === "clans"      && <ClansSection key={realtimeTick} />}
+            {section === "story"      && <StorySection key={realtimeTick} />}
             {section === "moderation" && <ModerationSection />}
-            {section === "research"   && <ResearchSection />}
+            {section === "research"   && <ResearchSection key={realtimeTick} />}
             {section === "config"     && <ConfigSection />}
           </div>
         </main>
