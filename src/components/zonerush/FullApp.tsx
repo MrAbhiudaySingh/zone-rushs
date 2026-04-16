@@ -186,8 +186,20 @@ export default function ZoneRushApp() {
   useEffect(() => {
     if (!authUser) return;
     const fetchUserData = async () => {
-      // Fetch profile
-      const { data: profile } = await supabase.from("profiles").select("*").eq("user_id", authUser.id).single();
+      // Fetch profile — create one if it doesn't exist yet
+      let { data: profile } = await supabase.from("profiles").select("*").eq("user_id", authUser.id).single();
+      if (!profile) {
+        const { data: newProfile } = await supabase.from("profiles").upsert({
+          user_id: authUser.id,
+          display_name: authUser.user_metadata?.name || authUser.email?.split("@")[0] || "Player",
+          roll_number: authUser.user_metadata?.roll_number || null,
+          year: authUser.user_metadata?.year || null,
+          course: authUser.user_metadata?.course || null,
+          specialisation: authUser.user_metadata?.specialisation || null,
+          xp_next: 100,
+        }, { onConflict: "user_id" }).select("*").single();
+        profile = newProfile;
+      }
       if (profile) {
         const lastActive = profile.updated_at ? new Date(profile.updated_at) : null;
         const now = new Date();

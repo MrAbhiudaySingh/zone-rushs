@@ -29,11 +29,20 @@ export function AuthScreen({ onAuth }: AuthScreenProps) {
       const { data, error: signErr } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: window.location.origin },
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: {
+            name: name.trim(),
+            roll_number: rollNumber.trim(),
+            year,
+            course: course.trim(),
+            specialisation: specialisation.trim() || null,
+          },
+        },
       });
       if (signErr) { setError(signErr.message); setLoading(false); return; }
       if (data?.user) {
-        // Create profile with student info
+        // Try to create profile — may fail if email not yet confirmed (RLS)
         await supabase.from("profiles").upsert({
           user_id: data.user.id,
           display_name: name.trim(),
@@ -41,7 +50,8 @@ export function AuthScreen({ onAuth }: AuthScreenProps) {
           year,
           course: course.trim(),
           specialisation: specialisation.trim() || null,
-        }, { onConflict: "user_id" });
+          xp_next: 100,
+        }, { onConflict: "user_id" }).select();
         showToast("✅ Account created! Check your email to verify.", "success");
       }
     } catch (err) {
