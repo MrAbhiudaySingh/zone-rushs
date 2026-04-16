@@ -1640,55 +1640,16 @@ function StorySection() {
 }
 
 // ─── MODERATION SECTION ────────────────────────────────────────────────────────
-const REPORTS = [
-  { id:1, reporter:"User #2203", reported:"Vikram K.", reason:"Toxic message in clan chat", time:"13:45", severity:"high", status:"pending", priorActions:[] },
-  { id:2, reporter:"User #7743", reported:"User #5501", reason:"Suspicious mission exploit", time:"12:30", severity:"medium", status:"pending", priorActions:["warn"] },
-  { id:3, reporter:"User #3317", reported:"User #8821", reason:"Harassment in zone chat", time:"11:00", severity:"high", status:"reviewing", priorActions:["warn","timeout"] },
-];
-
 function ModerationSection() {
-  const [reports, setReports] = useState(REPORTS);
-  const PRIOR_ICONS = { warn:"⚠️", timeout:"⏱", ban:"🚫" };
-  const nextAction = (priorActions) => { if (priorActions.includes("timeout")) return "ban"; if (priorActions.includes("warn")) return "timeout"; return "warn"; };
-  const ACTION_LABELS = { warn:"⚠️ Warn", timeout:"⏱ Timeout", ban:"🚫 Ban" };
-
-  const takeAction = (reportId, action) => {
-    setReports(rs => rs.map((r: any) => r.id === reportId ? {
-      ...r,
-      status: "resolved",
-      priorActions: [...r.priorActions, action],
-    } : r));
-    showToast(`${ACTION_LABELS[action]} applied to report #${reportId}`, action === "ban" ? "error" : "warning");
-  };
-
-  const resolveReport = (reportId) => {
-    setReports(rs => rs.map((r: any) => r.id === reportId ? { ...r, status:"resolved" } : r));
-    showToast(`✓ Report #${reportId} resolved — no action taken`, "success");
-  };
-
   return (
     <div style={AA.secWrap}>
-      <SectionTitle title="Moderation Queue" sub={`${reports.filter(r=>r.status!=="resolved").length} open · Warn → Timeout → Ban`} />
+      <SectionTitle title="Moderation Queue" sub="No moderation reports table configured yet" />
       <div style={AA.modLadder}>
         {[{ step:1, icon:"⚠️", label:"Warn", color:C.amber },{ step:2, icon:"⏱", label:"Timeout", color:C.red },{ step:3, icon:"🚫", label:"Ban", color:C.red }].map((s: any, i: number) => (
           <div key={s.step} style={AA.modLadderItem}><div style={{ ...AA.modLadderIcon, borderColor:s.color+"44", color:s.color }}>{s.icon}</div><div style={AA.modLadderLabel}>{s.label}</div>{i<2 && <div style={AA.modLadderArrow}>→</div>}</div>
         ))}
       </div>
-      <Table cols={["#","Reporter","Reported","Reason","Severity","History","Status","Actions"]} rows={reports.map((r: any) => {
-        const next = nextAction(r.priorActions);
-        return [
-          <span style={AA.monoSm}>R{r.id}</span>,<span style={AA.monoSm}>{r.reporter}</span>,<span style={AA.playerName}>{r.reported}</span>,<span style={{ color:C.dim, fontSize:11 }}>{r.reason}</span>,
-          <span style={{ color:{high:C.red,medium:C.amber,low:C.teal}[r.severity], fontSize:10, fontWeight:700, textTransform:"uppercase" }}>{r.severity}</span>,
-          <div style={{ display:"flex", gap:3 }}>{r.priorActions.length===0?<span style={{ color:C.dim, fontSize:10 }}>None</span>:r.priorActions.map((a: any, i: number) => <span key={i} style={{ fontSize:12 }}>{PRIOR_ICONS[a]}</span>)}</div>,
-          <StatusPill status={r.status} />,
-          r.status !== "resolved" ? (
-            <div style={AA.actionBtns}>
-              <button style={{ ...AA.tinyBtn, ...(next==="ban"?AA.tinyBtnRed:AA.tinyBtnAmber) }} onClick={() => takeAction(r.id, next)}>{ACTION_LABELS[next]}</button>
-              <button style={AA.tinyBtn} onClick={() => resolveReport(r.id)}>Dismiss</button>
-            </div>
-          ) : <span style={{ fontSize:10, color:C.teal }}>✓ Resolved</span>,
-        ];
-      })} />
+      <div style={{ ...AA.chartCard }}><div style={{ color:C.dim, fontFamily:ADM_MONO, fontSize:12 }}>No reports yet. A moderation reports table needs to be created to track user reports.</div></div>
     </div>
   );
 }
