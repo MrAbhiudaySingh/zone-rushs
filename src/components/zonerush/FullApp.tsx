@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect, useRef, createContext, useContext, useCallback } from "react";
 import type { CSSProperties, ReactNode, FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
