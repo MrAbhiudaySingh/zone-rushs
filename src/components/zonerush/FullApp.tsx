@@ -19,7 +19,7 @@ import type {
 // All interactions wired up with shared state management
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const AppContext = createContext(null);
+const AppContext = createContext<AppContextType | null>(null);
 
 // ─── TOAST SYSTEM ──────────────────────────────────────────────────────────────
 let _toastId = 0;
