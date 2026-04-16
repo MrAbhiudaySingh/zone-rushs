@@ -1656,17 +1656,42 @@ function ModerationSection() {
 
 // ─── RESEARCH SECTION ──────────────────────────────────────────────────────────
 function ResearchSection() {
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const [profilesRes, moodRes, questRes, storyRes] = await Promise.all([
+        supabase.from("profiles").select("aether, xp, streak"),
+        supabase.from("mood_entries").select("mood_score"),
+        supabase.from("quest_progress").select("id, user_id, status"),
+        supabase.from("story_progress").select("user_id"),
+      ]);
+      const profiles = profilesRes.data || [];
+      const moods = moodRes.data || [];
+      const quests = questRes.data || [];
+      const stories = storyRes.data || [];
+      const avgMood = moods.length > 0 ? (moods.reduce((s: number, m: any) => s + m.mood_score, 0) / moods.length).toFixed(1) : "N/A";
+      const activeQuests = quests.filter((q: any) => q.status === "completed").length;
+      const storyUsers = new Set(stories.map((s: any) => s.user_id)).size;
+      const storyPct = profiles.length > 0 ? Math.round((storyUsers / profiles.length) * 100) : 0;
+
+      setStats({ players: profiles.length, avgMood, totalMoods: moods.length, completedQuests: activeQuests, storyEngagement: storyPct, storyUsers });
+      setLoading(false);
+    })();
+  }, []);
+
+  if (loading) return <div style={{ color:C.dim, fontFamily:ADM_MONO, padding:20 }}>Loading research data...</div>;
+
   return (
     <div style={AA.secWrap}>
-      <SectionTitle title="Research Dashboard" sub="IRB-approved anonymised data" />
+      <SectionTitle title="Research Dashboard" sub="Anonymised aggregate data" />
       <div style={AA.kpiGrid}>{[
-        { label:"DAU Rate",val:"22.8%",delta:"Target: 30%",color:C.amber },{ label:"Cross-Dept Connect",val:"142",delta:"4.1/user",color:C.teal },{ label:"Avg Mood (30d)",val:"3.4/5",delta:"Slight decline",color:C.amber },
-        { label:"Steps Logged/Day",val:"12,400",delta:"+34% vs control",color:C.teal },{ label:"Sustainability Acts",val:"891",delta:"This month",color:C.teal },{ label:"Story Engagement",val:"67%",delta:"Of active users",color:"#A78BFA" },
+        { label:"Registered Players", val:String(stats.players), delta:"Total profiles", color:C.teal },
+        { label:"Avg Mood", val:`${stats.avgMood}/5`, delta:`${stats.totalMoods} entries`, color:C.amber },
+        { label:"Completed Quests", val:String(stats.completedQuests), delta:"All time", color:C.teal },
+        { label:"Story Engagement", val:`${stats.storyEngagement}%`, delta:`${stats.storyUsers} players`, color:"#A78BFA" },
       ].map((k: any) => <KpiCard key={k.label} {...k} />)}</div>
-      <div style={AA.chartsRow}>
-        <div style={{ ...AA.chartCard, flex:2 }}><div style={AA.chartTitle}>Cross-Department Social Connections</div><MiniLineChart data={[12,18,24,31,40,52,68,80,96,112,126,142]} color="#A78BFA" /></div>
-        <div style={{ ...AA.chartCard, flex:1 }}><div style={AA.chartTitle}>Wellbeing vs Engagement</div><div style={{ color:C.dim, fontSize:12, lineHeight:1.6 }}>Mood 4-5: avg 8.4 missions/week<br/>Mood 3: avg 5.2<br/>Mood 1-2: avg 2.1<br/><span style={{ color:C.amber }}>↑ r=0.71</span></div></div>
-      </div>
     </div>
   );
 }
