@@ -743,7 +743,7 @@ function AdminDashboard({ role, onLogout }: any) {
               <span style={AA.topBreadcrumb}>Campus Engage / Admin / {current.label}</span>
             </div>
             <div style={AA.topRight}>
-              <LiveBadge />
+              <LiveBadge key={realtimeTick} />
               <div style={AA.topTime}>{time.toLocaleDateString("en-GB", { weekday:"short", day:"numeric", month:"short" })}</div>
             </div>
           </div>
