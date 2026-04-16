@@ -32,12 +32,8 @@ import {
 // Remaining components below — constants, toast, UI primitives, and AppContext
 // are now imported from split files above.
 // ═══════════════════════════════════════════════════════════════════════════════
-let _toastId = 0;
-const _toastListeners: ToastHandler[] = [];
-function showToast(msg: string, type="success", duration=3000) {
-  const t: Toast = { id:++_toastId, msg, type, duration };
-  _toastListeners.forEach((fn: any) => fn(t));
-}
+
+
 
 function ToastContainer() {
   const [toasts, setToasts] = useState<Toast[]>([]);
