@@ -978,9 +978,28 @@ function PlayersSection() {
 
 function PlayerModal({ player, onClose, onWarn, onBan }: PlayerModalProps) {
   const ctx = useContext(AppContext);
+  const [grantType, setGrantType] = useState<"xp"|"ae"|"shards"|null>(null);
+  const [grantAmount, setGrantAmount] = useState("");
+  const [granting, setGranting] = useState(false);
+
+  const handleGrant = async () => {
+    const amount = parseInt(grantAmount);
+    if (!grantType || isNaN(amount) || amount === 0) return;
+    setGranting(true);
+    const field = grantType === "xp" ? "xp" : grantType === "ae" ? "aether" : "shards";
+    const newVal = (grantType === "xp" ? player.xp : grantType === "ae" ? player.ae : player.shards) + amount;
+    const { error } = await supabase.from("profiles").update({ [field]: Math.max(0, newVal) }).eq("user_id", player.id);
+    if (error) { showToast("Failed to update: " + error.message, "error"); }
+    else { showToast(`✅ ${amount > 0 ? "Granted" : "Deducted"} ${Math.abs(amount)} ${grantType.toUpperCase()} ${amount > 0 ? "to" : "from"} ${player.name}`, "success"); }
+    setGranting(false);
+    setGrantType(null);
+    setGrantAmount("");
+    onClose();
+  };
+
   return (
     <div style={AA.modalOverlay} onClick={onClose}>
-      <div style={AA.modal} onClick={e=>e.stopPropagation()}>
+      <div style={{ ...AA.modal, maxWidth: 560 }} onClick={e=>e.stopPropagation()}>
         <div style={AA.modalHdr}>
           <div>
             <div style={AA.modalTitle}>{player.name} <span style={AA.monoSm}>#{player.id}</span></div>
@@ -989,10 +1008,41 @@ function PlayerModal({ player, onClose, onWarn, onBan }: PlayerModalProps) {
           <button style={AA.modalClose} onClick={onClose}>✕</button>
         </div>
         <div style={AA.modalGrid}>
-          {[["Level",`Lv ${player.level}`],["XP",player.xp.toLocaleString()],["AE Balance",player.ae.toLocaleString()],["Streak",`${player.streak} days`],["Clan",player.clan||"None"],["Status",player.status]].map((k: any, v: any) => (
+          {[["Level",`Lv ${player.level}`],["XP",player.xp.toLocaleString()],["AE Balance",player.ae.toLocaleString()],["Shards",player.shards.toLocaleString()],["Streak",`${player.streak} days`],["Status",player.status]].map((k: any, v: any) => (
             <div key={k} style={AA.modalStat}><div style={AA.modalStatLbl}>{k}</div><div style={AA.modalStatVal}>{v}</div></div>
           ))}
         </div>
+
+        {/* Grant / Deduct Section */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.dim, fontFamily: ADM_MONO, letterSpacing: "0.08em", marginBottom: 8 }}>GRANT / DEDUCT RESOURCES</div>
+          <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+            {(["xp", "ae", "shards"] as const).map(t => (
+              <button key={t} style={{ ...AA.filterBtn, ...(grantType === t ? AA.filterBtnOn : {}), flex: 1 }} onClick={() => setGrantType(grantType === t ? null : t)}>
+                {t === "xp" ? "⚡ XP" : t === "ae" ? "💎 AE" : "🔷 Shards"}
+              </button>
+            ))}
+          </div>
+          {grantType && (
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                type="number"
+                placeholder={`Amount (negative to deduct)`}
+                value={grantAmount}
+                onChange={e => setGrantAmount(e.target.value)}
+                style={{ ...AA.fieldInput, flex: 1, fontSize: 12 }}
+              />
+              <button
+                style={{ ...AA.tinyBtn, ...AA.tinyBtnGreen, padding: "10px 16px", opacity: granting ? 0.5 : 1 }}
+                disabled={granting || !grantAmount || isNaN(parseInt(grantAmount)) || parseInt(grantAmount) === 0}
+                onClick={handleGrant}
+              >
+                {granting ? "..." : parseInt(grantAmount) > 0 ? "Grant" : "Deduct"}
+              </button>
+            </div>
+          )}
+        </div>
+
         <div style={AA.modalActions}>
           <button style={AA.modalBtn} onClick={() => { showToast(`📋 Activity log for ${player.name} opened`, "info"); onClose(); }}>🔍 View Full Activity Log</button>
           <button style={AA.modalBtn} onClick={() => { showToast(`✉️ Message sent to ${player.name}`, "success"); onClose(); }}>✉️ Send Direct Message</button>
