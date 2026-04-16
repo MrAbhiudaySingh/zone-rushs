@@ -294,7 +294,7 @@ export default function ZoneRushApp() {
       // Fetch notifications
       const { data: notifs } = await supabase.from("notifications").select("*").eq("user_id", authUser.id).eq("read", false).order("created_at", { ascending: false });
       if (notifs?.length) {
-        setPlayerNotifs(notifs.map((n: any) => ({ id: n.id, type: n.type, msg: `${n.title}: ${n.body}` })));
+        setPlayerNotifs(notifs.map((n: any) => ({ id: n.id, type: n.type, msg: n.message })));
       }
     };
     fetchUserData();
