@@ -1263,6 +1263,37 @@ function toast(m){
 }
 
 // ─────────────────────────────────────────
+// CONFIRM AVATAR (send to parent app)
+// ─────────────────────────────────────────
+function confirmAvatar(){
+  const dataUrl = canvas.toDataURL('image/png');
+  const config = {
+    sex: S.sex, skin: S.skin.id, hair: S.hair.id, hairColor: S.hairColor.id,
+    arms: S.arms.id, torso: S.torso.id, legs: S.legs.id, feet: S.feet.id,
+    hat: S.hat.id, weapon: S.weapon.id, shield: S.shield.id,
+    clothColor: S.clothColor.id, scene: S.scene.id
+  };
+  window.parent.postMessage({type:'avatar-confirmed', dataUrl, config}, '*');
+  toast('✓ AVATAR SET!');
+}
+
+// Listen for owned items from parent app
+window.addEventListener('message', function(e){
+  if(e.data && e.data.type === 'set-owned-items'){
+    ownedShopItems = new Set(e.data.ownedIds || []);
+    buildAll();
+  }
+  if(e.data && e.data.type === 'load-avatar-config'){
+    // Load saved config
+    const c = e.data.config;
+    if(c){
+      if(c.sex) S.sex = c.sex;
+      buildAll(); startAnim();
+    }
+  }
+});
+
+// ─────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────
 buildAll();
