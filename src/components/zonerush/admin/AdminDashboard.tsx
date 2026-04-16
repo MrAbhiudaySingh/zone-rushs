@@ -754,66 +754,77 @@ function AdminDashboard({ role, onLogout }: any) {
 
 function LiveBadge() {
   const [pulse, setPulse] = useState(true);
+  const [activeCount, setActiveCount] = useState(0);
   useEffect(() => { const t = setInterval(() => setPulse((p: any) => !p), 1200); return () => clearInterval(t); }, []);
+  useEffect(() => {
+    (async () => {
+      const { count } = await supabase.from("profiles").select("*", { count:"exact", head:true });
+      setActiveCount(count || 0);
+    })();
+  }, []);
   return (
     <div style={AA.liveBadge}>
       <div style={{ ...AA.liveDot, opacity: pulse ? 1 : 0.3 }} />
-      <span>LIVE — 284 active</span>
+      <span>LIVE — {activeCount} registered</span>
     </div>
   );
 }
 
 // ─── OVERVIEW SECTION ──────────────────────────────────────────────────────────
 function OverviewSection() {
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const [profilesRes, zonesRes, questProgRes, moodRes, clansRes] = await Promise.all([
+        supabase.from("profiles").select("*"),
+        supabase.from("zones").select("id, contest_status, owner_clan_id"),
+        supabase.from("quest_progress").select("id, status, created_at"),
+        supabase.from("mood_entries").select("id, mood_score, crisis_flag"),
+        supabase.from("clans").select("id"),
+      ]);
+
+      const profiles = profilesRes.data || [];
+      const zones = zonesRes.data || [];
+      const quests = questProgRes.data || [];
+      const moods = moodRes.data || [];
+
+      const totalAE = profiles.reduce((s: number, p: any) => s + (p.aether || 0), 0);
+      const today = new Date().toISOString().slice(0, 10);
+      const missionsToday = quests.filter((q: any) => q.created_at?.startsWith(today)).length;
+      const crisisCount = moods.filter((m: any) => m.crisis_flag).length;
+      const activeZones = zones.filter((z: any) => z.owner_clan_id).length;
+      const contested = zones.filter((z: any) => z.contest_status !== "peaceful").length;
+
+      setStats({
+        users: profiles.length,
+        zones: `${activeZones}/${zones.length}`,
+        contested,
+        totalAE,
+        missionsToday,
+        crisisCount,
+        clans: (clansRes.data || []).length,
+      });
+      setLoading(false);
+    })();
+  }, []);
+
+  if (loading) return <div style={{ color:C.dim, fontFamily:ADM_MONO, padding:20 }}>Loading overview...</div>;
+
   return (
     <div style={AA.secWrap}>
-      <SectionTitle title="Platform Overview" sub="Real-time snapshot · refreshes every 60s" />
+      <SectionTitle title="Platform Overview" sub="Real-time snapshot from database" />
       <div style={AA.kpiGrid}>
         {[
-          { label:"Registered Users",  val:"1,247",  delta:"+23 today",   color:C.teal,  icon:"👤" },
-          { label:"Daily Active",       val:"284",    delta:"22.8% DAU",   color:C.amber, icon:"⚡" },
-          { label:"Zones Active",       val:"18/24",  delta:"3 contested", color:C.red,   icon:"◈" },
-          { label:"AE in Circulation",  val:"2.4M",   delta:"+48K today",  color:C.amber, icon:"◎" },
-          { label:"Missions Today",     val:"892",    delta:"+12% vs avg", color:C.teal,  icon:"🎯" },
-          { label:"Crisis Flags",       val:"2",      delta:"⚠ Review now",color:C.red,   icon:"💚" },
+          { label:"Registered Users", val:stats.users.toLocaleString(), delta:`${stats.clans} clans`, color:C.teal },
+          { label:"Zones Active", val:stats.zones, delta:`${stats.contested} contested`, color:C.red },
+          { label:"AE in Circulation", val:stats.totalAE.toLocaleString(), delta:"Total across all players", color:C.amber },
+          { label:"Missions Today", val:String(stats.missionsToday), delta:"Quest progress entries", color:C.teal },
+          { label:"Crisis Flags", val:String(stats.crisisCount), delta:stats.crisisCount > 0 ? "⚠ Review now" : "All clear", color:stats.crisisCount > 0 ? C.red : C.teal },
         ].map((k: any) => <KpiCard key={k.label} {...k} />)}
       </div>
       <div style={AA.chartsRow}>
-        <div style={{ ...AA.chartCard, flex:2 }}>
-          <div style={AA.chartTitle}>Daily Active Users — Last 14 Days</div>
-          <MiniLineChart data={[180,210,195,240,260,230,284,270,290,310,284,300,284,284]} color={C.teal} />
-        </div>
-        <div style={{ ...AA.chartCard, flex:1 }}>
-          <div style={AA.chartTitle}>Player Motivation Split</div>
-          <DonutChart segments={[
-            { label:"Territory",  val:32, color:C.amber },
-            { label:"Social",     val:24, color:C.teal  },
-            { label:"Builder",    val:18, color:"#A78BFA"},
-            { label:"Competitor", val:16, color:C.red   },
-            { label:"Explorer",   val:10, color:"#4DA6FF"},
-          ]} />
-        </div>
-      </div>
-      <div style={AA.healthRow}>
-        <div style={AA.chartCard}>
-          <div style={AA.chartTitle}>System Health</div>
-          <div style={AA.healthGrid}>
-            {[
-              { svc:"API Gateway",       status:"ok",   ms:42   },
-              { svc:"Supabase DB",       status:"ok",   ms:18   },
-              { svc:"Geo Engine",        status:"ok",   ms:67   },
-              { svc:"Push (FCM)",        status:"warn", ms:210  },
-              { svc:"Health API",        status:"ok",   ms:89   },
-              { svc:"Media CDN",         status:"ok",   ms:31   },
-            ].map((h: any) => (
-              <div key={h.svc} style={AA.healthRow2}>
-                <div style={{ ...AA.statusPip, background: h.status === "ok" ? C.teal : C.amber }} />
-                <span style={AA.healthSvc}>{h.svc}</span>
-                <span style={{ ...AA.healthMs, color: h.ms > 150 ? C.amber : C.teal }}>{h.ms}ms</span>
-              </div>
-            ))}
-          </div>
-        </div>
         <div style={{ ...AA.chartCard, flex:1 }}>
           <div style={AA.chartTitle}>Recent Activity Feed</div>
           <ActivityFeed />
@@ -824,22 +835,27 @@ function OverviewSection() {
 }
 
 function ActivityFeed() {
-  const events = [
-    { t:"14:32", txt:"Nocturne captured Engineering Dept",  c:C.red   },
-    { t:"14:28", txt:"User #4821 mood: Bad — crisis flag",  c:C.red, flag:true },
-    { t:"14:21", txt:"Style Event voting opened (Week 12)", c:C.teal  },
-    { t:"14:15", txt:"IronVeil declared war on Library",    c:C.amber },
-    { t:"14:09", txt:"Story clue #7 solved (23 players)",  c:"#A78BFA"},
-    { t:"14:01", txt:"Marketplace: Rare cap listed 800 AE", c:C.amber },
-    { t:"13:55", txt:"15,000-step mission surge (+40 comp)",c:C.teal  },
-    { t:"13:48", txt:"User reported: toxic clan message",   c:C.red   },
-  ];
+  const [events, setEvents] = useState<any[]>([]);
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("notifications").select("*").order("created_at", { ascending: false }).limit(10);
+      if (data) {
+        setEvents(data.map((n: any) => ({
+          t: new Date(n.created_at).toLocaleTimeString("en-GB", { hour:"2-digit", minute:"2-digit" }),
+          txt: n.message,
+          c: n.type === "crisis" ? C.red : n.type === "warning" ? C.amber : C.teal,
+          flag: n.type === "crisis",
+        })));
+      }
+    })();
+  }, []);
+  if (events.length === 0) return <div style={{ color:C.dim, fontFamily:ADM_MONO, padding:12, fontSize:11 }}>No recent activity yet.</div>;
   return (
     <div style={AA.feedList}>
       {events.map((e: any, i: number) => (
         <div key={i} style={{ ...AA.feedRow, ...(e.flag ? AA.feedRowAlert : {}) }}>
           <span style={AA.feedTime}>{e.t}</span>
-          <div style={{ ...AA.feedDot, background:e.color }} />
+          <div style={{ ...AA.feedDot, background:e.c }} />
           <span style={{ ...AA.feedTxt, ...(e.flag ? { color:C.red, fontWeight:700 } : {}) }}>{e.txt}</span>
           {e.flag && <span style={AA.feedFlagPill}>REVIEW</span>}
         </div>
@@ -970,56 +986,61 @@ function PlayerModal({ player, onClose, onWarn, onBan }: PlayerModalProps) {
 }
 
 // ─── WELLBEING SECTION ─────────────────────────────────────────────────────────
-const MOOD_DIST = [
-  { label:"Great (5)", count:84,  pct:30, color:"#00D4A8" },
-  { label:"Good (4)",  count:98,  pct:35, color:"#27AE60" },
-  { label:"Okay (3)",  count:56,  pct:20, color:"#F5A623" },
-  { label:"Low (2)",   count:31,  pct:11, color:"#E67E22" },
-  { label:"Bad (1)",   count:15,  pct:5,  color:"#E74C3C" },
-];
-
-const CRISIS_FLAGS = [
-  { id:"A", anon:"User #5501", mood:1, text:"I don't see the point anymore", time:"14:28", outreach:true,  consentShare:true, resolved:false },
-  { id:"B", anon:"User #3382", mood:2, text:"Really struggling with exams and feeling isolated", time:"11:04", outreach:false, consentShare:false, resolved:false },
-  { id:"C", anon:"User #1847", mood:1, text:"[free text logged, encrypted]", time:"09:15", outreach:true,  consentShare:true, resolved:true  },
-];
-
 function WellbeingSection() {
-  const [crisisFlags, setCrisisFlags] = useState(CRISIS_FLAGS);
-  const resolve = (id) => setCrisisFlags(fs => fs.map((f: any) => f.id === id ? { ...f, resolved:true } : f));
+  const [moods, setMoods] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [resolvedIds, setResolvedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("mood_entries").select("*").order("created_at", { ascending: false });
+      setMoods(data || []);
+      setLoading(false);
+    })();
+  }, []);
+
+  if (loading) return <div style={{ color:C.dim, fontFamily:ADM_MONO, padding:20 }}>Loading wellbeing data...</div>;
+
+  const crisisEntries = moods.filter((m: any) => m.crisis_flag);
+  const resolve = (id: string) => setResolvedIds(prev => new Set([...prev, id]));
+
+  const dist = [5,4,3,2,1].map(score => {
+    const count = moods.filter((m: any) => m.mood_score === score).length;
+    return { label: ["","Bad (1)","Low (2)","Okay (3)","Good (4)","Great (5)"][score], count, pct: moods.length > 0 ? Math.round((count / moods.length) * 100) : 0, color: ["","#E74C3C","#E67E22","#F5A623","#27AE60","#00D4A8"][score] };
+  });
+
   return (
     <div style={AA.secWrap}>
       <SectionTitle title="Wellbeing Dashboard" sub="All data anonymised — no user identification without outreach consent" />
-      <div style={AA.crisisBox}>
-        <div style={AA.crisisHdr}><span style={AA.crisisTitle}>⚠ CRISIS FLAGS — Immediate Review Required</span><span style={AA.crisisCount}>{crisisFlags.filter(f=>!f.resolved).length} unresolved</span></div>
-        {crisisFlags.map((f: any) => (
-          <div key={f.id} style={{ ...AA.crisisRow, ...(f.resolved ? AA.crisisRowResolved : {}) }}>
-            <div style={AA.crisisLeft}>
-              <div style={{ ...AA.crisisAnon, ...(f.resolved ? { color:C.dim } : {}) }}>{f.anon}</div>
-              {f.consentShare ? (
-                <div style={AA.crisisText}>"{f.text}"</div>
-              ) : (
-                <div style={{ ...AA.crisisText, fontStyle:"italic", color:C.dim }}>🔒 [Free text encrypted — user did not consent to share content]</div>
-              )}
-              <div style={AA.crisisMeta}>Mood: {f.mood}/5 · {f.time} · {f.outreach ? "🙋 Outreach requested" : "No outreach opt-in"}{!f.consentShare && " · 🔒 Text hidden"}</div>
-            </div>
-            <div style={AA.crisisActions}>
-              {!f.resolved && f.outreach && <button style={AA.crisisContactBtn}>Contact Student Support</button>}
-              {!f.resolved && <button style={AA.crisisResolveBtn} onClick={() => resolve(f.id)}>Mark Resolved</button>}
-              {f.resolved && <span style={AA.resolvedBadge}>✓ Resolved</span>}
-            </div>
-          </div>
-        ))}
-      </div>
+      {crisisEntries.length > 0 ? (
+        <div style={AA.crisisBox}>
+          <div style={AA.crisisHdr}><span style={AA.crisisTitle}>⚠ CRISIS FLAGS — Immediate Review Required</span><span style={AA.crisisCount}>{crisisEntries.filter(f => !resolvedIds.has(f.id)).length} unresolved</span></div>
+          {crisisEntries.map((f: any) => {
+            const isResolved = resolvedIds.has(f.id);
+            return (
+              <div key={f.id} style={{ ...AA.crisisRow, ...(isResolved ? AA.crisisRowResolved : {}) }}>
+                <div style={AA.crisisLeft}>
+                  <div style={{ ...AA.crisisAnon, ...(isResolved ? { color:C.dim } : {}) }}>Entry #{f.anon_user_hash?.slice(0,6) || "?"}</div>
+                  {f.free_text ? <div style={AA.crisisText}>"{f.free_text}"</div> : <div style={{ ...AA.crisisText, fontStyle:"italic", color:C.dim }}>🔒 No free text shared</div>}
+                  <div style={AA.crisisMeta}>Mood: {f.mood_score}/5 · {new Date(f.created_at).toLocaleTimeString("en-GB", { hour:"2-digit", minute:"2-digit" })} · {f.outreach_requested ? "🙋 Outreach requested" : "No outreach opt-in"}</div>
+                </div>
+                <div style={AA.crisisActions}>
+                  {!isResolved && f.outreach_requested && <button style={AA.crisisContactBtn}>Contact Student Support</button>}
+                  {!isResolved && <button style={AA.crisisResolveBtn} onClick={() => resolve(f.id)}>Mark Resolved</button>}
+                  {isResolved && <span style={AA.resolvedBadge}>✓ Resolved</span>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div style={{ ...AA.chartCard, marginBottom:12, borderColor:"rgba(0,212,168,0.3)" }}><div style={{ color:C.teal, fontSize:12, fontFamily:ADM_MONO }}>✓ No crisis flags — all clear</div></div>
+      )}
       <div style={AA.chartsRow}>
         <div style={{ ...AA.chartCard, flex:1 }}>
-          <div style={AA.chartTitle}>Today's Mood Distribution (284 check-ins)</div>
-          <div style={AA.moodBars}>{MOOD_DIST.map((m: any) => (<div key={m.label} style={AA.moodBar}><div style={AA.moodBarLbl}>{m.label}</div><div style={AA.moodBarTrack}><div style={{ ...AA.moodBarFill, width:`${m.pct}%`, background:m.color }} /></div><div style={{ ...AA.mono, fontSize:11, color:m.color, width:40 }}>{m.count}</div></div>))}</div>
-        </div>
-        <div style={{ ...AA.chartCard, flex:1 }}>
-          <div style={AA.chartTitle}>7-Day Mood Trend</div>
-          <MiniLineChart data={[3.6, 3.4, 3.7, 3.5, 3.2, 3.4, 3.3]} color={C.amber} min={1} max={5} label="Avg mood" />
-          <div style={AA.moodNote}>⬇ Slight downward trend — exam period begins next week.</div>
+          <div style={AA.chartTitle}>Mood Distribution ({moods.length} check-ins)</div>
+          {moods.length === 0 ? <div style={{ color:C.dim, fontFamily:ADM_MONO, fontSize:11 }}>No mood entries yet.</div> :
+          <div style={AA.moodBars}>{dist.map((m: any) => (<div key={m.label} style={AA.moodBar}><div style={AA.moodBarLbl}>{m.label}</div><div style={AA.moodBarTrack}><div style={{ ...AA.moodBarFill, width:`${m.pct}%`, background:m.color }} /></div><div style={{ ...AA.mono, fontSize:11, color:m.color, width:40 }}>{m.count}</div></div>))}</div>}
         </div>
       </div>
       <div style={AA.privacyBox}><div style={AA.privacyTitle}>🔒 Privacy Architecture Active</div><div style={AA.privacyBody}>All mood entries stored with anonymised hash only. Free text encrypted at rest (AES-256).</div></div>
@@ -1099,26 +1120,39 @@ function ZonesSection() {
 
 // ─── ECONOMY SECTION ───────────────────────────────────────────────────────────
 function EconomySection() {
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const [profilesRes, inventoryRes, shopRes] = await Promise.all([
+        supabase.from("profiles").select("aether, shards"),
+        supabase.from("user_inventory").select("id, listed_for_sale, sale_price_ae"),
+        supabase.from("shop_items").select("id, price_ae"),
+      ]);
+      const profiles = profilesRes.data || [];
+      const totalAE = profiles.reduce((s: number, p: any) => s + (p.aether || 0), 0);
+      const totalShards = profiles.reduce((s: number, p: any) => s + (p.shards || 0), 0);
+      const avgAE = profiles.length > 0 ? Math.round(totalAE / profiles.length) : 0;
+      const listings = (inventoryRes.data || []).filter((i: any) => i.listed_for_sale);
+      const marketVol = listings.reduce((s: number, i: any) => s + (i.sale_price_ae || 0), 0);
+
+      setStats({ totalAE, totalShards, avgAE, marketVol, listings: listings.length, players: profiles.length });
+      setLoading(false);
+    })();
+  }, []);
+
+  if (loading) return <div style={{ color:C.dim, fontFamily:ADM_MONO, padding:20 }}>Loading economy data...</div>;
+
   return (
     <div style={AA.secWrap}>
       <SectionTitle title="Economy Monitor" sub="Anti-inflation surveillance · no real-money transactions" />
       <div style={AA.kpiGrid}>{[
-        { label:"Total AE Supply",val:"2,418,340",delta:"+48,200 today",color:C.amber },
-        { label:"AE Sinks (spent)",val:"1,890,100",delta:"78% sink ratio",color:C.teal },
-        { label:"Shards in Circ.",val:"4,281",delta:"+12 this week",color:"#A78BFA" },
-        { label:"Marketplace Volume",val:"38,400 AE",delta:"47 trades today",color:C.amber },
-        { label:"Avg Player Balance",val:"1,940 AE",delta:"Healthy range",color:C.teal },
-        { label:"Rich:Poor Ratio",val:"8.2:1",delta:"⚠ Monitor",color:C.amber },
+        { label:"Total AE Supply", val:stats.totalAE.toLocaleString(), delta:`${stats.players} players`, color:C.amber },
+        { label:"Shards in Circ.", val:stats.totalShards.toLocaleString(), delta:"Across all players", color:"#A78BFA" },
+        { label:"Avg Player Balance", val:`${stats.avgAE.toLocaleString()} AE`, delta:stats.avgAE > 5000 ? "⚠ Monitor" : "Healthy range", color:C.teal },
+        { label:"Marketplace Listings", val:String(stats.listings), delta:`${stats.marketVol.toLocaleString()} AE total`, color:C.amber },
       ].map((k: any) => <KpiCard key={k.label} {...k} />)}</div>
-      <div style={AA.chartsRow}>
-        <div style={{ ...AA.chartCard, flex:2 }}><div style={AA.chartTitle}>AE Supply vs Sinks — 14 Days</div><DualLineChart data1={[2100,2180,2200,2240,2280,2300,2330,2350,2370,2390,2400,2410,2415,2418]} data2={[1600,1680,1720,1780,1820,1850,1870,1900,1920,1940,1960,1970,1980,1890]} color1={C.amber} color2={C.teal} /></div>
-        <div style={{ ...AA.chartCard, flex:1 }}><div style={AA.chartTitle}>AE Source Breakdown</div><DonutChart segments={[{ label:"Daily missions",val:44,color:C.teal },{ label:"Zone income",val:22,color:C.amber },{ label:"Weekly missions",val:18,color:"#A78BFA" },{ label:"Combat wins",val:10,color:C.red },{ label:"Story rewards",val:6,color:"#4DA6FF" }]} /></div>
-      </div>
-      <div style={AA.chartCard}><div style={AA.chartTitle}>Admin Economy Controls</div><div style={AA.ecoControls}>
-        {[{ label:"Daily mission AE multiplier",val:"1.0×" },{ label:"Shop price floor",val:"100 AE" },{ label:"Marketplace fee",val:"5%" },{ label:"Max player AE balance",val:"50,000 AE" }].map((c: any) => (
-          <div key={c.label} style={AA.ecoControlRow}><span style={AA.ecoControlLabel}>{c.label}</span><div style={AA.ecoControlRight}><span style={{ ...AA.mono, color:C.amber }}>{c.val}</span><button style={AA.tinyBtn}>Edit</button></div></div>
-        ))}
-      </div></div>
     </div>
   );
 }
@@ -1512,18 +1546,30 @@ function StyleSubCard({ sub, resolved, onView }: { sub: any; resolved?: boolean;
 }
 
 // ─── COMBAT SECTION ────────────────────────────────────────────────────────────
-const COMBAT_LOG = [
-  { id:8821, challenger:"Vikram K.", defender:"Karan T.", mode:"open", winner:"Vikram K.", wager:200, time:"14:22", itemDrop:false },
-  { id:8820, challenger:"Priya M.", defender:"Meera K.", mode:"zone_raid", winner:"Meera K.", wager:0, time:"13:58", itemDrop:true },
-  { id:8819, challenger:"BlazeThorn", defender:"Nocturne", mode:"clan_war", winner:"BlazeThorn", wager:0, time:"12:30", itemDrop:false },
-];
-
 function CombatSection() {
+  const [captures, setCaptures] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("zone_captures").select("*, zone:zones(name), clan:clans(name, tag)").order("created_at", { ascending: false }).limit(20);
+      setCaptures(data || []);
+      setLoading(false);
+    })();
+  }, []);
+
   return (
     <div style={AA.secWrap}>
-      <SectionTitle title="Combat Log" sub="All duels, zone raids, and clan wars" />
-      <div style={{ ...AA.kpiGrid, gridTemplateColumns:"repeat(4,1fr)", marginBottom:16 }}>{[{ label:"Fights Today",val:"47",delta:"+8 vs avg",color:C.red },{ label:"Zone Raids",val:"12",delta:"4 zones changed",color:C.amber },{ label:"Clan Wars",val:"2",delta:"1 ongoing",color:C.red },{ label:"Items Dropped",val:"6",delta:"3 rare",color:"#A78BFA" }].map((k: any) => <KpiCard key={k.label} {...k} />)}</div>
-      <Table cols={["ID","Challenger","Defender","Mode","Winner","Wager","Time"]} rows={COMBAT_LOG.map((c: any) => [<span style={AA.monoSm}>#{c.id}</span>,<span style={AA.playerName}>{c.challenger}</span>,<span style={AA.playerName}>{c.defender}</span>,<span style={{ color:C.teal, fontSize:11, textTransform:"uppercase" }}>{c.mode.replace("_"," ")}</span>,<span style={{ color:C.amber, fontWeight:700 }}>{c.winner}</span>,<span style={AA.mono}>{c.wager>0?`${c.wager} AE`:"—"}</span>,<span style={AA.monoSm}>{c.time}</span>])} />
+      <SectionTitle title="Combat Log" sub="Zone captures and territorial battles" />
+      {loading ? <div style={{ color:C.dim, fontFamily:ADM_MONO, padding:20 }}>Loading...</div> :
+      captures.length === 0 ? <div style={{ ...AA.chartCard }}><div style={{ color:C.dim, fontFamily:ADM_MONO, fontSize:12 }}>No combat activity recorded yet.</div></div> :
+      <Table cols={["Zone","Attacking Clan","Status","Started","Actions"]} rows={captures.map((c: any) => [
+        <span style={AA.playerName}>{c.zone?.name || "Unknown"}</span>,
+        <span style={{ color:"#A78BFA" }}>{c.clan?.name || "?"} [{c.clan?.tag || "?"}]</span>,
+        <span style={{ color:c.status==="capturing"?C.amber:c.status==="completed"?C.teal:C.red, fontSize:11, fontWeight:700, textTransform:"uppercase" }}>{c.status}</span>,
+        <span style={AA.monoSm}>{new Date(c.timer_started_at).toLocaleString("en-GB", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })}</span>,
+        <button style={AA.tinyBtn} onClick={() => showToast(`Zone: ${c.zone?.name}, Status: ${c.status}`, "info")}>Details</button>,
+      ])} />}
     </div>
   );
 }
@@ -1559,164 +1605,147 @@ function ClansSection() {
 }
 
 // ─── STORY SECTION ─────────────────────────────────────────────────────────────
-const CHAPTERS = [
-  { id:1, title:"The Missing Ledger", status:"active", cluesSolved:2, totalClues:5, players:84 },
-  { id:2, title:"The Hidden Room", status:"locked", cluesSolved:0, totalClues:6, players:0 },
-  { id:3, title:"Voices in the Archive", status:"locked", cluesSolved:0, totalClues:7, players:0 },
-  { id:4, title:"The Founder's Secret", status:"draft", cluesSolved:0, totalClues:8, players:0 },
-];
-
 function StorySection() {
-  const [chapters, setChapters] = useState(CHAPTERS);
+  const [chapters, setChapters] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const unlockChapter = (id) => {
-    setChapters(chs => chs.map((ch: any) => ch.id === id ? { ...ch, status:"active" } : ch));
-    showToast(`📖 Chapter ${id} unlocked! Players can now discover clues.`, "success");
-  };
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("story_progress").select("chapter_id, clue_index, completed_at, user_id");
+      const progress = data || [];
+      const chapterIds = [...new Set(progress.map((p: any) => p.chapter_id))];
+      const chapterData = chapterIds.map(cid => {
+        const entries = progress.filter((p: any) => p.chapter_id === cid);
+        const maxClue = Math.max(0, ...entries.map((e: any) => e.clue_index));
+        const players = new Set(entries.map((e: any) => e.user_id)).size;
+        return { id: cid, title: cid, status: "active", cluesSolved: maxClue, players };
+      });
+      setChapters(chapterData);
+      setLoading(false);
+    })();
+  }, []);
 
   return (
     <div style={AA.secWrap}>
-      <SectionTitle title="Story Quest Manager" sub="The Campus Chronicle — Season 1" />
+      <SectionTitle title="Story Quest Manager" sub="The Campus Chronicle" />
+      {loading ? <div style={{ color:C.dim, fontFamily:ADM_MONO, padding:20 }}>Loading...</div> :
+      chapters.length === 0 ? <div style={{ ...AA.chartCard }}><div style={{ color:C.dim, fontFamily:ADM_MONO, fontSize:12 }}>No story progress recorded yet. Players haven't started any chapters.</div></div> :
       <div style={AA.chartsRow}>
         <div style={{ ...AA.chartCard, flex:1 }}><div style={AA.chartTitle}>Chapter Progress</div>
-          {chapters.map((ch: any) => (<div key={ch.id} style={AA.chapterRow}><div style={AA.chapterLeft}><span style={{ ...AA.mono, color:ch.status==="active"?C.teal:ch.status==="draft"?C.amber:C.dim }}>Ch{ch.id}</span><div><div style={AA.chapterTitle}>{ch.title}</div><div style={AA.chapterMeta}>{ch.status==="active"?`${ch.cluesSolved}/${ch.totalClues} clues · ${ch.players} players`:ch.status==="locked"?"Locked":"Draft"}</div></div></div>
-            <div style={AA.actionBtns}>
-              {ch.status==="active" && <button style={AA.tinyBtn} onClick={() => showToast(`📊 Ch${ch.id}: ${ch.cluesSolved}/${ch.totalClues} clues solved by ${ch.players} players`, "info")}>Monitor</button>}
-              {ch.status==="locked" && <button style={{ ...AA.tinyBtn, ...AA.tinyBtnGreen }} onClick={() => unlockChapter(ch.id)}>Unlock</button>}
-              {ch.status==="draft" && <button style={AA.tinyBtn} onClick={() => showToast("📝 Story editor would open here", "info")}>Edit</button>}
-            </div>
-          </div>))}
+          {chapters.map((ch: any) => (<div key={ch.id} style={AA.chapterRow}><div style={AA.chapterLeft}><span style={{ ...AA.mono, color:C.teal }}>{ch.id}</span><div><div style={AA.chapterTitle}>{ch.title}</div><div style={AA.chapterMeta}>{ch.cluesSolved} clues · {ch.players} players</div></div></div></div>))}
         </div>
-      </div>
+      </div>}
     </div>
   );
 }
 
 // ─── MODERATION SECTION ────────────────────────────────────────────────────────
-const REPORTS = [
-  { id:1, reporter:"User #2203", reported:"Vikram K.", reason:"Toxic message in clan chat", time:"13:45", severity:"high", status:"pending", priorActions:[] },
-  { id:2, reporter:"User #7743", reported:"User #5501", reason:"Suspicious mission exploit", time:"12:30", severity:"medium", status:"pending", priorActions:["warn"] },
-  { id:3, reporter:"User #3317", reported:"User #8821", reason:"Harassment in zone chat", time:"11:00", severity:"high", status:"reviewing", priorActions:["warn","timeout"] },
-];
-
 function ModerationSection() {
-  const [reports, setReports] = useState(REPORTS);
-  const PRIOR_ICONS = { warn:"⚠️", timeout:"⏱", ban:"🚫" };
-  const nextAction = (priorActions) => { if (priorActions.includes("timeout")) return "ban"; if (priorActions.includes("warn")) return "timeout"; return "warn"; };
-  const ACTION_LABELS = { warn:"⚠️ Warn", timeout:"⏱ Timeout", ban:"🚫 Ban" };
-
-  const takeAction = (reportId, action) => {
-    setReports(rs => rs.map((r: any) => r.id === reportId ? {
-      ...r,
-      status: "resolved",
-      priorActions: [...r.priorActions, action],
-    } : r));
-    showToast(`${ACTION_LABELS[action]} applied to report #${reportId}`, action === "ban" ? "error" : "warning");
-  };
-
-  const resolveReport = (reportId) => {
-    setReports(rs => rs.map((r: any) => r.id === reportId ? { ...r, status:"resolved" } : r));
-    showToast(`✓ Report #${reportId} resolved — no action taken`, "success");
-  };
-
   return (
     <div style={AA.secWrap}>
-      <SectionTitle title="Moderation Queue" sub={`${reports.filter(r=>r.status!=="resolved").length} open · Warn → Timeout → Ban`} />
+      <SectionTitle title="Moderation Queue" sub="No moderation reports table configured yet" />
       <div style={AA.modLadder}>
         {[{ step:1, icon:"⚠️", label:"Warn", color:C.amber },{ step:2, icon:"⏱", label:"Timeout", color:C.red },{ step:3, icon:"🚫", label:"Ban", color:C.red }].map((s: any, i: number) => (
           <div key={s.step} style={AA.modLadderItem}><div style={{ ...AA.modLadderIcon, borderColor:s.color+"44", color:s.color }}>{s.icon}</div><div style={AA.modLadderLabel}>{s.label}</div>{i<2 && <div style={AA.modLadderArrow}>→</div>}</div>
         ))}
       </div>
-      <Table cols={["#","Reporter","Reported","Reason","Severity","History","Status","Actions"]} rows={reports.map((r: any) => {
-        const next = nextAction(r.priorActions);
-        return [
-          <span style={AA.monoSm}>R{r.id}</span>,<span style={AA.monoSm}>{r.reporter}</span>,<span style={AA.playerName}>{r.reported}</span>,<span style={{ color:C.dim, fontSize:11 }}>{r.reason}</span>,
-          <span style={{ color:{high:C.red,medium:C.amber,low:C.teal}[r.severity], fontSize:10, fontWeight:700, textTransform:"uppercase" }}>{r.severity}</span>,
-          <div style={{ display:"flex", gap:3 }}>{r.priorActions.length===0?<span style={{ color:C.dim, fontSize:10 }}>None</span>:r.priorActions.map((a: any, i: number) => <span key={i} style={{ fontSize:12 }}>{PRIOR_ICONS[a]}</span>)}</div>,
-          <StatusPill status={r.status} />,
-          r.status !== "resolved" ? (
-            <div style={AA.actionBtns}>
-              <button style={{ ...AA.tinyBtn, ...(next==="ban"?AA.tinyBtnRed:AA.tinyBtnAmber) }} onClick={() => takeAction(r.id, next)}>{ACTION_LABELS[next]}</button>
-              <button style={AA.tinyBtn} onClick={() => resolveReport(r.id)}>Dismiss</button>
-            </div>
-          ) : <span style={{ fontSize:10, color:C.teal }}>✓ Resolved</span>,
-        ];
-      })} />
+      <div style={{ ...AA.chartCard }}><div style={{ color:C.dim, fontFamily:ADM_MONO, fontSize:12 }}>No reports yet. A moderation reports table needs to be created to track user reports.</div></div>
     </div>
   );
 }
 
 // ─── RESEARCH SECTION ──────────────────────────────────────────────────────────
 function ResearchSection() {
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const [profilesRes, moodRes, questRes, storyRes] = await Promise.all([
+        supabase.from("profiles").select("aether, xp, streak"),
+        supabase.from("mood_entries").select("mood_score"),
+        supabase.from("quest_progress").select("id, user_id, status"),
+        supabase.from("story_progress").select("user_id"),
+      ]);
+      const profiles = profilesRes.data || [];
+      const moods = moodRes.data || [];
+      const quests = questRes.data || [];
+      const stories = storyRes.data || [];
+      const avgMood = moods.length > 0 ? (moods.reduce((s: number, m: any) => s + m.mood_score, 0) / moods.length).toFixed(1) : "N/A";
+      const activeQuests = quests.filter((q: any) => q.status === "completed").length;
+      const storyUsers = new Set(stories.map((s: any) => s.user_id)).size;
+      const storyPct = profiles.length > 0 ? Math.round((storyUsers / profiles.length) * 100) : 0;
+
+      setStats({ players: profiles.length, avgMood, totalMoods: moods.length, completedQuests: activeQuests, storyEngagement: storyPct, storyUsers });
+      setLoading(false);
+    })();
+  }, []);
+
+  if (loading) return <div style={{ color:C.dim, fontFamily:ADM_MONO, padding:20 }}>Loading research data...</div>;
+
   return (
     <div style={AA.secWrap}>
-      <SectionTitle title="Research Dashboard" sub="IRB-approved anonymised data" />
+      <SectionTitle title="Research Dashboard" sub="Anonymised aggregate data" />
       <div style={AA.kpiGrid}>{[
-        { label:"DAU Rate",val:"22.8%",delta:"Target: 30%",color:C.amber },{ label:"Cross-Dept Connect",val:"142",delta:"4.1/user",color:C.teal },{ label:"Avg Mood (30d)",val:"3.4/5",delta:"Slight decline",color:C.amber },
-        { label:"Steps Logged/Day",val:"12,400",delta:"+34% vs control",color:C.teal },{ label:"Sustainability Acts",val:"891",delta:"This month",color:C.teal },{ label:"Story Engagement",val:"67%",delta:"Of active users",color:"#A78BFA" },
+        { label:"Registered Players", val:String(stats.players), delta:"Total profiles", color:C.teal },
+        { label:"Avg Mood", val:`${stats.avgMood}/5`, delta:`${stats.totalMoods} entries`, color:C.amber },
+        { label:"Completed Quests", val:String(stats.completedQuests), delta:"All time", color:C.teal },
+        { label:"Story Engagement", val:`${stats.storyEngagement}%`, delta:`${stats.storyUsers} players`, color:"#A78BFA" },
       ].map((k: any) => <KpiCard key={k.label} {...k} />)}</div>
-      <div style={AA.chartsRow}>
-        <div style={{ ...AA.chartCard, flex:2 }}><div style={AA.chartTitle}>Cross-Department Social Connections</div><MiniLineChart data={[12,18,24,31,40,52,68,80,96,112,126,142]} color="#A78BFA" /></div>
-        <div style={{ ...AA.chartCard, flex:1 }}><div style={AA.chartTitle}>Wellbeing vs Engagement</div><div style={{ color:C.dim, fontSize:12, lineHeight:1.6 }}>Mood 4-5: avg 8.4 missions/week<br/>Mood 3: avg 5.2<br/>Mood 1-2: avg 2.1<br/><span style={{ color:C.amber }}>↑ r=0.71</span></div></div>
-      </div>
     </div>
   );
 }
 
 // ─── CONFIG SECTION ────────────────────────────────────────────────────────────
 function ConfigSection() {
-  const initSettings = [
-    { group:"Game Balance", settings:[{ key:"xp_multiplier",label:"XP Multiplier",val:"1.0×" },{ key:"ae_earn_cap",label:"Max AE/day",val:"500 AE" },{ key:"zone_cooldown",label:"Zone attack cooldown",val:`${ADMIN_GAME_RULES.ZONE_ATTACK_COOLDOWN_HOURS}h` }] },
-    { group:"Clan Rules", settings:[{ key:"clan_min_level",label:"Min level to create",val:"3" },{ key:"clan_max",label:"Max clan size",val:"20" },{ key:"clan_cost",label:"Creation cost",val:"500 AE" }] },
-    { group:"Feature Flags", settings:[{ key:"combat",label:"Combat system",val:"ON" },{ key:"marketplace",label:"Marketplace",val:"ON" },{ key:"style_event",label:"Style events",val:"ON" },{ key:"maintenance",label:"Maintenance mode",val:"OFF" }] },
-  ];
-  const [groups, setGroups] = useState(initSettings);
+  const [configs, setConfigs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editKey, setEditKey] = useState<string | null>(null);
   const [editVal, setEditVal] = useState("");
 
-  const startEdit = (key, val) => { setEditKey(key); setEditVal(val); };
-  const saveEdit = () => {
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("game_config").select("*").order("key");
+      setConfigs(data || []);
+      setLoading(false);
+    })();
+  }, []);
+
+  const saveEdit = async () => {
     if (!editKey) return;
-    setGroups((gs: any) => gs.map((g: any) => ({
-      ...g,
-      settings: g.settings.map((s: any) => s.key === editKey ? { ...s, val: editVal } : s),
-    })));
+    const existing = configs.find((c: any) => c.key === editKey);
+    if (existing) {
+      await supabase.from("game_config").update({ value: editVal }).eq("id", existing.id);
+    } else {
+      await supabase.from("game_config").insert({ key: editKey, value: editVal });
+    }
+    setConfigs(cs => cs.map((c: any) => c.key === editKey ? { ...c, value: editVal } : c));
     showToast(`✓ ${editKey} updated to "${editVal}"`, "success");
     setEditKey(null);
     setEditVal("");
   };
 
-  const toggleFlag = (key) => {
-    setGroups((gs: any) => gs.map((g: any) => ({
-      ...g,
-      settings: g.settings.map((s: any) => s.key === key ? { ...s, val: s.val === "ON" ? "OFF" : "ON" } : s),
-    })));
-    const setting = groups.flatMap((g: any) => g.settings).find((s: any) => s.key === key);
-    const newVal = setting?.val === "ON" ? "OFF" : "ON";
-    showToast(`⚙️ ${key} set to ${newVal}`, newVal === "ON" ? "success" : "warning");
-  };
+  if (loading) return <div style={{ color:C.dim, fontFamily:ADM_MONO, padding:20 }}>Loading config...</div>;
 
   return (
     <div style={AA.secWrap}>
-      <SectionTitle title="Platform Config" sub="Global settings — changes apply immediately" />
-      {groups.map((group: any) => (
-        <div key={group.group} style={{ ...AA.chartCard, marginBottom:12 }}>
-          <div style={AA.chartTitle}>{group.group}</div>
-          {group.settings.map((s: any) => (
-            <div key={s.key} style={AA.ecoControlRow}>
-              <div><div style={AA.ecoControlLabel}>{s.label}</div><div style={{ ...AA.monoSm, color:C.dim }}>{s.key}</div></div>
+      <SectionTitle title="Platform Config" sub="Global settings stored in database — changes persist" />
+      {configs.length === 0 ? (
+        <div style={{ ...AA.chartCard }}><div style={{ color:C.dim, fontFamily:ADM_MONO, fontSize:12 }}>No config entries yet. Add settings via the database.</div></div>
+      ) : (
+        <div style={{ ...AA.chartCard, marginBottom:12 }}>
+          <div style={AA.chartTitle}>Game Config</div>
+          {configs.map((c: any) => (
+            <div key={c.key} style={AA.ecoControlRow}>
+              <div><div style={AA.ecoControlLabel}>{c.key}</div></div>
               <div style={AA.actionBtns}>
-                <span style={{ ...AA.mono, color:s.val==="ON"?C.teal:s.val==="OFF"?C.red:C.amber }}>{s.val}</span>
-                {(s.val === "ON" || s.val === "OFF") ? (
-                  <button style={{ ...AA.tinyBtn, ...(s.val==="ON"?AA.tinyBtnRed:AA.tinyBtnGreen) }} onClick={() => toggleFlag(s.key)}>{s.val==="ON"?"Disable":"Enable"}</button>
-                ) : (
-                  <button style={AA.tinyBtn} onClick={() => startEdit(s.key, s.val)}>Edit</button>
-                )}
+                <span style={{ ...AA.mono, color:C.amber }}>{c.value || "—"}</span>
+                <button style={AA.tinyBtn} onClick={() => { setEditKey(c.key); setEditVal(c.value || ""); }}>Edit</button>
               </div>
             </div>
           ))}
         </div>
-      ))}
+      )}
       {editKey && (
         <div style={AA.modalOverlay} onClick={() => setEditKey(null)}>
           <div style={{ ...AA.modal, maxWidth:400 }} onClick={e => e.stopPropagation()}>
