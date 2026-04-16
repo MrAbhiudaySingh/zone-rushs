@@ -106,6 +106,86 @@ export type Database = {
         }
         Relationships: []
       }
+      event_participants: {
+        Row: {
+          event_id: string
+          id: string
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          event_id: string
+          id?: string
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          event_id?: string
+          id?: string
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_participants_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          created_at: string
+          description: string | null
+          ends_at: string | null
+          id: string
+          reward_ae: number
+          starts_at: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          reward_ae?: number
+          starts_at?: string | null
+          status?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          reward_ae?: number
+          starts_at?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      game_config: {
+        Row: {
+          id: string
+          key: string
+          value: string | null
+        }
+        Insert: {
+          id?: string
+          key: string
+          value?: string | null
+        }
+        Update: {
+          id?: string
+          key?: string
+          value?: string | null
+        }
+        Relationships: []
+      }
       google_fit_tokens: {
         Row: {
           access_token: string | null
@@ -141,6 +221,33 @@ export type Database = {
           refresh_token?: string | null
           token_expires_at?: string | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          read: boolean
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          read?: boolean
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean
+          type?: string
           user_id?: string
         }
         Relationships: []
@@ -213,6 +320,44 @@ export type Database = {
           year?: string | null
         }
         Relationships: []
+      }
+      proof_submissions: {
+        Row: {
+          id: string
+          proof_url: string | null
+          quest_progress_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          proof_url?: string | null
+          quest_progress_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          proof_url?: string | null
+          quest_progress_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proof_submissions_quest_progress_id_fkey"
+            columns: ["quest_progress_id"]
+            isOneToOne: false
+            referencedRelation: "quest_progress"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       quest_definitions: {
         Row: {
@@ -364,6 +509,228 @@ export type Database = {
             columns: ["quest_progress_id"]
             isOneToOne: false
             referencedRelation: "quest_progress"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_items: {
+        Row: {
+          active: boolean
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          price_ae: number
+          price_shards: number
+          soul_bound: boolean
+          stock: number | null
+          svg_asset_url: string | null
+          tier: string
+          tradeable: boolean
+        }
+        Insert: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          price_ae?: number
+          price_shards?: number
+          soul_bound?: boolean
+          stock?: number | null
+          svg_asset_url?: string | null
+          tier?: string
+          tradeable?: boolean
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          price_ae?: number
+          price_shards?: number
+          soul_bound?: boolean
+          stock?: number | null
+          svg_asset_url?: string | null
+          tier?: string
+          tradeable?: boolean
+        }
+        Relationships: []
+      }
+      story_progress: {
+        Row: {
+          chapter_id: string
+          clue_index: number
+          completed_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          chapter_id: string
+          clue_index?: number
+          completed_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          chapter_id?: string
+          clue_index?: number
+          completed_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      style_events: {
+        Row: {
+          created_at: string
+          id: string
+          status: string
+          theme_description: string | null
+          theme_title: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          status?: string
+          theme_description?: string | null
+          theme_title: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          status?: string
+          theme_description?: string | null
+          theme_title?: string
+          week_start?: string
+        }
+        Relationships: []
+      }
+      style_submissions: {
+        Row: {
+          approval_status: string
+          description: string | null
+          design_png_url: string | null
+          id: string
+          style_event_id: string
+          submitted_at: string
+          title: string
+          user_id: string
+          vote_count: number
+        }
+        Insert: {
+          approval_status?: string
+          description?: string | null
+          design_png_url?: string | null
+          id?: string
+          style_event_id: string
+          submitted_at?: string
+          title: string
+          user_id: string
+          vote_count?: number
+        }
+        Update: {
+          approval_status?: string
+          description?: string | null
+          design_png_url?: string | null
+          id?: string
+          style_event_id?: string
+          submitted_at?: string
+          title?: string
+          user_id?: string
+          vote_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "style_submissions_style_event_id_fkey"
+            columns: ["style_event_id"]
+            isOneToOne: false
+            referencedRelation: "style_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      treasury_log: {
+        Row: {
+          action: string
+          amount_ae: number
+          clan_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          action: string
+          amount_ae?: number
+          clan_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          action?: string
+          amount_ae?: number
+          clan_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treasury_log_clan_id_fkey"
+            columns: ["clan_id"]
+            isOneToOne: false
+            referencedRelation: "clans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_inventory: {
+        Row: {
+          acquired_at: string
+          acquired_via: string | null
+          den_slot: string | null
+          equipped: boolean
+          id: string
+          item_id: string
+          listed_for_sale: boolean
+          quantity: number
+          sale_price_ae: number | null
+          user_id: string
+        }
+        Insert: {
+          acquired_at?: string
+          acquired_via?: string | null
+          den_slot?: string | null
+          equipped?: boolean
+          id?: string
+          item_id: string
+          listed_for_sale?: boolean
+          quantity?: number
+          sale_price_ae?: number | null
+          user_id: string
+        }
+        Update: {
+          acquired_at?: string
+          acquired_via?: string | null
+          den_slot?: string | null
+          equipped?: boolean
+          id?: string
+          item_id?: string
+          listed_for_sale?: boolean
+          quantity?: number
+          sale_price_ae?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_inventory_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "shop_items"
             referencedColumns: ["id"]
           },
         ]
