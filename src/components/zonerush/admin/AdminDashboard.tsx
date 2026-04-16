@@ -1605,35 +1605,36 @@ function ClansSection() {
 }
 
 // ─── STORY SECTION ─────────────────────────────────────────────────────────────
-const CHAPTERS = [
-  { id:1, title:"The Missing Ledger", status:"active", cluesSolved:2, totalClues:5, players:84 },
-  { id:2, title:"The Hidden Room", status:"locked", cluesSolved:0, totalClues:6, players:0 },
-  { id:3, title:"Voices in the Archive", status:"locked", cluesSolved:0, totalClues:7, players:0 },
-  { id:4, title:"The Founder's Secret", status:"draft", cluesSolved:0, totalClues:8, players:0 },
-];
-
 function StorySection() {
-  const [chapters, setChapters] = useState(CHAPTERS);
+  const [chapters, setChapters] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const unlockChapter = (id) => {
-    setChapters(chs => chs.map((ch: any) => ch.id === id ? { ...ch, status:"active" } : ch));
-    showToast(`📖 Chapter ${id} unlocked! Players can now discover clues.`, "success");
-  };
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("story_progress").select("chapter_id, clue_index, completed_at, user_id");
+      const progress = data || [];
+      const chapterIds = [...new Set(progress.map((p: any) => p.chapter_id))];
+      const chapterData = chapterIds.map(cid => {
+        const entries = progress.filter((p: any) => p.chapter_id === cid);
+        const maxClue = Math.max(0, ...entries.map((e: any) => e.clue_index));
+        const players = new Set(entries.map((e: any) => e.user_id)).size;
+        return { id: cid, title: cid, status: "active", cluesSolved: maxClue, players };
+      });
+      setChapters(chapterData);
+      setLoading(false);
+    })();
+  }, []);
 
   return (
     <div style={AA.secWrap}>
-      <SectionTitle title="Story Quest Manager" sub="The Campus Chronicle — Season 1" />
+      <SectionTitle title="Story Quest Manager" sub="The Campus Chronicle" />
+      {loading ? <div style={{ color:C.dim, fontFamily:ADM_MONO, padding:20 }}>Loading...</div> :
+      chapters.length === 0 ? <div style={{ ...AA.chartCard }}><div style={{ color:C.dim, fontFamily:ADM_MONO, fontSize:12 }}>No story progress recorded yet. Players haven't started any chapters.</div></div> :
       <div style={AA.chartsRow}>
         <div style={{ ...AA.chartCard, flex:1 }}><div style={AA.chartTitle}>Chapter Progress</div>
-          {chapters.map((ch: any) => (<div key={ch.id} style={AA.chapterRow}><div style={AA.chapterLeft}><span style={{ ...AA.mono, color:ch.status==="active"?C.teal:ch.status==="draft"?C.amber:C.dim }}>Ch{ch.id}</span><div><div style={AA.chapterTitle}>{ch.title}</div><div style={AA.chapterMeta}>{ch.status==="active"?`${ch.cluesSolved}/${ch.totalClues} clues · ${ch.players} players`:ch.status==="locked"?"Locked":"Draft"}</div></div></div>
-            <div style={AA.actionBtns}>
-              {ch.status==="active" && <button style={AA.tinyBtn} onClick={() => showToast(`📊 Ch${ch.id}: ${ch.cluesSolved}/${ch.totalClues} clues solved by ${ch.players} players`, "info")}>Monitor</button>}
-              {ch.status==="locked" && <button style={{ ...AA.tinyBtn, ...AA.tinyBtnGreen }} onClick={() => unlockChapter(ch.id)}>Unlock</button>}
-              {ch.status==="draft" && <button style={AA.tinyBtn} onClick={() => showToast("📝 Story editor would open here", "info")}>Edit</button>}
-            </div>
-          </div>))}
+          {chapters.map((ch: any) => (<div key={ch.id} style={AA.chapterRow}><div style={AA.chapterLeft}><span style={{ ...AA.mono, color:C.teal }}>{ch.id}</span><div><div style={AA.chapterTitle}>{ch.title}</div><div style={AA.chapterMeta}>{ch.cluesSolved} clues · {ch.players} players</div></div></div></div>))}
         </div>
-      </div>
+      </div>}
     </div>
   );
 }
