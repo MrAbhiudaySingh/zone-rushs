@@ -4714,9 +4714,9 @@ function HomeScreen() {
       <div style={{ position:"relative", width:"100%", maxWidth:430, margin:"0 auto", minHeight:"100dvh", color:TX, fontFamily:FONT, overflowX:"hidden" }}>
         {wellbeing && <WellbeingOverlay onDone={async (moodScore, freeText, outreachRequested) => {
           setWellbeing(false);
-          if (moodScore != null && user?.id) {
+          if (moodScore != null && ctx?.authUser?.id) {
             try {
-              await saveMoodEntry({ data: { userId: user.id, moodScore, freeText, outreachRequested } });
+              await saveMoodEntry({ data: { userId: ctx.authUser.id, moodScore, freeText, outreachRequested } });
             } catch (e) { console.error("Mood save error:", e); }
           }
         }} />}
