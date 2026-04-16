@@ -23,9 +23,9 @@ const AppContext = createContext<AppContextType | null>(null);
 
 // ─── TOAST SYSTEM ──────────────────────────────────────────────────────────────
 let _toastId = 0;
-const _toastListeners = [];
-function showToast(msg, type="success", duration=3000) {
-  const t = { id:++_toastId, msg, type, duration };
+const _toastListeners: ToastHandler[] = [];
+function showToast(msg: string, type="success", duration=3000) {
+  const t: Toast = { id:++_toastId, msg, type, duration };
   _toastListeners.forEach(fn => fn(t));
 }
 
