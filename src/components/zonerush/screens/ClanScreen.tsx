@@ -24,7 +24,7 @@ export function ClanScreen({ userOverride, onBack }: ClanScreenProps) {
   return <ClanHub user={user} onBack={onBack} />;
 }
 
-const SUGGESTED_CLANS: any[] = [];
+
 
 function NoClanScreen({ user, canCreate, onBack }: NoClanScreenProps) {
   const ctx = useContext(AppContext);
