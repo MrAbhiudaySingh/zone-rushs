@@ -1698,58 +1698,54 @@ function ResearchSection() {
 
 // ─── CONFIG SECTION ────────────────────────────────────────────────────────────
 function ConfigSection() {
-  const initSettings = [
-    { group:"Game Balance", settings:[{ key:"xp_multiplier",label:"XP Multiplier",val:"1.0×" },{ key:"ae_earn_cap",label:"Max AE/day",val:"500 AE" },{ key:"zone_cooldown",label:"Zone attack cooldown",val:`${ADMIN_GAME_RULES.ZONE_ATTACK_COOLDOWN_HOURS}h` }] },
-    { group:"Clan Rules", settings:[{ key:"clan_min_level",label:"Min level to create",val:"3" },{ key:"clan_max",label:"Max clan size",val:"20" },{ key:"clan_cost",label:"Creation cost",val:"500 AE" }] },
-    { group:"Feature Flags", settings:[{ key:"combat",label:"Combat system",val:"ON" },{ key:"marketplace",label:"Marketplace",val:"ON" },{ key:"style_event",label:"Style events",val:"ON" },{ key:"maintenance",label:"Maintenance mode",val:"OFF" }] },
-  ];
-  const [groups, setGroups] = useState(initSettings);
+  const [configs, setConfigs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editKey, setEditKey] = useState<string | null>(null);
   const [editVal, setEditVal] = useState("");
 
-  const startEdit = (key, val) => { setEditKey(key); setEditVal(val); };
-  const saveEdit = () => {
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("game_config").select("*").order("key");
+      setConfigs(data || []);
+      setLoading(false);
+    })();
+  }, []);
+
+  const saveEdit = async () => {
     if (!editKey) return;
-    setGroups((gs: any) => gs.map((g: any) => ({
-      ...g,
-      settings: g.settings.map((s: any) => s.key === editKey ? { ...s, val: editVal } : s),
-    })));
+    const existing = configs.find((c: any) => c.key === editKey);
+    if (existing) {
+      await supabase.from("game_config").update({ value: editVal }).eq("id", existing.id);
+    } else {
+      await supabase.from("game_config").insert({ key: editKey, value: editVal });
+    }
+    setConfigs(cs => cs.map((c: any) => c.key === editKey ? { ...c, value: editVal } : c));
     showToast(`✓ ${editKey} updated to "${editVal}"`, "success");
     setEditKey(null);
     setEditVal("");
   };
 
-  const toggleFlag = (key) => {
-    setGroups((gs: any) => gs.map((g: any) => ({
-      ...g,
-      settings: g.settings.map((s: any) => s.key === key ? { ...s, val: s.val === "ON" ? "OFF" : "ON" } : s),
-    })));
-    const setting = groups.flatMap((g: any) => g.settings).find((s: any) => s.key === key);
-    const newVal = setting?.val === "ON" ? "OFF" : "ON";
-    showToast(`⚙️ ${key} set to ${newVal}`, newVal === "ON" ? "success" : "warning");
-  };
+  if (loading) return <div style={{ color:C.dim, fontFamily:ADM_MONO, padding:20 }}>Loading config...</div>;
 
   return (
     <div style={AA.secWrap}>
-      <SectionTitle title="Platform Config" sub="Global settings — changes apply immediately" />
-      {groups.map((group: any) => (
-        <div key={group.group} style={{ ...AA.chartCard, marginBottom:12 }}>
-          <div style={AA.chartTitle}>{group.group}</div>
-          {group.settings.map((s: any) => (
-            <div key={s.key} style={AA.ecoControlRow}>
-              <div><div style={AA.ecoControlLabel}>{s.label}</div><div style={{ ...AA.monoSm, color:C.dim }}>{s.key}</div></div>
+      <SectionTitle title="Platform Config" sub="Global settings stored in database — changes persist" />
+      {configs.length === 0 ? (
+        <div style={{ ...AA.chartCard }}><div style={{ color:C.dim, fontFamily:ADM_MONO, fontSize:12 }}>No config entries yet. Add settings via the database.</div></div>
+      ) : (
+        <div style={{ ...AA.chartCard, marginBottom:12 }}>
+          <div style={AA.chartTitle}>Game Config</div>
+          {configs.map((c: any) => (
+            <div key={c.key} style={AA.ecoControlRow}>
+              <div><div style={AA.ecoControlLabel}>{c.key}</div></div>
               <div style={AA.actionBtns}>
-                <span style={{ ...AA.mono, color:s.val==="ON"?C.teal:s.val==="OFF"?C.red:C.amber }}>{s.val}</span>
-                {(s.val === "ON" || s.val === "OFF") ? (
-                  <button style={{ ...AA.tinyBtn, ...(s.val==="ON"?AA.tinyBtnRed:AA.tinyBtnGreen) }} onClick={() => toggleFlag(s.key)}>{s.val==="ON"?"Disable":"Enable"}</button>
-                ) : (
-                  <button style={AA.tinyBtn} onClick={() => startEdit(s.key, s.val)}>Edit</button>
-                )}
+                <span style={{ ...AA.mono, color:C.amber }}>{c.value || "—"}</span>
+                <button style={AA.tinyBtn} onClick={() => { setEditKey(c.key); setEditVal(c.value || ""); }}>Edit</button>
               </div>
             </div>
           ))}
         </div>
-      ))}
+      )}
       {editKey && (
         <div style={AA.modalOverlay} onClick={() => setEditKey(null)}>
           <div style={{ ...AA.modal, maxWidth:400 }} onClick={e => e.stopPropagation()}>
