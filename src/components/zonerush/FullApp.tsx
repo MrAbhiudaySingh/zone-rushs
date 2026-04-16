@@ -33,10 +33,10 @@ export default function ZoneRushApp() {
         supabase.from("profiles").update({
           display_name: next.name,
           level: next.level, xp: next.xp, xp_next: next.xpNext,
-          ae: next.ae, shards: next.shards,
+          aether: next.ae, shards: next.shards,
           streak: next.streak, shields: next.shields,
           combat_rank: next.combatRank, influence_rank: next.influenceRank,
-        }).eq("id", authUser.id).then(() => {});
+        }).eq("user_id", authUser.id).then(() => {});
       }
       return next;
     });
@@ -222,7 +222,7 @@ export default function ZoneRushApp() {
         _setSharedUser({
           name: profile.display_name || authUser.email,
           level: profile.level, xp: profile.xp, xpNext: profile.xp_next,
-          ae: profile.ae, shards: profile.shards,
+          ae: profile.aether, shards: profile.shards,
           streak: currentStreak, shields: profile.shields,
           combatRank: profile.combat_rank, influenceRank: profile.influence_rank,
           clan: null,
@@ -234,19 +234,18 @@ export default function ZoneRushApp() {
       if (membership?.clan) {
         const c = membership.clan;
         const { count: memberCount } = await supabase.from("clan_members").select("id", { count: "exact", head: true }).eq("clan_id", c.id);
-        const clanZones = ((window as any).__zr_zones || []).filter((z: any) => z.captured_by === c.id);
+        const clanZones = ((window as any).__zr_zones || []).filter((z: any) => z.owner_clan_id === c.id);
         _setSharedUser(u => ({
           ...u,
           clan: {
             id: c.id, name: c.name, tag: c.tag, motto: c.motto, color: c.color,
-            founded: new Date(c.founded_at).toLocaleDateString("en-GB", { month:"short", year:"numeric" }),
-            memberRole: membership.role.charAt(0).toUpperCase() + membership.role.slice(1),
-            treasury: c.treasury, weeklyXP: c.weekly_xp,
-            rank: c.rank, cpr: Number(c.cpr), zonesHeld: clanZones.length,
-            totalMembers: memberCount || 1, maxMembers: c.max_members,
+            founded: c.created_at ? new Date(c.created_at).toLocaleDateString("en-GB", { month:"short", year:"numeric" }) : "N/A",
+            memberRole: membership.clan_role ? membership.clan_role.charAt(0).toUpperCase() + membership.clan_role.slice(1) : "Member",
+            treasury: c.aether_treasury, weeklyXP: 0,
+            rank: c.rank, cpr: Number(c.cpr_score || 0), zonesHeld: clanZones.length,
+            totalMembers: memberCount || c.total_members || 1, maxMembers: c.max_members,
           }
         }));
-        await supabase.from("profiles").update({ clan_id: c.id }).eq("user_id", authUser.id);
       }
 
       // Fetch quest progress
@@ -295,7 +294,7 @@ export default function ZoneRushApp() {
       // Fetch notifications
       const { data: notifs } = await supabase.from("notifications").select("*").eq("user_id", authUser.id).eq("read", false).order("created_at", { ascending: false });
       if (notifs?.length) {
-        setPlayerNotifs(notifs.map((n: any) => ({ id: n.id, type: n.type, msg: `${n.title}: ${n.body}` })));
+        setPlayerNotifs(notifs.map((n: any) => ({ id: n.id, type: n.type, msg: n.message })));
       }
     };
     fetchUserData();
