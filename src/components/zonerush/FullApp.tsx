@@ -1829,7 +1829,7 @@ function MarketScreen({ user }) {
   const [sellPrice, setSellPrice] = useState("");
   const marketplaceListings = ctx?.marketplaceListings || [];
 
-  const shopItems = activeShop.filter(i => !i.designer && !i._isMarketListing && (i.rarity === "common" || i.rarity === "uncommon") && (!search || i.name.toLowerCase().includes(search.toLowerCase())) && (catFilter === "all" || i.cat === catFilter || (catFilter === "armor" && i.cat === "armor") || (catFilter === "clothing" && (i.cat === "clothing" || i.cat === "armor")) ));
+  const shopItems = activeShop.filter(i => !i.designer && !i._isMarketListing && (i.rarity === "common" || i.rarity === "uncommon") && (!search || i.name.toLowerCase().includes(search.toLowerCase())) && (catFilter === "all" || i.cat === catFilter || (catFilter === "armor" && (i.cat === "armor" || i.cat === "arms")) || (catFilter === "clothing" && (i.cat === "clothing" || i.cat === "armor")) ));
   const community = [
     ...COMMUNITY_ITEMS,
     ...allShopItems.filter(i => i.designer && i.active !== false),
