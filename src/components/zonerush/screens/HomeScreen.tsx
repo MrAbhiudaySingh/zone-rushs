@@ -526,7 +526,7 @@ function MarketShortcut({ onOpen }: any) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // MISSION CARD — colourful gradient accent, illustrated feel
 // ═══════════════════════════════════════════════════════════════════════════════
-function MissionCard({ m, idx=0 }: MissionCardProps) {
+export function MissionCard({ m, idx=0 }: MissionCardProps) {
   const ctx = useContext(AppContext);
   const [submitting, setSubmitting] = useState(false);
   const [completed, setCompleted] = useState(() => ctx?.completedMissions?.has(m.id) || false);
