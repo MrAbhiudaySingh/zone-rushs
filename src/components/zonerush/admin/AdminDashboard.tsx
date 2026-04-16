@@ -825,15 +825,41 @@ function ActivityFeed() {
 }
 
 // ─── PLAYERS SECTION ───────────────────────────────────────────────────────────
-const MOCK_PLAYERS: any[] = [];
-
 function PlayersSection() {
   const ctx = useContext(AppContext);
-  const [players,  setPlayers]  = useState(MOCK_PLAYERS);
-  const [search,   setSearch]   = useState("");
-  const [filter,   setFilter]   = useState("all");
+  const [players, setPlayers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
   const [selected, setSelected] = useState<any>(null);
   const [confirmBan, setConfirmBan] = useState<any>(null);
+
+  const fetchPlayers = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+    if (!error && data) {
+      setPlayers(data.map((p: any) => ({
+        id: p.user_id,
+        name: p.display_name,
+        level: p.level,
+        xp: p.xp,
+        ae: p.aether,
+        streak: p.streak,
+        shards: p.shards,
+        shields: p.shields,
+        combatRank: p.combat_rank,
+        influenceRank: p.influence_rank,
+        status: "active",
+        flag: false,
+        email: "—",
+        joinDate: new Date(p.created_at).toLocaleDateString("en-GB"),
+        clan: null,
+      })));
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchPlayers(); }, [fetchPlayers]);
 
   const filtered = players.filter((p: any) => {
     const q = search.toLowerCase();
@@ -849,6 +875,7 @@ function PlayersSection() {
   return (
     <div style={AA.secWrap}>
       <SectionTitle title="Player Management" sub={`${players.length} registered · ${players.filter(p=>p.flag).length} flagged`} />
+      {loading ? <div style={{ color:C.dim, fontFamily:ADM_MONO, padding:20 }}>Loading players...</div> : <>
       <div style={AA.toolBar}>
         <input style={AA.searchInput} placeholder="Search name or ID..." value={search} onChange={e=>setSearch(e.target.value)} />
         <div style={AA.filterRow}>
@@ -858,22 +885,21 @@ function PlayersSection() {
         </div>
         <button style={AA.exportBtn}>↓ Export CSV</button>
       </div>
-      <Table cols={["ID","Name","Level","XP","AE","Streak","Clan","Status","Actions"]} rows={filtered.map((p: any) => [
-        <span style={AA.monoSm}>#{p.id}</span>,
+      <Table cols={["ID","Name","Level","XP","AE","Streak","Status","Actions"]} rows={filtered.map((p: any) => [
+        <span style={AA.monoSm}>{String(p.id).slice(0,8)}</span>,
         <span style={AA.playerName}>{p.name}</span>,
         <span style={{ ...AA.mono, color:C.teal }}>Lv {p.level}</span>,
         <span style={AA.mono}>{p.xp.toLocaleString()}</span>,
         <span style={{ ...AA.mono, color:C.amber }}>{p.ae.toLocaleString()}</span>,
         <span style={AA.mono}>{p.streak}d</span>,
-        <span style={{ color:C.dim }}>{p.clan || "—"}</span>,
         <StatusPill status={p.status} />,
         <div style={AA.actionBtns}>
           <button style={AA.tinyBtn} onClick={()=>setSelected(p)}>View</button>
           {p.flag && <button style={{ ...AA.tinyBtn, ...AA.tinyBtnAmber }} onClick={()=>warnPlayer(p.id)}>Warn</button>}
           {p.flag && <button style={{ ...AA.tinyBtn, ...AA.tinyBtnRed }} onClick={()=>setConfirmBan(p)}>Ban</button>}
-          {p.flag && <button style={{ ...AA.tinyBtn }} onClick={()=>unflagPlayer(p.id)}>Clear Flag</button>}
         </div>,
       ])} />
+      </>}
       {selected && <PlayerModal player={selected} onClose={()=>setSelected(null)} onWarn={()=>warnPlayer(selected.id)} onBan={()=>setConfirmBan(selected)} />}
       {confirmBan && (
         <div style={AA.modalOverlay} onClick={() => setConfirmBan(null)}>
@@ -980,52 +1006,65 @@ function WellbeingSection() {
 // ─── ZONES SECTION ─────────────────────────────────────────────────────────────
 const ADMIN_GAME_RULES: Record<string, number> = { ZONE_ATTACK_COOLDOWN_HOURS:24, ZONE_CAPTURE_MINS_STANDARD:3, ZONE_CAPTURE_MINS_LANDMARK:5, CLAN_CREATE_MIN_LEVEL:5, CLAN_MAX_MEMBERS:20, CLAN_CREATE_COST_AE:500, WAR_DECLARE_COST_AE:200, COMBAT_OPPONENT_COOLDOWN_HOURS:4, COMBAT_MAX_INCOMING:3, COMBAT_LEVEL_RANGE:5 };
 
-function zoneOnCooldown(zone) {
-  if (!zone.lastAttackedAt) return false;
-  return Date.now() - new Date(zone.lastAttackedAt).getTime() < ADMIN_GAME_RULES.ZONE_ATTACK_COOLDOWN_HOURS * 3600000;
-}
-function cooldownRemaining(zone) {
-  if (!zone.lastAttackedAt) return null;
-  const remainMs = ADMIN_GAME_RULES.ZONE_ATTACK_COOLDOWN_HOURS * 3600000 - (Date.now() - new Date(zone.lastAttackedAt).getTime());
-  if (remainMs <= 0) return null;
-  return `${Math.floor(remainMs / 3600000)}h ${Math.floor((remainMs % 3600000) / 60000)}m`;
-}
-
-const NOW = Date.now();
-const hAgo = (h) => new Date(NOW - h * 3600000).toISOString();
-const MOCK_ZONES = [
-  { id:1, name:"Main Library",     type:"library",  owner:"Nocturne",   strength:82, income:50,  tier:2, contested:false, lastCapture:"3d",    lastAttackedAt: hAgo(30),  attackedTodayBy: null },
-  { id:2, name:"Sports Arena",     type:"arena",    owner:"Nocturne",   strength:65, income:80,  tier:3, contested:true,  lastCapture:"6h",    lastAttackedAt: hAgo(3),   attackedTodayBy: "BlazeThorn" },
-  { id:3, name:"Cafeteria Block",  type:"social",   owner:"Nocturne",   strength:90, income:40,  tier:1, contested:false, lastCapture:"1d",    lastAttackedAt: hAgo(48),  attackedTodayBy: null },
-  { id:4, name:"Engineering Dept", type:"academic", owner:"Nocturne",   strength:58, income:70,  tier:2, contested:true,  lastCapture:"2h",    lastAttackedAt: hAgo(1),   attackedTodayBy: "IronVeil" },
-  { id:5, name:"Clock Tower",      type:"landmark", owner:"IronVeil",   strength:91, income:100, tier:3, contested:false, lastCapture:"5d",    lastAttackedAt: hAgo(72),  attackedTodayBy: null },
-  { id:6, name:"North Quad",       type:"outdoor",  owner:"BlazeThorn", strength:74, income:60,  tier:2, contested:false, lastCapture:"4d",    lastAttackedAt: hAgo(26),  attackedTodayBy: null },
-  { id:7, name:"Student Union",    type:"social",   owner:"SolarEdge",  strength:63, income:55,  tier:2, contested:false, lastCapture:"2d",    lastAttackedAt: hAgo(50),  attackedTodayBy: null },
-  { id:8, name:"Science Block",    type:"academic", owner:null,         strength:0,  income:65,  tier:2, contested:false, lastCapture:"Never", lastAttackedAt: null,      attackedTodayBy: null },
-];
-
 function ZonesSection() {
+  const [zones, setZones] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [sel, setSel] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase.from("zones").select("*, owner_clan:clans(name, tag, color)");
+      if (!error && data) {
+        setZones(data.map((z: any) => ({
+          id: z.id,
+          name: z.name,
+          type: z.zone_type,
+          owner: z.owner_clan?.name || null,
+          ownerTag: z.owner_clan?.tag || null,
+          strength: z.control_strength,
+          income: z.aether_rate_per_hour,
+          tier: z.tier,
+          contested: z.contest_status !== "peaceful",
+          lastCapture: z.last_capture_at ? new Date(z.last_capture_at).toLocaleDateString("en-GB") : "Never",
+          lastAttackedAt: z.last_capture_at,
+          developmentLevel: z.development_level,
+        })));
+      }
+      setLoading(false);
+    })();
+  }, []);
+
+  const contested = zones.filter(z => z.contested);
+  const unclaimed = zones.filter(z => !z.owner);
+
   return (
     <div style={AA.secWrap}>
-      <SectionTitle title="Zone Control" sub={`${MOCK_ZONES.filter(z=>z.contested).length} contested · ${MOCK_ZONES.filter(z=>!z.owner).length} unclaimed`} />
-      <div style={AA.chartsRow}>
-        <div style={{ ...AA.chartCard, flex:1 }}><div style={AA.chartTitle}>Zone Ownership</div><DonutChart segments={[{ label:"Nocturne",val:3,color:"#A78BFA" },{ label:"IronVeil",val:2,color:"#95A5A6" },{ label:"BlazeThorn",val:1,color:"#E74C3C" },{ label:"SolarEdge",val:1,color:"#F5A623" },{ label:"Unclaimed",val:1,color:C.dim }]} /></div>
-        <div style={{ ...AA.chartCard, flex:2 }}><div style={AA.chartTitle}>Zone Income by Owner (AE/day)</div><BarChart data={[{ label:"Nocturne",val:240,color:"#A78BFA" },{ label:"IronVeil",val:160,color:"#95A5A6" },{ label:"BlazeThorn",val:60,color:C.red },{ label:"SolarEdge",val:55,color:C.amber }]} /></div>
-      </div>
-      <div style={AA.ruleCallout}><span style={AA.ruleCalloutIcon}>🛡️</span><div><span style={AA.ruleCalloutTitle}>Attack cooldown: </span><span style={AA.ruleCalloutBody}>Each zone can only be attacked once every {ADMIN_GAME_RULES.ZONE_ATTACK_COOLDOWN_HOURS}h.</span></div></div>
-      <Table cols={["ID","Zone","Type","Owner","Strength","Income","Tier","Status","Attack Slot","Actions"]} rows={MOCK_ZONES.map((z: any) => { const onCd = zoneOnCooldown(z); const remaining = cooldownRemaining(z); return [
-        <span style={AA.monoSm}>Z{z.id}</span>,<span style={AA.playerName}>{z.name}</span>,<span style={{ color:C.dim, textTransform:"capitalize" }}>{z.type}</span>,<span style={{ color:z.owner?"#A78BFA":C.dim }}>{z.owner||"Unclaimed"}</span>,<StrengthBar val={z.strength} />,<span style={{ ...AA.mono, color:C.amber }}>+{z.income}</span>,<span style={AA.mono}>T{z.tier}</span>,<span style={{ color:z.contested?C.red:C.teal, fontSize:11, fontWeight:700 }}>{z.contested?"CONTESTED":"Active"}</span>,
-        onCd ? <div><div style={AA.cdUsed}>🔒 {z.attackedTodayBy||"Attacked"}</div><div style={AA.cdTimer}>{remaining} left</div></div> : <span style={AA.cdOpen}>✓ Open</span>,
-        <div style={AA.actionBtns}><button style={AA.tinyBtn} onClick={()=>setSel(z)}>Manage</button>{onCd && <button style={{ ...AA.tinyBtn, ...AA.tinyBtnAmber }}>Reset CD</button>}</div>,
-      ]; })} />
+      <SectionTitle title="Zone Control" sub={`${contested.length} contested · ${unclaimed.length} unclaimed`} />
+      {loading ? <div style={{ color:C.dim, fontFamily:ADM_MONO, padding:20 }}>Loading zones...</div> : <>
+      <Table cols={["ID","Zone","Type","Owner","Strength","Income/hr","Tier","Status","Actions"]} rows={zones.map((z: any) => [
+        <span style={AA.monoSm}>{String(z.id).slice(0,8)}</span>,
+        <span style={AA.playerName}>{z.name}</span>,
+        <span style={{ color:C.dim, textTransform:"capitalize" }}>{z.type}</span>,
+        <span style={{ color:z.owner?"#A78BFA":C.dim }}>{z.owner ? `${z.owner} [${z.ownerTag}]` : "Unclaimed"}</span>,
+        <StrengthBar val={z.strength} />,
+        <span style={{ ...AA.mono, color:C.amber }}>+{z.income}</span>,
+        <span style={AA.mono}>T{z.tier}</span>,
+        <span style={{ color:z.contested?C.red:C.teal, fontSize:11, fontWeight:700 }}>{z.contested?"CONTESTED":"Peaceful"}</span>,
+        <div style={AA.actionBtns}><button style={AA.tinyBtn} onClick={()=>setSel(z)}>Manage</button></div>,
+      ])} />
+      </>}
       {sel && (
         <div style={AA.modalOverlay} onClick={()=>setSel(null)}>
           <div style={AA.modal} onClick={e=>e.stopPropagation()}>
-            <div style={AA.modalHdr}><div><div style={AA.modalTitle}>{sel.name}</div><div style={AA.modalSub}>Zone #{sel.id} · Tier {sel.tier}</div></div><button style={AA.modalClose} onClick={()=>setSel(null)}>✕</button></div>
+            <div style={AA.modalHdr}><div><div style={AA.modalTitle}>{sel.name}</div><div style={AA.modalSub}>Tier {sel.tier} · {sel.type}</div></div><button style={AA.modalClose} onClick={()=>setSel(null)}>✕</button></div>
+            <div style={AA.modalGrid}>
+              {[["Owner",sel.owner||"Unclaimed"],["Strength",`${sel.strength}%`],["Income",`${sel.income} AE/hr`],["Development",`Lv ${sel.developmentLevel}`]].map(([label,val]: any) => (
+                <div key={label} style={AA.modalStat}><div style={AA.modalStatLbl}>{label}</div><div style={AA.modalStatVal}>{val}</div></div>
+              ))}
+            </div>
             <div style={AA.modalActions}>
-              <button style={AA.modalBtn}>📍 View on Map</button><button style={AA.modalBtn}>🔄 Force Unclaim</button><button style={AA.modalBtn}>⬆ Upgrade Tier</button>
-              <button style={{ ...AA.modalBtn, ...AA.modalBtnRed }}>🗑 Delete Zone</button>
+              <button style={AA.modalBtn}>🔄 Force Unclaim</button>
+              <button style={AA.modalBtn}>⬆ Upgrade Tier</button>
             </div>
           </div>
         </div>
@@ -1126,58 +1165,118 @@ function ShopSection() {
 }
 
 // ─── MISSIONS SECTION ──────────────────────────────────────────────────────────
-const MISSION_TEMPLATES: any[] = [
-  { id:1, title:"Morning Walk", cat:"Health", type:"steps", reward:80, xp:40, active:true, completions:47 },
-  { id:2, title:"Visit the Library", cat:"Territory", type:"checkin", reward:120, xp:60, active:true, completions:23 },
-  { id:3, title:"Document Campus Art", cat:"Social", type:"photo", reward:100, xp:50, active:true, completions:18 },
-  { id:4, title:"Meditation Session", cat:"Wellness", type:"photo", reward:45, xp:20, active:true, completions:31 },
-  { id:5, title:"Litter Collection", cat:"Sustainability", type:"photo", reward:180, xp:60, active:false, completions:0 },
-  { id:6, title:"Department Selfie", cat:"Social", type:"photo", reward:160, xp:60, active:true, completions:12 },
-];
-
 function MissionsSection() {
   const ctx = useContext(AppContext);
   const [mTab, setMTab] = useState("templates");
-  const [showNew, setShowNew] = useState(false);
+  const [questDefs, setQuestDefs] = useState<any[]>([]);
+  const [proofs, setProofs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [viewProof, setViewProof] = useState<any>(null);
   const [rejectNote, setRejectNote] = useState("");
-  const proofs = ctx?.sharedProofs || PROOF_SUBMISSIONS;
-  const pending = proofs.filter((p: any) => p.status === "pending" || p.status === "flagged");
-  const resolved = proofs.filter((p: any) => p.status === "approved" || p.status === "rejected");
-  const missions = ctx?.sharedMissions || MISSIONS;
 
-  const approve = (id) => { if (ctx) ctx.approveProof(id); setViewProof(null); };
-  const reject = (id, reason) => { if (ctx) ctx.rejectProof(id, reason); setViewProof(null); setRejectNote(""); };
-  const toggleTemplate = (id) => { if (ctx) ctx.toggleMission(id); };
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    const [defsRes, proofsRes] = await Promise.all([
+      supabase.from("quest_definitions").select("*").order("sort_order"),
+      supabase.from("proof_submissions").select("*, quest_progress:quest_progress(*, quest_definition:quest_definitions(*)), submitter:profiles!proof_submissions_user_id_fkey(display_name)"),
+    ]);
+    if (defsRes.data) setQuestDefs(defsRes.data);
+    if (proofsRes.data) {
+      setProofs(proofsRes.data.map((p: any) => ({
+        id: p.id,
+        userId: p.user_id,
+        userName: p.submitter?.display_name || "Unknown",
+        missionTitle: p.quest_progress?.quest_definition?.title || "Unknown Mission",
+        cat: p.quest_progress?.quest_definition?.category || "",
+        status: p.status,
+        reward: p.quest_progress?.quest_definition?.aether_reward || 0,
+        xp: p.quest_progress?.quest_definition?.xp_reward || 0,
+        proofUrl: p.proof_url,
+        progressId: p.quest_progress_id,
+        submittedAt: new Date(p.quest_progress?.created_at || Date.now()).toLocaleDateString("en-GB"),
+      })));
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const pending = proofs.filter((p: any) => p.status === "pending");
+  const resolved = proofs.filter((p: any) => p.status === "approved" || p.status === "rejected");
+
+  const toggleQuest = async (id: string, currentActive: boolean) => {
+    const { error } = await supabase.from("quest_definitions").update({ is_active: !currentActive }).eq("id", id);
+    if (!error) {
+      setQuestDefs(ds => ds.map(d => d.id === id ? { ...d, is_active: !currentActive } : d));
+      showToast(`Mission ${!currentActive ? "enabled" : "disabled"}`, "success");
+    } else {
+      showToast("Failed to update mission", "error");
+    }
+  };
+
+  const approve = async (proof: any) => {
+    const { error } = await supabase.from("proof_submissions").update({ status: "approved", reviewed_at: new Date().toISOString() }).eq("id", proof.id);
+    if (!error && proof.reward > 0 || proof.xp > 0) {
+      // Update user profile with rewards
+      const { data: profile } = await supabase.from("profiles").select("aether, xp").eq("user_id", proof.userId).maybeSingle();
+      if (profile) {
+        await supabase.from("profiles").update({
+          aether: profile.aether + (proof.reward || 0),
+          xp: profile.xp + (proof.xp || 0),
+        }).eq("user_id", proof.userId);
+      }
+    }
+    if (!error) {
+      setProofs(ps => ps.map(p => p.id === proof.id ? { ...p, status: "approved" } : p));
+      showToast(`✓ Proof approved — ${proof.reward} AE + ${proof.xp} XP released`, "success");
+    }
+    setViewProof(null);
+  };
+
+  const reject = async (id: string, reason: string) => {
+    await supabase.from("proof_submissions").update({ status: "rejected", reviewed_at: new Date().toISOString() }).eq("id", id);
+    setProofs(ps => ps.map(p => p.id === id ? { ...p, status: "rejected" } : p));
+    showToast("Proof rejected", "warning");
+    setViewProof(null);
+    setRejectNote("");
+  };
 
   return (
     <div style={AA.secWrap}>
       <SectionTitle title="Missions" sub="Mission templates · proof image review · reward release" />
+      {loading ? <div style={{ color:C.dim, fontFamily:ADM_MONO, padding:20 }}>Loading...</div> : <>
       <div style={AA.innerTabBar}>
-        <button style={{ ...AA.innerTab, ...(mTab==="templates"?AA.innerTabOn:{}) }} onClick={() => setMTab("templates")}>📋 Templates</button>
+        <button style={{ ...AA.innerTab, ...(mTab==="templates"?AA.innerTabOn:{}) }} onClick={() => setMTab("templates")}>📋 Templates ({questDefs.length})</button>
         <button style={{ ...AA.innerTab, ...(mTab==="proof"?AA.innerTabOn:{}) }} onClick={() => setMTab("proof")}>📷 Proof Review{pending.length > 0 && <span style={AA.innerTabBadge}>{pending.length}</span>}</button>
       </div>
       {mTab === "templates" && <>
-        <div style={AA.toolBar}><span style={{ color:C.dim, fontSize:12 }}>{MISSION_TEMPLATES.filter(m=>m.active).length} active · changes reflect instantly</span><button style={AA.exportBtn} onClick={() => setShowNew(true)}>+ New Mission</button></div>
-        <Table cols={["ID","Title","Category","Type","AE","XP","Completions","Status","Actions"]} rows={MISSION_TEMPLATES.map((m: any) => { const liveM = missions.find((lm: any) => lm.title === m.title); const isDisabled = liveM?._disabled || !m.active; return [
-          <span style={AA.monoSm}>M{m.id}</span>,<span style={AA.playerName}>{m.title}</span>,<span style={{ color:C.dim }}>{m.cat}</span>,<span style={{ color:C.teal, textTransform:"capitalize", fontSize:11 }}>{m.type}</span>,<span style={{ ...AA.mono, color:C.amber }}>{m.reward}</span>,<span style={AA.mono}>{m.xp}</span>,<span style={{ ...AA.mono, color:C.teal }}>{m.completions}</span>,
-          <span style={{ color:isDisabled?C.dim:C.teal, fontSize:11, fontWeight:700 }}>{isDisabled?"OFF":"ACTIVE"}</span>,
-          <div style={AA.actionBtns}><button style={AA.tinyBtn}>Edit</button><button style={{ ...AA.tinyBtn, ...(!isDisabled?AA.tinyBtnRed:AA.tinyBtnGreen) }} onClick={() => liveM && toggleTemplate(liveM.id)}>{!isDisabled?"Disable":"Enable"}</button></div>,
-        ]; })} />
+        <div style={AA.toolBar}><span style={{ color:C.dim, fontSize:12 }}>{questDefs.filter(m=>m.is_active).length} active · changes reflect instantly</span></div>
+        <Table cols={["Title","Category","Tier","AE","XP","Shards","Tracking","Status","Actions"]} rows={questDefs.map((m: any) => [
+          <span style={AA.playerName}>{m.icon} {m.title}</span>,
+          <span style={{ color:C.dim }}>{m.category}</span>,
+          <span style={{ color:C.teal, fontSize:11 }}>{m.tier}</span>,
+          <span style={{ ...AA.mono, color:C.amber }}>{m.aether_reward}</span>,
+          <span style={AA.mono}>{m.xp_reward}</span>,
+          <span style={AA.mono}>{m.shard_reward}</span>,
+          <span style={{ color:C.dim, textTransform:"capitalize", fontSize:11 }}>{m.tracking_type}</span>,
+          <span style={{ color:m.is_active?C.teal:C.dim, fontSize:11, fontWeight:700 }}>{m.is_active?"ACTIVE":"OFF"}</span>,
+          <div style={AA.actionBtns}><button style={{ ...AA.tinyBtn, ...(m.is_active?AA.tinyBtnRed:AA.tinyBtnGreen) }} onClick={() => toggleQuest(m.id, m.is_active)}>{m.is_active?"Disable":"Enable"}</button></div>,
+        ])} />
       </>}
       {mTab === "proof" && <>
         {pending.length > 0 && <><div style={AA.proofQueueLabel}>⏳ Awaiting Review — {pending.length}</div>{pending.map((s: any) => <ProofCard key={s.id} sub={s} onView={() => { setViewProof(s); setRejectNote(""); }} />)}</>}
         {resolved.length > 0 && <><div style={{ ...AA.proofQueueLabel, color:C.dim, marginTop:16 }}>✓ Resolved — {resolved.length}</div>{resolved.map((s: any) => <ProofCard key={s.id} sub={s} resolved />)}</>}
+        {pending.length === 0 && resolved.length === 0 && <div style={{ color:C.dim, fontFamily:ADM_MONO, padding:20 }}>No proof submissions yet.</div>}
+      </>}
       </>}
       {viewProof && (
         <div style={AA.modalOverlay} onClick={() => setViewProof(null)}>
           <div style={{ ...AA.modal, maxWidth:560 }} onClick={e => e.stopPropagation()}>
             <div style={AA.modalHdr}><div><div style={AA.modalTitle}>{viewProof.missionTitle}</div><div style={AA.modalSub}>{viewProof.userName} · {viewProof.submittedAt}</div></div><button style={AA.modalClose} onClick={() => setViewProof(null)}>✕</button></div>
-            <div style={AA.proofImgWrap}><div style={AA.proofImgPlaceholder}>📷</div></div>
-            {viewProof.note && <div style={AA.proofUserNote}><span style={{ color:C.dim, fontSize:10, fontWeight:700 }}>USER NOTE: </span>{viewProof.note}</div>}
+            <div style={AA.proofImgWrap}>{viewProof.proofUrl ? <img src={viewProof.proofUrl} alt="Proof" style={{ width:"100%", maxHeight:300, objectFit:"contain" }} /> : <div style={AA.proofImgPlaceholder}>📷</div>}</div>
             <div style={AA.proofRewardRow}><div style={AA.proofRewardChip}><span style={{ color:C.amber }}>◎</span> {viewProof.reward} AE</div><div style={AA.proofRewardChip}><span style={{ color:C.teal }}>⚡</span> {viewProof.xp} XP</div></div>
             <div style={{ display:"flex", flexDirection:"column", gap:10, marginTop:16 }}>
-              <button style={{ ...AA.modalBtn, background:"rgba(0,212,168,0.08)", borderColor:"rgba(0,212,168,0.4)", color:C.teal, fontWeight:700 }} onClick={() => approve(viewProof.id)}>✓ Approve — release rewards</button>
+              <button style={{ ...AA.modalBtn, background:"rgba(0,212,168,0.08)", borderColor:"rgba(0,212,168,0.4)", color:C.teal, fontWeight:700 }} onClick={() => approve(viewProof)}>✓ Approve — release rewards</button>
               <input style={AA.fieldInput} placeholder="Rejection reason (required)" value={rejectNote} onChange={e => setRejectNote(e.target.value)} />
               <button style={{ ...AA.modalBtn, ...AA.modalBtnRed, opacity: rejectNote.trim() ? 1 : 0.4 }} disabled={!rejectNote.trim()} onClick={() => reject(viewProof.id, rejectNote)}>✕ Reject submission</button>
             </div>
@@ -1205,85 +1304,82 @@ function ProofCard({ sub, resolved, onView }: any) {
 }
 
 // ─── EVENTS SECTION ────────────────────────────────────────────────────────────
-const REWARD_TYPES = [
-  { id:"ae", label:"AE (Aether)", icon:"◎" },{ id:"xp", label:"XP", icon:"⚡" },{ id:"badge", label:"Exclusive Badge", icon:"🏅" },{ id:"item", label:"Shop Item Unlock", icon:"🎁" },{ id:"title", label:"Player Title", icon:"👑" },
-];
-const EVENT_TYPE_COLOR: Record<string, string> = { territory:C.amber, sustainability:"#27AE60", social:"#4DA6FF", wellness:"#A78BFA", combat:C.red };
-const RECIPIENT_LABELS = { all:"All completers", top1:"1st place only", top3:"Top 3", top10:"Top 10" };
-
-const MOCK_EVENTS_ADMIN: any[] = [
-  { id:1, title:"Freshers Capture Blitz", type:"territory", status:"active", desc:"Freshers-only zone capture competition.", startDate:"Feb 20", endDate:"Feb 27", eligibility:"Level 1–5 only", participants:84, maxParticipants:200, rewardRules:[{ type:"ae",amount:500,recipients:"top1",label:"500 AE → 1st" },{ type:"badge",badgeSlug:"fresher_champion",recipients:"top3",label:"Fresher Champion badge → top 3" }], granted:false },
-  { id:2, title:"Campus Clean-Up Sprint", type:"sustainability", status:"scheduled", desc:"Complete 5 litter collection missions in 48 hours.", startDate:"Mar 1", endDate:"Mar 3", eligibility:"All players", participants:0, maxParticipants:null, rewardRules:[{ type:"ae",amount:300,recipients:"all",label:"300 AE → all completers" }], granted:false },
-  { id:3, title:"Valentine's Social Surge", type:"social", status:"ended", desc:"Cross-department selfie challenge.", startDate:"Feb 13", endDate:"Feb 15", eligibility:"All players", participants:142, maxParticipants:null, rewardRules:[{ type:"ae",amount:200,recipients:"top1",label:"200 AE → most submissions" }], granted:true },
-];
-
 function EventsSection() {
-  const ctx = useContext(AppContext);
+  const [events, setEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [adminEvents, setAdminEvents] = useState(MOCK_EVENTS_ADMIN);
-  const [grantingId, setGrantingId] = useState<any>(null);
-  const [form, setForm] = useState({ title:"", type:"territory", desc:"", startDate:"", endDate:"", eligibility:"All players", maxParticipants:"", rewardRules:[] });
+  const [form, setForm] = useState({ title:"", desc:"" });
 
-  const active = adminEvents.filter((e: any) => e.status === "active");
-  const scheduled = adminEvents.filter((e: any) => e.status === "scheduled");
-  const ended = adminEvents.filter((e: any) => e.status === "ended");
+  const fetchEvents = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from("events").select("*").order("created_at", { ascending: false });
+    if (!error && data) setEvents(data);
+    setLoading(false);
+  }, []);
 
-  const grantEvent = (id) => { setAdminEvents((evs: any) => evs.map((e: any) => e.id === id ? { ...e, granted:true } : e)); setGrantingId(null); };
-  const endEventNow = (id) => { setAdminEvents((evs: any) => evs.map((e: any) => e.id === id ? { ...e, status:"ended" } : e)); if (ctx) ctx.endEvent(id); };
-  const createEvent = () => {
+  useEffect(() => { fetchEvents(); }, [fetchEvents]);
+
+  const active = events.filter(e => e.status === "active");
+  const upcoming = events.filter(e => e.status === "upcoming");
+  const ended = events.filter(e => e.status === "ended");
+
+  const endEventNow = async (id: string) => {
+    const { error } = await supabase.from("events").update({ status: "ended" }).eq("id", id);
+    if (!error) {
+      setEvents(evs => evs.map(e => e.id === id ? { ...e, status: "ended" } : e));
+      showToast("Event ended", "success");
+    }
+  };
+
+  const createEvent = async () => {
     if (!form.title.trim()) return;
-    const newEv = { id:Date.now(), ...form, status:"active", participants:0, granted:false, color:EVENT_TYPE_COLOR[form.type]||C.amber };
-    setAdminEvents((evs: any) => [...evs, newEv]);
-    if (ctx) ctx.addEvent({ id:newEv.id, title:form.title, type:form.type, status:"active", desc:form.desc, endDate:form.endDate, eligibility:form.eligibility, participants:0, maxParticipants:form.maxParticipants?parseInt(form.maxParticipants):null, reward:form.rewardRules.map(r=>r.label).join(" + ")||"TBD", color:EVENT_TYPE_COLOR[form.type]||C.amber });
-    setForm({ title:"", type:"territory", desc:"", startDate:"", endDate:"", eligibility:"All players", maxParticipants:"", rewardRules:[] });
+    const { data, error } = await supabase.from("events").insert({ title: form.title, description: form.desc, status: "active" }).select().maybeSingle();
+    if (!error && data) {
+      setEvents(evs => [data, ...evs]);
+      showToast("Event created!", "success");
+    }
+    setForm({ title:"", desc:"" });
     setShowCreate(false);
   };
 
+  const statusColor = { active: C.teal, upcoming: C.amber, ended: C.dim, scheduled: C.amber };
+
   return (
     <div style={AA.secWrap}>
-      <SectionTitle title="Limited Time Events" sub="Create and manage timed campus-wide events" />
+      <SectionTitle title="Events" sub="Create and manage timed campus-wide events" />
+      {loading ? <div style={{ color:C.dim, fontFamily:ADM_MONO, padding:20 }}>Loading events...</div> : <>
       <div style={AA.toolBar}>
         <div style={{ ...AA.kpiGrid, gridTemplateColumns:"repeat(3,1fr)", width:"100%" }}>
-          {[{ label:"Active now",val:active.length,color:C.teal },{ label:"Scheduled",val:scheduled.length,color:C.amber },{ label:"Ended",val:ended.length,color:C.dim }].map((k: any) => (<div key={k.label} style={AA.kpiCard}><div style={{ ...AA.kpiVal, color:k.color }}>{k.val}</div><div style={AA.kpiLabel}>{k.label}</div></div>))}
+          {[{ label:"Active now",val:active.length,color:C.teal },{ label:"Upcoming",val:upcoming.length,color:C.amber },{ label:"Ended",val:ended.length,color:C.dim }].map((k: any) => (<div key={k.label} style={AA.kpiCard}><div style={{ ...AA.kpiVal, color:k.color }}>{k.val}</div><div style={AA.kpiLabel}>{k.label}</div></div>))}
         </div>
         <button style={{ ...AA.exportBtn, whiteSpace:"nowrap", alignSelf:"flex-start" }} onClick={() => setShowCreate(true)}>+ Create Event</button>
       </div>
-      {active.length > 0 && <><div style={AA.proofQueueLabel}>⚡ Active Now</div>{active.map((ev: any) => <EventCard key={ev.id} ev={ev} onGrant={() => setGrantingId(ev.id)} onEnd={() => endEventNow(ev.id)} />)}</>}
-      {scheduled.length > 0 && <><div style={{ ...AA.proofQueueLabel, color:C.amber, marginTop:12 }}>📅 Scheduled</div>{scheduled.map((ev: any) => <EventCard key={ev.id} ev={ev} onEnd={() => endEventNow(ev.id)} />)}</>}
-      {ended.length > 0 && <><div style={{ ...AA.proofQueueLabel, color:C.dim, marginTop:12 }}>✓ Ended</div>{ended.map((ev: any) => <EventCard key={ev.id} ev={ev} dim onGrant={() => setGrantingId(ev.id)} />)}</>}
+      <Table cols={["Title","Description","Status","Reward AE","Created","Actions"]} rows={events.map((ev: any) => [
+        <span style={AA.playerName}>{ev.title}</span>,
+        <span style={{ color:C.dim, fontSize:11 }}>{ev.description || "—"}</span>,
+        <span style={{ color:statusColor[ev.status]||C.dim, fontSize:11, fontWeight:700, textTransform:"uppercase" }}>{ev.status}</span>,
+        <span style={{ ...AA.mono, color:C.amber }}>{ev.reward_ae} AE</span>,
+        <span style={AA.monoSm}>{new Date(ev.created_at).toLocaleDateString("en-GB")}</span>,
+        <div style={AA.actionBtns}>
+          {ev.status === "active" && <button style={{ ...AA.tinyBtn, ...AA.tinyBtnRed }} onClick={() => endEventNow(ev.id)}>End Now</button>}
+        </div>,
+      ])} />
+      </>}
       {showCreate && (
         <div style={AA.modalOverlay} onClick={() => setShowCreate(false)}>
-          <div style={{ ...AA.modal, maxWidth:580, maxHeight:"92vh", overflowY:"auto" }} onClick={e => e.stopPropagation()}>
+          <div style={{ ...AA.modal, maxWidth:580 }} onClick={e => e.stopPropagation()}>
             <div style={AA.modalHdr}><div style={AA.modalTitle}>⚡ Create Event</div><button style={AA.modalClose} onClick={() => setShowCreate(false)}>✕</button></div>
             <div style={{ display:"flex", flexDirection:"column", gap:14, marginTop:12 }}>
               <div style={AA.fieldWrap}><label style={AA.fieldLabel}>TITLE</label><input style={AA.fieldInput} placeholder="e.g. Freshers Capture Blitz" value={form.title} onChange={e => setForm(f=>({...f, title:e.target.value}))} /></div>
               <div style={AA.fieldWrap}><label style={AA.fieldLabel}>DESCRIPTION</label><textarea style={{ ...AA.fieldInput, resize:"none", height:70 }} value={form.desc} onChange={e => setForm(f=>({...f, desc:e.target.value}))} /></div>
               <div style={{ display:"flex", gap:10 }}>
                 <button style={{ ...AA.exportBtn, flex:1 }} onClick={() => setShowCreate(false)}>Cancel</button>
-                <button style={{ ...AA.exportBtn, flex:2, background:`linear-gradient(135deg, ${C.teal}, #0088BB)`, color:"#050810", fontWeight:700, border:"none" }} onClick={createEvent}>⚡ Schedule Event</button>
+                <button style={{ ...AA.exportBtn, flex:2, background:`linear-gradient(135deg, ${C.teal}, #0088BB)`, color:"#050810", fontWeight:700, border:"none" }} onClick={createEvent}>⚡ Create Event</button>
               </div>
             </div>
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function EventCard({ ev, dim, onGrant, onEnd }: any) {
-  const tc = EVENT_TYPE_COLOR[ev.type] || C.dim;
-  return (
-    <div style={{ ...AA.eventCard, ...(dim?{ opacity:0.75 }:{}), borderLeftColor:tc }}>
-      <div style={AA.eventCardTop}>
-        <div style={AA.eventCardLeft}><span style={{ ...AA.eventTypePill, color:tc, borderColor:tc+"55" }}>{ev.type.toUpperCase()}</span><div style={AA.eventCardTitle}>{ev.title}</div><div style={AA.eventCardDesc}>{ev.desc}</div></div>
-        <div style={AA.eventCardRight}><div style={{ ...AA.eventStatusDot, background:ev.status==="active"?C.teal:ev.status==="scheduled"?C.amber:C.dim }} /><span style={{ fontSize:10, color:C.dim, fontFamily:ADM_MONO, textTransform:"uppercase" }}>{ev.status}</span></div>
-      </div>
-      {ev.rewardRules && <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:10 }}>{ev.rewardRules.map((r: any, i: number) => <span key={i} style={AA.rewardRuleChip}>{REWARD_TYPES.find(t=>t.id===r.type)?.icon} {r.label}</span>)}</div>}
-      <div style={AA.eventCardMeta}><span>📅 {ev.startDate} → {ev.endDate}</span><span>👥 {ev.participants}{ev.maxParticipants?`/${ev.maxParticipants}`:""}</span>{ev.granted && <span style={{ color:C.teal, fontWeight:700 }}>✓ Rewards granted</span>}</div>
-      <div style={AA.actionBtns}>
-        {ev.status==="active" && <button style={{ ...AA.tinyBtn, ...AA.tinyBtnRed }} onClick={onEnd}>End Now</button>}
-        {ev.status==="ended" && !ev.granted && onGrant && <button style={{ ...AA.tinyBtn, ...AA.tinyBtnGreen }} onClick={onGrant}>🎁 Grant Rewards</button>}
-      </div>
     </div>
   );
 }
@@ -1401,37 +1497,31 @@ function CombatSection() {
 }
 
 // ─── CLANS SECTION ─────────────────────────────────────────────────────────────
-const CLAN_DATA = [];
-
 function ClansSection() {
-  const [clans, setClans] = useState(CLAN_DATA);
-  const [confirmDissolve, setConfirmDissolve] = useState(null);
+  const [clans, setClans] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const dissolveClan = (tag) => {
-    setClans(cs => cs.filter((c: any) => c.tag !== tag));
-    setConfirmDissolve(null);
-    showToast(`🛡️ Clan [${tag}] dissolved`, "error");
-  };
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase.from("clans").select("*").order("cpr_score", { ascending: false });
+      if (!error && data) setClans(data);
+      setLoading(false);
+    })();
+  }, []);
 
   return (
     <div style={AA.secWrap}>
       <SectionTitle title="Clan Management" sub={`${clans.length} active clans`} />
-      <Table cols={["Tag","Name","Leader","Members","Zones","CPR","Treasury","Flags","Actions"]} rows={clans.map((c: any) => [
-        <span style={{ ...AA.mono, color:"#A78BFA" }}>[{c.tag}]</span>,<span style={AA.playerName}>{c.name}</span>,<span style={{ color:C.dim }}>{c.leader}</span>,<span style={AA.mono}>{c.members}</span>,<span style={{ ...AA.mono, color:C.teal }}>{c.zones}</span>,<span style={{ ...AA.mono, color:C.amber }}>{c.cpr}</span>,<span style={{ ...AA.mono, color:C.amber }}>{c.treasury.toLocaleString()} AE</span>,<span style={{ color:c.flags>0?C.red:C.dim, fontWeight:700 }}>{c.flags>0?`⚠ ${c.flags}`:"—"}</span>,
-        <div style={AA.actionBtns}><button style={AA.tinyBtn} onClick={() => showToast(`📊 ${c.name}: ${c.members} members, ${c.zones} zones, CPR ${c.cpr}`, "info")}>View</button><button style={{ ...AA.tinyBtn, ...AA.tinyBtnRed }} onClick={() => setConfirmDissolve(c)}>Dissolve</button></div>,
-      ])} />
-      {confirmDissolve && (
-        <div style={AA.modalOverlay} onClick={() => setConfirmDissolve(null)}>
-          <div style={AA.modal} onClick={e => e.stopPropagation()}>
-            <div style={AA.modalHdr}><div style={AA.modalTitle}>Dissolve [{confirmDissolve.tag}] {confirmDissolve.name}?</div><button style={AA.modalClose} onClick={() => setConfirmDissolve(null)}>✕</button></div>
-            <div style={{ fontSize:12, color:C.dim, marginBottom:16, lineHeight:1.6 }}>This will disband the clan, release all zones, and return treasury ({confirmDissolve.treasury.toLocaleString()} AE) to members. This action cannot be undone.</div>
-            <div style={{ display:"flex", gap:8 }}>
-              <button style={{ ...AA.exportBtn, flex:1 }} onClick={() => setConfirmDissolve(null)}>Cancel</button>
-              <button style={{ ...AA.exportBtn, flex:1, background:"rgba(231,76,60,0.15)", borderColor:"rgba(231,76,60,0.4)", color:C.red }} onClick={() => dissolveClan(confirmDissolve.tag)}>⚠ Dissolve Clan</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {loading ? <div style={{ color:C.dim, fontFamily:ADM_MONO, padding:20 }}>Loading clans...</div> :
+      <Table cols={["Tag","Name","Members","Zones","CPR","Treasury","Actions"]} rows={clans.map((c: any) => [
+        <span style={{ ...AA.mono, color:"#A78BFA" }}>[{c.tag}]</span>,
+        <span style={AA.playerName}>{c.name}</span>,
+        <span style={AA.mono}>{c.total_members}/{c.max_members}</span>,
+        <span style={{ ...AA.mono, color:C.teal }}>{c.zones_held}</span>,
+        <span style={{ ...AA.mono, color:C.amber }}>{c.cpr_score}</span>,
+        <span style={{ ...AA.mono, color:C.amber }}>{c.aether_treasury.toLocaleString()} AE</span>,
+        <div style={AA.actionBtns}><button style={AA.tinyBtn} onClick={() => showToast(`📊 ${c.name}: ${c.total_members} members, ${c.zones_held} zones`, "info")}>View</button></div>,
+      ])} />}
     </div>
   );
 }
