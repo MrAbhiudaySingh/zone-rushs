@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect, useRef, createContext, useContext, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { saveMoodEntry } from "@/server/mood";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ZONERUSH — Full Functional App (Player + Admin)
@@ -4711,7 +4712,14 @@ function HomeScreen() {
       <div style={{ position:"fixed", inset:0, zIndex:0, pointerEvents:"none", backgroundImage:`linear-gradient(${T}06 1px, transparent 1px), linear-gradient(90deg, ${T}06 1px, transparent 1px)`, backgroundSize:"56px 56px", opacity:0.7 }} />
 
       <div style={{ position:"relative", width:"100%", maxWidth:430, margin:"0 auto", minHeight:"100dvh", color:TX, fontFamily:FONT, overflowX:"hidden" }}>
-        {wellbeing && <WellbeingOverlay onDone={() => setWellbeing(false)} />}
+        {wellbeing && <WellbeingOverlay onDone={async (moodScore, freeText, outreachRequested) => {
+          setWellbeing(false);
+          if (moodScore != null && ctx?.authUser?.id) {
+            try {
+              await saveMoodEntry({ data: { userId: ctx.authUser.id, moodScore, freeText, outreachRequested } });
+            } catch (e) { console.error("Mood save error:", e); }
+          }
+        }} />}
 
         {/* Notification banner */}
         {notifs.length > 0 && !wellbeing && (
