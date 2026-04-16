@@ -1686,7 +1686,7 @@ function QuestScreen({ missions, events, styleEvent, onStyleEvent }: QuestScreen
 
   const renderGroup = (quests) => {
     const groups = groupByCategory(quests);
-    return Object.entries(groups).map((cat: any, items: any, : any) => (
+    return Object.entries(groups).map((cat: any, items: any) => (
       <div key={cat} style={{ marginBottom:16 }}>
         <div style={{ fontSize:13, fontWeight:800, color:TX, marginBottom:8, display:"flex", alignItems:"center", gap:6 }}>
           {CATEGORY_LABELS[cat] || cat}
@@ -1916,7 +1916,7 @@ function MarketScreen({ user }: MarketScreenProps) {
           <>
             {/* Category filter chips */}
             <div style={{ display:"flex", gap:6, overflowX:"auto", marginBottom:12, paddingBottom:4 }}>
-              {[["all","All"],["clothing","Clothing"],["armor","Armor"],["arms","Arms"],["weapon","Weapons"],["shield","Shields"],["footwear","Footwear"],["consumable","Items"]].map((k: any, l: any, : any) => (
+              {[["all","All"],["clothing","Clothing"],["armor","Armor"],["arms","Arms"],["weapon","Weapons"],["shield","Shields"],["footwear","Footwear"],["consumable","Items"]].map((k: any, l: any) => (
                 <button key={k} onClick={() => setCatFilter(k)} style={{
                   padding:"6px 14px", borderRadius:99, fontSize:11, fontWeight:700, fontFamily:FONT, whiteSpace:"nowrap",
                   background: catFilter===k ? T : "rgba(255,255,255,0.06)", border: catFilter===k ? `1px solid ${T}` : `1px solid ${BR}`,
@@ -2475,7 +2475,7 @@ function MembersTab({ clan, isLeader, isOfficer }: any) {
 
       <div style={{ display:"flex", alignItems:"center", gap:8 }}>
         <span style={{ fontSize:11, color:TM, fontWeight:700 }}>Sort:</span>
-        {[["xp","XP"],["level","Level"],["zones","Zones"]].map((k: any, l: any, : any) => (
+        {[["xp","XP"],["level","Level"],["zones","Zones"]].map((k: any, l: any) => (
           <button key={k} onClick={() => setSort(k)} style={{ padding:"5px 12px", background: sort===k ? `${TG}15` : "rgba(255,255,255,0.03)", border:`1px solid ${sort===k ? `${TG}50` : BR}`, borderRadius:99, fontSize:11, fontWeight:600, color: sort===k ? TG : TM, fontFamily:FONT }}>{l}</button>
         ))}
       </div>
@@ -3683,7 +3683,7 @@ function PlayerModal({ player, onClose, onWarn, onBan }: PlayerModalProps) {
           <button style={AA.modalClose} onClick={onClose}>✕</button>
         </div>
         <div style={AA.modalGrid}>
-          {[["Level",`Lv ${player.level}`],["XP",player.xp.toLocaleString()],["AE Balance",player.ae.toLocaleString()],["Streak",`${player.streak} days`],["Clan",player.clan||"None"],["Status",player.status]].map((k: any, v: any, : any) => (
+          {[["Level",`Lv ${player.level}`],["XP",player.xp.toLocaleString()],["AE Balance",player.ae.toLocaleString()],["Streak",`${player.streak} days`],["Clan",player.clan||"None"],["Status",player.status]].map((k: any, v: any) => (
             <div key={k} style={AA.modalStat}><div style={AA.modalStatLbl}>{k}</div><div style={AA.modalStatVal}>{v}</div></div>
           ))}
         </div>
@@ -3869,7 +3869,7 @@ function ShopSection() {
     <div style={AA.secWrap}>
       <SectionTitle title="Shop Manager" sub={`${items.filter(i=>i.active).length} active · ${items.filter(i=>i.type==="limited").length} limited`} />
       <div style={AA.toolBar}>
-        <div style={AA.filterRow}>{[["all","All"],["general","General"],["limited","Limited"],["active","Active"],["inactive","Inactive"]].map((f: any, l: any, : any) => (<button key={f} style={{ ...AA.filterBtn, ...(filter===f?AA.filterBtnOn:{}) }} onClick={() => setFilter(f)}>{l}</button>))}</div>
+        <div style={AA.filterRow}>{[["all","All"],["general","General"],["limited","Limited"],["active","Active"],["inactive","Inactive"]].map((f: any, l: any) => (<button key={f} style={{ ...AA.filterBtn, ...(filter===f?AA.filterBtnOn:{}) }} onClick={() => setFilter(f)}>{l}</button>))}</div>
         <button style={{ ...AA.exportBtn, marginLeft:"auto" }} onClick={() => setShowAdd(true)}>+ Add Item</button>
       </div>
       <Table cols={["Name","Cat","Price","Rarity","Type","Stock","Sold","Status","Actions"]} rows={filtered.map((item: any) => { const stockOut = item.type==="limited" && item.stock !== null && item.sold >= item.stock; return [
