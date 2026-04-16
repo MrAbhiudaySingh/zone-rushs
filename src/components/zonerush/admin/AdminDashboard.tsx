@@ -754,11 +754,18 @@ function AdminDashboard({ role, onLogout }: any) {
 
 function LiveBadge() {
   const [pulse, setPulse] = useState(true);
+  const [activeCount, setActiveCount] = useState(0);
   useEffect(() => { const t = setInterval(() => setPulse((p: any) => !p), 1200); return () => clearInterval(t); }, []);
+  useEffect(() => {
+    (async () => {
+      const { count } = await supabase.from("profiles").select("*", { count:"exact", head:true });
+      setActiveCount(count || 0);
+    })();
+  }, []);
   return (
     <div style={AA.liveBadge}>
       <div style={{ ...AA.liveDot, opacity: pulse ? 1 : 0.3 }} />
-      <span>LIVE — 284 active</span>
+      <span>LIVE — {activeCount} registered</span>
     </div>
   );
 }
