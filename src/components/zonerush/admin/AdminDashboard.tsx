@@ -772,55 +772,59 @@ function LiveBadge() {
 
 // ─── OVERVIEW SECTION ──────────────────────────────────────────────────────────
 function OverviewSection() {
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const [profilesRes, zonesRes, questProgRes, moodRes, clansRes] = await Promise.all([
+        supabase.from("profiles").select("*"),
+        supabase.from("zones").select("id, contest_status, owner_clan_id"),
+        supabase.from("quest_progress").select("id, status, created_at"),
+        supabase.from("mood_entries").select("id, mood_score, crisis_flag"),
+        supabase.from("clans").select("id"),
+      ]);
+
+      const profiles = profilesRes.data || [];
+      const zones = zonesRes.data || [];
+      const quests = questProgRes.data || [];
+      const moods = moodRes.data || [];
+
+      const totalAE = profiles.reduce((s: number, p: any) => s + (p.aether || 0), 0);
+      const today = new Date().toISOString().slice(0, 10);
+      const missionsToday = quests.filter((q: any) => q.created_at?.startsWith(today)).length;
+      const crisisCount = moods.filter((m: any) => m.crisis_flag).length;
+      const activeZones = zones.filter((z: any) => z.owner_clan_id).length;
+      const contested = zones.filter((z: any) => z.contest_status !== "peaceful").length;
+
+      setStats({
+        users: profiles.length,
+        zones: `${activeZones}/${zones.length}`,
+        contested,
+        totalAE,
+        missionsToday,
+        crisisCount,
+        clans: (clansRes.data || []).length,
+      });
+      setLoading(false);
+    })();
+  }, []);
+
+  if (loading) return <div style={{ color:C.dim, fontFamily:ADM_MONO, padding:20 }}>Loading overview...</div>;
+
   return (
     <div style={AA.secWrap}>
-      <SectionTitle title="Platform Overview" sub="Real-time snapshot · refreshes every 60s" />
+      <SectionTitle title="Platform Overview" sub="Real-time snapshot from database" />
       <div style={AA.kpiGrid}>
         {[
-          { label:"Registered Users",  val:"1,247",  delta:"+23 today",   color:C.teal,  icon:"👤" },
-          { label:"Daily Active",       val:"284",    delta:"22.8% DAU",   color:C.amber, icon:"⚡" },
-          { label:"Zones Active",       val:"18/24",  delta:"3 contested", color:C.red,   icon:"◈" },
-          { label:"AE in Circulation",  val:"2.4M",   delta:"+48K today",  color:C.amber, icon:"◎" },
-          { label:"Missions Today",     val:"892",    delta:"+12% vs avg", color:C.teal,  icon:"🎯" },
-          { label:"Crisis Flags",       val:"2",      delta:"⚠ Review now",color:C.red,   icon:"💚" },
+          { label:"Registered Users", val:stats.users.toLocaleString(), delta:`${stats.clans} clans`, color:C.teal },
+          { label:"Zones Active", val:stats.zones, delta:`${stats.contested} contested`, color:C.red },
+          { label:"AE in Circulation", val:stats.totalAE.toLocaleString(), delta:"Total across all players", color:C.amber },
+          { label:"Missions Today", val:String(stats.missionsToday), delta:"Quest progress entries", color:C.teal },
+          { label:"Crisis Flags", val:String(stats.crisisCount), delta:stats.crisisCount > 0 ? "⚠ Review now" : "All clear", color:stats.crisisCount > 0 ? C.red : C.teal },
         ].map((k: any) => <KpiCard key={k.label} {...k} />)}
       </div>
       <div style={AA.chartsRow}>
-        <div style={{ ...AA.chartCard, flex:2 }}>
-          <div style={AA.chartTitle}>Daily Active Users — Last 14 Days</div>
-          <MiniLineChart data={[180,210,195,240,260,230,284,270,290,310,284,300,284,284]} color={C.teal} />
-        </div>
-        <div style={{ ...AA.chartCard, flex:1 }}>
-          <div style={AA.chartTitle}>Player Motivation Split</div>
-          <DonutChart segments={[
-            { label:"Territory",  val:32, color:C.amber },
-            { label:"Social",     val:24, color:C.teal  },
-            { label:"Builder",    val:18, color:"#A78BFA"},
-            { label:"Competitor", val:16, color:C.red   },
-            { label:"Explorer",   val:10, color:"#4DA6FF"},
-          ]} />
-        </div>
-      </div>
-      <div style={AA.healthRow}>
-        <div style={AA.chartCard}>
-          <div style={AA.chartTitle}>System Health</div>
-          <div style={AA.healthGrid}>
-            {[
-              { svc:"API Gateway",       status:"ok",   ms:42   },
-              { svc:"Supabase DB",       status:"ok",   ms:18   },
-              { svc:"Geo Engine",        status:"ok",   ms:67   },
-              { svc:"Push (FCM)",        status:"warn", ms:210  },
-              { svc:"Health API",        status:"ok",   ms:89   },
-              { svc:"Media CDN",         status:"ok",   ms:31   },
-            ].map((h: any) => (
-              <div key={h.svc} style={AA.healthRow2}>
-                <div style={{ ...AA.statusPip, background: h.status === "ok" ? C.teal : C.amber }} />
-                <span style={AA.healthSvc}>{h.svc}</span>
-                <span style={{ ...AA.healthMs, color: h.ms > 150 ? C.amber : C.teal }}>{h.ms}ms</span>
-              </div>
-            ))}
-          </div>
-        </div>
         <div style={{ ...AA.chartCard, flex:1 }}>
           <div style={AA.chartTitle}>Recent Activity Feed</div>
           <ActivityFeed />
