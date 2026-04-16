@@ -986,56 +986,61 @@ function PlayerModal({ player, onClose, onWarn, onBan }: PlayerModalProps) {
 }
 
 // ─── WELLBEING SECTION ─────────────────────────────────────────────────────────
-const MOOD_DIST = [
-  { label:"Great (5)", count:84,  pct:30, color:"#00D4A8" },
-  { label:"Good (4)",  count:98,  pct:35, color:"#27AE60" },
-  { label:"Okay (3)",  count:56,  pct:20, color:"#F5A623" },
-  { label:"Low (2)",   count:31,  pct:11, color:"#E67E22" },
-  { label:"Bad (1)",   count:15,  pct:5,  color:"#E74C3C" },
-];
-
-const CRISIS_FLAGS = [
-  { id:"A", anon:"User #5501", mood:1, text:"I don't see the point anymore", time:"14:28", outreach:true,  consentShare:true, resolved:false },
-  { id:"B", anon:"User #3382", mood:2, text:"Really struggling with exams and feeling isolated", time:"11:04", outreach:false, consentShare:false, resolved:false },
-  { id:"C", anon:"User #1847", mood:1, text:"[free text logged, encrypted]", time:"09:15", outreach:true,  consentShare:true, resolved:true  },
-];
-
 function WellbeingSection() {
-  const [crisisFlags, setCrisisFlags] = useState(CRISIS_FLAGS);
-  const resolve = (id) => setCrisisFlags(fs => fs.map((f: any) => f.id === id ? { ...f, resolved:true } : f));
+  const [moods, setMoods] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [resolvedIds, setResolvedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("mood_entries").select("*").order("created_at", { ascending: false });
+      setMoods(data || []);
+      setLoading(false);
+    })();
+  }, []);
+
+  if (loading) return <div style={{ color:C.dim, fontFamily:ADM_MONO, padding:20 }}>Loading wellbeing data...</div>;
+
+  const crisisEntries = moods.filter((m: any) => m.crisis_flag);
+  const resolve = (id: string) => setResolvedIds(prev => new Set([...prev, id]));
+
+  const dist = [5,4,3,2,1].map(score => {
+    const count = moods.filter((m: any) => m.mood_score === score).length;
+    return { label: ["","Bad (1)","Low (2)","Okay (3)","Good (4)","Great (5)"][score], count, pct: moods.length > 0 ? Math.round((count / moods.length) * 100) : 0, color: ["","#E74C3C","#E67E22","#F5A623","#27AE60","#00D4A8"][score] };
+  });
+
   return (
     <div style={AA.secWrap}>
       <SectionTitle title="Wellbeing Dashboard" sub="All data anonymised — no user identification without outreach consent" />
-      <div style={AA.crisisBox}>
-        <div style={AA.crisisHdr}><span style={AA.crisisTitle}>⚠ CRISIS FLAGS — Immediate Review Required</span><span style={AA.crisisCount}>{crisisFlags.filter(f=>!f.resolved).length} unresolved</span></div>
-        {crisisFlags.map((f: any) => (
-          <div key={f.id} style={{ ...AA.crisisRow, ...(f.resolved ? AA.crisisRowResolved : {}) }}>
-            <div style={AA.crisisLeft}>
-              <div style={{ ...AA.crisisAnon, ...(f.resolved ? { color:C.dim } : {}) }}>{f.anon}</div>
-              {f.consentShare ? (
-                <div style={AA.crisisText}>"{f.text}"</div>
-              ) : (
-                <div style={{ ...AA.crisisText, fontStyle:"italic", color:C.dim }}>🔒 [Free text encrypted — user did not consent to share content]</div>
-              )}
-              <div style={AA.crisisMeta}>Mood: {f.mood}/5 · {f.time} · {f.outreach ? "🙋 Outreach requested" : "No outreach opt-in"}{!f.consentShare && " · 🔒 Text hidden"}</div>
-            </div>
-            <div style={AA.crisisActions}>
-              {!f.resolved && f.outreach && <button style={AA.crisisContactBtn}>Contact Student Support</button>}
-              {!f.resolved && <button style={AA.crisisResolveBtn} onClick={() => resolve(f.id)}>Mark Resolved</button>}
-              {f.resolved && <span style={AA.resolvedBadge}>✓ Resolved</span>}
-            </div>
-          </div>
-        ))}
-      </div>
+      {crisisEntries.length > 0 ? (
+        <div style={AA.crisisBox}>
+          <div style={AA.crisisHdr}><span style={AA.crisisTitle}>⚠ CRISIS FLAGS — Immediate Review Required</span><span style={AA.crisisCount}>{crisisEntries.filter(f => !resolvedIds.has(f.id)).length} unresolved</span></div>
+          {crisisEntries.map((f: any) => {
+            const isResolved = resolvedIds.has(f.id);
+            return (
+              <div key={f.id} style={{ ...AA.crisisRow, ...(isResolved ? AA.crisisRowResolved : {}) }}>
+                <div style={AA.crisisLeft}>
+                  <div style={{ ...AA.crisisAnon, ...(isResolved ? { color:C.dim } : {}) }}>Entry #{f.anon_user_hash?.slice(0,6) || "?"}</div>
+                  {f.free_text ? <div style={AA.crisisText}>"{f.free_text}"</div> : <div style={{ ...AA.crisisText, fontStyle:"italic", color:C.dim }}>🔒 No free text shared</div>}
+                  <div style={AA.crisisMeta}>Mood: {f.mood_score}/5 · {new Date(f.created_at).toLocaleTimeString("en-GB", { hour:"2-digit", minute:"2-digit" })} · {f.outreach_requested ? "🙋 Outreach requested" : "No outreach opt-in"}</div>
+                </div>
+                <div style={AA.crisisActions}>
+                  {!isResolved && f.outreach_requested && <button style={AA.crisisContactBtn}>Contact Student Support</button>}
+                  {!isResolved && <button style={AA.crisisResolveBtn} onClick={() => resolve(f.id)}>Mark Resolved</button>}
+                  {isResolved && <span style={AA.resolvedBadge}>✓ Resolved</span>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div style={{ ...AA.chartCard, marginBottom:12, borderColor:"rgba(0,212,168,0.3)" }}><div style={{ color:C.teal, fontSize:12, fontFamily:ADM_MONO }}>✓ No crisis flags — all clear</div></div>
+      )}
       <div style={AA.chartsRow}>
         <div style={{ ...AA.chartCard, flex:1 }}>
-          <div style={AA.chartTitle}>Today's Mood Distribution (284 check-ins)</div>
-          <div style={AA.moodBars}>{MOOD_DIST.map((m: any) => (<div key={m.label} style={AA.moodBar}><div style={AA.moodBarLbl}>{m.label}</div><div style={AA.moodBarTrack}><div style={{ ...AA.moodBarFill, width:`${m.pct}%`, background:m.color }} /></div><div style={{ ...AA.mono, fontSize:11, color:m.color, width:40 }}>{m.count}</div></div>))}</div>
-        </div>
-        <div style={{ ...AA.chartCard, flex:1 }}>
-          <div style={AA.chartTitle}>7-Day Mood Trend</div>
-          <MiniLineChart data={[3.6, 3.4, 3.7, 3.5, 3.2, 3.4, 3.3]} color={C.amber} min={1} max={5} label="Avg mood" />
-          <div style={AA.moodNote}>⬇ Slight downward trend — exam period begins next week.</div>
+          <div style={AA.chartTitle}>Mood Distribution ({moods.length} check-ins)</div>
+          {moods.length === 0 ? <div style={{ color:C.dim, fontFamily:ADM_MONO, fontSize:11 }}>No mood entries yet.</div> :
+          <div style={AA.moodBars}>{dist.map((m: any) => (<div key={m.label} style={AA.moodBar}><div style={AA.moodBarLbl}>{m.label}</div><div style={AA.moodBarTrack}><div style={{ ...AA.moodBarFill, width:`${m.pct}%`, background:m.color }} /></div><div style={{ ...AA.mono, fontSize:11, color:m.color, width:40 }}>{m.count}</div></div>))}</div>}
         </div>
       </div>
       <div style={AA.privacyBox}><div style={AA.privacyTitle}>🔒 Privacy Architecture Active</div><div style={AA.privacyBody}>All mood entries stored with anonymised hash only. Free text encrypted at rest (AES-256).</div></div>
