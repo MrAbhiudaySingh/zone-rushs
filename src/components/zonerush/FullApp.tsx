@@ -1,7 +1,18 @@
-// @ts-nocheck
 import { useState, useEffect, useRef, createContext, useContext, useCallback } from "react";
+import type { CSSProperties, ReactNode, FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { saveMoodEntry } from "@/server/mood";
+import type {
+  AppContextType, ZRUser, ZRMission, ZRShopItem, ZREvent, ZRStyleEvent, ZRStyleSub,
+  ZRProof, ZRNotif, ZRClan, ZRZone, ZRGalleryItem, Toast, ToastHandler, Mood,
+  WellbeingOverlayProps, ZoneAlertProps, HudHeaderProps, XpTrackProps, StatStripProps,
+  ChipProps, CardProps, SectionHeaderProps, ProgressBarProps, TabBarProps,
+  MissionCardProps, StoryCardProps, StyleEventGalleryProps, QuestScreenProps,
+  MarketScreenProps, ClanScreenProps, NoClanScreenProps, ClanHubProps,
+  WarTabProps, TreasuryTabProps, PlayerModalProps, AuthScreenProps,
+  AdminSectionTitleProps, KpiCardProps, StatusPillProps, StrengthBarProps,
+  AdminTableProps, MiniLineChartProps, DualLineChartProps, DonutChartProps,
+} from "./types";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ZONERUSH — Full Functional App (Player + Admin)
