@@ -1546,18 +1546,30 @@ function StyleSubCard({ sub, resolved, onView }: { sub: any; resolved?: boolean;
 }
 
 // ─── COMBAT SECTION ────────────────────────────────────────────────────────────
-const COMBAT_LOG = [
-  { id:8821, challenger:"Vikram K.", defender:"Karan T.", mode:"open", winner:"Vikram K.", wager:200, time:"14:22", itemDrop:false },
-  { id:8820, challenger:"Priya M.", defender:"Meera K.", mode:"zone_raid", winner:"Meera K.", wager:0, time:"13:58", itemDrop:true },
-  { id:8819, challenger:"BlazeThorn", defender:"Nocturne", mode:"clan_war", winner:"BlazeThorn", wager:0, time:"12:30", itemDrop:false },
-];
-
 function CombatSection() {
+  const [captures, setCaptures] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("zone_captures").select("*, zone:zones(name), clan:clans(name, tag)").order("created_at", { ascending: false }).limit(20);
+      setCaptures(data || []);
+      setLoading(false);
+    })();
+  }, []);
+
   return (
     <div style={AA.secWrap}>
-      <SectionTitle title="Combat Log" sub="All duels, zone raids, and clan wars" />
-      <div style={{ ...AA.kpiGrid, gridTemplateColumns:"repeat(4,1fr)", marginBottom:16 }}>{[{ label:"Fights Today",val:"47",delta:"+8 vs avg",color:C.red },{ label:"Zone Raids",val:"12",delta:"4 zones changed",color:C.amber },{ label:"Clan Wars",val:"2",delta:"1 ongoing",color:C.red },{ label:"Items Dropped",val:"6",delta:"3 rare",color:"#A78BFA" }].map((k: any) => <KpiCard key={k.label} {...k} />)}</div>
-      <Table cols={["ID","Challenger","Defender","Mode","Winner","Wager","Time"]} rows={COMBAT_LOG.map((c: any) => [<span style={AA.monoSm}>#{c.id}</span>,<span style={AA.playerName}>{c.challenger}</span>,<span style={AA.playerName}>{c.defender}</span>,<span style={{ color:C.teal, fontSize:11, textTransform:"uppercase" }}>{c.mode.replace("_"," ")}</span>,<span style={{ color:C.amber, fontWeight:700 }}>{c.winner}</span>,<span style={AA.mono}>{c.wager>0?`${c.wager} AE`:"—"}</span>,<span style={AA.monoSm}>{c.time}</span>])} />
+      <SectionTitle title="Combat Log" sub="Zone captures and territorial battles" />
+      {loading ? <div style={{ color:C.dim, fontFamily:ADM_MONO, padding:20 }}>Loading...</div> :
+      captures.length === 0 ? <div style={{ ...AA.chartCard }}><div style={{ color:C.dim, fontFamily:ADM_MONO, fontSize:12 }}>No combat activity recorded yet.</div></div> :
+      <Table cols={["Zone","Attacking Clan","Status","Started","Actions"]} rows={captures.map((c: any) => [
+        <span style={AA.playerName}>{c.zone?.name || "Unknown"}</span>,
+        <span style={{ color:"#A78BFA" }}>{c.clan?.name || "?"} [{c.clan?.tag || "?"}]</span>,
+        <span style={{ color:c.status==="capturing"?C.amber:c.status==="completed"?C.teal:C.red, fontSize:11, fontWeight:700, textTransform:"uppercase" }}>{c.status}</span>,
+        <span style={AA.monoSm}>{new Date(c.timer_started_at).toLocaleString("en-GB", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })}</span>,
+        <button style={AA.tinyBtn} onClick={() => showToast(`Zone: ${c.zone?.name}, Status: ${c.status}`, "info")}>Details</button>,
+      ])} />}
     </div>
   );
 }
