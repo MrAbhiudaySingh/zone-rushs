@@ -1121,13 +1121,26 @@ function buildSw(id,items,key){
     el.appendChild(d);
   });
 }
+// Owned items from shop (received via postMessage)
+let ownedShopItems = new Set();
+
 function buildOg(id,items,key){
   const el=document.getElementById(id); el.innerHTML='';
   items.forEach(item=>{
+    const isOwned = !item.shopId || ownedShopItems.has(item.shopId);
     const b=document.createElement('div');
-    b.className='opt'+(S[key]===item?' active':'');
-    b.innerHTML=`${item.icon}<span class="ol">${item.label}</span>`;
-    b.onclick=()=>{S[key]=item;buildOg(id,items,key);startAnim();};
+    if(!isOwned){
+      b.className='opt';
+      b.innerHTML=`${item.icon}<span class="ol">🔒</span>`;
+      b.style.opacity='0.35';
+      b.style.cursor='not-allowed';
+      b.title='Buy from the Shop first!';
+      b.style.display='none'; // hidden until purchased
+    } else {
+      b.className='opt'+(S[key]===item?' active':'');
+      b.innerHTML=`${item.icon}<span class="ol">${item.label}</span>`;
+      b.onclick=()=>{S[key]=item;buildOg(id,items,key);startAnim();};
+    }
     el.appendChild(b);
   });
 }
