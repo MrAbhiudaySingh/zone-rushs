@@ -35,7 +35,7 @@ export const RARITY_COLOR: Record<string, string> = { common:"#8B9AB0", uncommon
 // ─── DEFAULT DATA ──────────────────────────────────────────────────────────────
 export const USER: any = {
   name:"Player", level:1,
-  xp:0, xpNext:1000,
+  xp:0, xpNext:100,
   ae:0, shards:0,
   streak:0, shields:0,
   combatRank:"Unranked", influenceRank:"Unranked",
