@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState, useEffect, useRef, createContext, useContext, useCallback } from "react";
+import { useState, useEffect, useRef, useContext, useCallback } from "react";
 import type { CSSProperties, ReactNode, FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { saveMoodEntry } from "@/server/mood";
@@ -14,21 +14,26 @@ import type {
   AdminSectionTitleProps, KpiCardProps, StatusPillProps, StrengthBarProps,
   AdminTableProps, MiniLineChartProps, DualLineChartProps, DonutChartProps,
 } from "./types";
+import { AppContext } from "./AppContext";
+import { showToast, ToastContainer } from "./toast";
+import { GlobalStyles, Chip, Card, SectionHeader, ProgressBar, TabBar } from "./ui/Primitives";
+import {
+  IMG, BG, S1, S2, BR, T, TL, TG, TA, TY, TR, TB, TX, TM, TD, FONT, MONO,
+  RARITY_COLOR, USER, MISSIONS, MONTHLY_MISSIONS, LIVE_EVENTS,
+  SPRITE_IMG, ITEM_ICONS, SHOP_ITEMS, INIT_SHOP_ITEMS,
+  PROOF_SUBMISSIONS, COMMUNITY_ITEMS, STORY, WEEKLY,
+  STYLE_SUBMISSIONS_INIT, STYLE_EVENT_LIVE, CL_USER, MEMBERS,
+  GAME_RULES, clanZoneOnCooldown, clanCooldownRemaining,
+  ZONES, ATTACKABLE_ZONES, WAR_LOG, ENEMY_CLANS, TREASURY_LOG,
+  MOODS, SUGGESTED_CLANS, TABS,
+} from "./constants";
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ZONERUSH — Full Functional App (Player + Admin)
-// All interactions wired up with shared state management
+// Remaining components below — constants, toast, UI primitives, and AppContext
+// are now imported from split files above.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const AppContext = createContext<AppContextType | null>(null);
 
-// ─── TOAST SYSTEM ──────────────────────────────────────────────────────────────
-let _toastId = 0;
-const _toastListeners: ToastHandler[] = [];
-function showToast(msg: string, type="success", duration=3000) {
-  const t: Toast = { id:++_toastId, msg, type, duration };
-  _toastListeners.forEach((fn: any) => fn(t));
-}
 
 function ToastContainer() {
   const [toasts, setToasts] = useState<Toast[]>([]);
