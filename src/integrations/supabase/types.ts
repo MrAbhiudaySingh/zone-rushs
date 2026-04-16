@@ -225,6 +225,36 @@ export type Database = {
         }
         Relationships: []
       }
+      mood_entries: {
+        Row: {
+          anon_user_hash: string
+          created_at: string
+          crisis_flag: boolean
+          free_text: string | null
+          id: string
+          mood_score: number
+          outreach_requested: boolean
+        }
+        Insert: {
+          anon_user_hash: string
+          created_at?: string
+          crisis_flag?: boolean
+          free_text?: string | null
+          id?: string
+          mood_score: number
+          outreach_requested?: boolean
+        }
+        Update: {
+          anon_user_hash?: string
+          created_at?: string
+          crisis_flag?: boolean
+          free_text?: string | null
+          id?: string
+          mood_score?: number
+          outreach_requested?: boolean
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
