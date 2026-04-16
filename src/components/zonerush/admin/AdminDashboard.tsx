@@ -639,6 +639,24 @@ function AdminLogin({ onAuth, onCancel }: any) {
   );
 }
 
+// ─── REALTIME REFRESH HOOK ──────────────────────────────────────────────────────
+function useAdminRealtime() {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => setTick(t => t + 1))
+      .on("postgres_changes", { event: "*", schema: "public", table: "quest_progress" }, () => setTick(t => t + 1))
+      .on("postgres_changes", { event: "*", schema: "public", table: "zone_captures" }, () => setTick(t => t + 1))
+      .on("postgres_changes", { event: "*", schema: "public", table: "mood_entries" }, () => setTick(t => t + 1))
+      .on("postgres_changes", { event: "*", schema: "public", table: "clans" }, () => setTick(t => t + 1))
+      .on("postgres_changes", { event: "*", schema: "public", table: "events" }, () => setTick(t => t + 1))
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+  return tick;
+}
+
 // ─── MAIN DASHBOARD ────────────────────────────────────────────────────────────
 const SECTIONS = [
   { id:"overview",    icon:"◈",  label:"Overview",      roles:["admin","researcher","moderator"] },
@@ -662,6 +680,7 @@ function AdminDashboard({ role, onLogout }: any) {
   const [section, setSection] = useState("overview");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [time, setTime] = useState(new Date());
+  const realtimeTick = useAdminRealtime();
 
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000);
