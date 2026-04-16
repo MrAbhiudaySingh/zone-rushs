@@ -835,22 +835,27 @@ function OverviewSection() {
 }
 
 function ActivityFeed() {
-  const events = [
-    { t:"14:32", txt:"Nocturne captured Engineering Dept",  c:C.red   },
-    { t:"14:28", txt:"User #4821 mood: Bad — crisis flag",  c:C.red, flag:true },
-    { t:"14:21", txt:"Style Event voting opened (Week 12)", c:C.teal  },
-    { t:"14:15", txt:"IronVeil declared war on Library",    c:C.amber },
-    { t:"14:09", txt:"Story clue #7 solved (23 players)",  c:"#A78BFA"},
-    { t:"14:01", txt:"Marketplace: Rare cap listed 800 AE", c:C.amber },
-    { t:"13:55", txt:"15,000-step mission surge (+40 comp)",c:C.teal  },
-    { t:"13:48", txt:"User reported: toxic clan message",   c:C.red   },
-  ];
+  const [events, setEvents] = useState<any[]>([]);
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("notifications").select("*").order("created_at", { ascending: false }).limit(10);
+      if (data) {
+        setEvents(data.map((n: any) => ({
+          t: new Date(n.created_at).toLocaleTimeString("en-GB", { hour:"2-digit", minute:"2-digit" }),
+          txt: n.message,
+          c: n.type === "crisis" ? C.red : n.type === "warning" ? C.amber : C.teal,
+          flag: n.type === "crisis",
+        })));
+      }
+    })();
+  }, []);
+  if (events.length === 0) return <div style={{ color:C.dim, fontFamily:ADM_MONO, padding:12, fontSize:11 }}>No recent activity yet.</div>;
   return (
     <div style={AA.feedList}>
       {events.map((e: any, i: number) => (
         <div key={i} style={{ ...AA.feedRow, ...(e.flag ? AA.feedRowAlert : {}) }}>
           <span style={AA.feedTime}>{e.t}</span>
-          <div style={{ ...AA.feedDot, background:e.color }} />
+          <div style={{ ...AA.feedDot, background:e.c }} />
           <span style={{ ...AA.feedTxt, ...(e.flag ? { color:C.red, fontWeight:700 } : {}) }}>{e.txt}</span>
           {e.flag && <span style={AA.feedFlagPill}>REVIEW</span>}
         </div>
