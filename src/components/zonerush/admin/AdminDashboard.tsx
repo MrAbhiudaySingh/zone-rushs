@@ -518,16 +518,15 @@ function BarChart({ data }: any) {
 }
 
 // ─── ACCESS GATE ───────────────────────────────────────────────────────────────
-const DEMO_CREDS = [
-  { user:"admin@campus.ac.uk",      pass:"CE_ADMIN_2026",  role:"admin"      },
-  { user:"research@campus.ac.uk",   pass:"CE_RESEARCH",    role:"researcher" },
-  { user:"mod@campus.ac.uk",        pass:"CE_MOD_2026",    role:"moderator"  },
-];
+const ADMIN_EMAILS: Record<string, string> = {
+  // Map authenticated Supabase emails to roles.
+  // Add real admin emails here or use a user_roles table for production.
+};
 
 export function AdminRoot({ onExitAdmin }: any) {
   const [authed, setAuthed]   = useState(false);
   const [role,   setRole]     = useState(null);
-  const handleLogout = () => { setAuthed(false); setRole(null); if (onExitAdmin) onExitAdmin(); };
+  const handleLogout = async () => { await supabase.auth.signOut(); setAuthed(false); setRole(null); if (onExitAdmin) onExitAdmin(); };
   return authed
     ? <AdminDashboard role={role} onLogout={handleLogout} />
     : <AdminLogin onAuth={(r) => { setRole(r); setAuthed(true); }} onCancel={onExitAdmin} />;
@@ -539,20 +538,36 @@ function AdminLogin({ onAuth, onCancel }: any) {
   const [err,   setErr]     = useState("");
   const [shake, setShake]   = useState(false);
   const [blink, setBlink]   = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const t = setInterval(() => setBlink(b => !b), 530);
     return () => clearInterval(t);
   }, []);
 
-  const attempt = () => {
-    const match = DEMO_CREDS.find((c: any) => c.user === email && c.pass === pass);
-    if (match) {
-      onAuth(match.role);
-    } else {
-      setErr("ACCESS DENIED — invalid credentials");
+  const attempt = async () => {
+    if (loading) return;
+    setLoading(true);
+    setErr("");
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+      if (error) throw error;
+      // Check user_roles table for admin/moderator/researcher role
+      const userId = data.user?.id;
+      if (!userId) throw new Error("No user returned");
+      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+      const userRole = roles?.[0]?.role;
+      if (!userRole || !["admin", "moderator", "researcher"].includes(userRole)) {
+        await supabase.auth.signOut();
+        throw new Error("ACCESS DENIED — insufficient privileges");
+      }
+      onAuth(userRole);
+    } catch (e: any) {
+      setErr(e.message || "Authentication failed");
       setShake(true);
       setTimeout(() => setShake(false), 600);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -602,7 +617,7 @@ function AdminLogin({ onAuth, onCancel }: any) {
           </div>
 
           <div style={AA.loginFooter}>
-            Demo: admin@campus.ac.uk / CE_ADMIN_2026
+            Sign in with your admin account
             {onCancel && (
               <button onClick={onCancel} style={{ display:"block", marginTop:8, background:"none", border:"none", color:C.dim, fontFamily:ADM_MONO, fontSize:10, cursor:"pointer", textDecoration:"underline", padding:0 }}>
                 ← Back to app

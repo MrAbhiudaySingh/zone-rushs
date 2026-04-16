@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { createClient } from "@supabase/supabase-js";
 
 export const Route = createFileRoute("/api/google-fit/sync")({
   server: {
@@ -7,20 +8,36 @@ export const Route = createFileRoute("/api/google-fit/sync")({
       POST: async ({ request }) => {
         const corsHeaders = {
           "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Origin": request.headers.get("origin") || "",
           "Access-Control-Allow-Methods": "POST, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type, Authorization",
         };
 
         try {
-          const body = await request.json();
-          const userId = body?.user_id;
-          if (!userId || typeof userId !== "string" || userId.length > 100) {
-            return new Response(JSON.stringify({ error: "Invalid user_id" }), {
-              status: 400,
+          // Authenticate the user via their JWT
+          const authHeader = request.headers.get("authorization");
+          if (!authHeader?.startsWith("Bearer ")) {
+            return new Response(JSON.stringify({ error: "Missing authorization header" }), {
+              status: 401,
               headers: corsHeaders,
             });
           }
+
+          const token = authHeader.replace("Bearer ", "");
+          const supabaseAuth = createClient(
+            process.env.SUPABASE_URL!,
+            process.env.SUPABASE_PUBLISHABLE_KEY!,
+          );
+          const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
+
+          if (authError || !user) {
+            return new Response(JSON.stringify({ error: "Invalid or expired token" }), {
+              status: 401,
+              headers: corsHeaders,
+            });
+          }
+
+          const userId = user.id;
 
           // Get user's Google Fit tokens
           const { data: fitData, error: fitError } = await supabaseAdmin
@@ -60,7 +77,6 @@ export const Route = createFileRoute("/api/google-fit/sync")({
 
             if (!refreshRes.ok) {
               console.error("Token refresh failed:", await refreshRes.text());
-              // Mark as disconnected
               await supabaseAdmin.from("google_fit_tokens").update({ connected: false }).eq("user_id", userId);
               return new Response(JSON.stringify({ error: "Token refresh failed, reconnect required", steps: 0 }), {
                 status: 200,
@@ -122,13 +138,13 @@ export const Route = createFileRoute("/api/google-fit/sync")({
             }
           }
 
-          // Update daily_steps in google_fit_tokens
+          // Update daily_steps
           await supabaseAdmin.from("google_fit_tokens").update({
             daily_steps: totalSteps,
             last_synced_at: new Date().toISOString(),
           }).eq("user_id", userId);
 
-          // Also update any step-related quest_progress
+          // Update step-related quest_progress
           const { data: stepQuests } = await supabaseAdmin
             .from("quest_definitions")
             .select("id, target_value")
@@ -162,15 +178,15 @@ export const Route = createFileRoute("/api/google-fit/sync")({
           console.error("Sync error:", err);
           return new Response(JSON.stringify({ error: "Internal error", steps: 0 }), {
             status: 500,
-            headers: corsHeaders,
+            headers: { "Content-Type": "application/json" },
           });
         }
       },
-      OPTIONS: async () => {
+      OPTIONS: async ({ request }) => {
         return new Response(null, {
           status: 204,
           headers: {
-            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Origin": request.headers.get("origin") || "",
             "Access-Control-Allow-Methods": "POST, OPTIONS",
             "Access-Control-Allow-Headers": "Content-Type, Authorization",
           },
