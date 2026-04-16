@@ -32,7 +32,7 @@ function showToast(msg: string, type="success", duration=3000) {
 function ToastContainer() {
   const [toasts, setToasts] = useState([]);
   useEffect(() => {
-    const handler = (t) => {
+    const handler = (t: Toast) => {
       setToasts(ts => [...ts, t]);
       setTimeout(() => setToasts(ts => ts.filter(x => x.id !== t.id)), t.duration);
     };
@@ -84,7 +84,7 @@ const FONT  = "'Nunito',system-ui,sans-serif";
 const MONO  = "'Nunito','Nunito',monospace";
 
 // Rarity colors — vibrant, distinct
-const RARITY_COLOR = { common:"#8B9AB0", uncommon:TG, rare:TB, epic:TA, legendary:TY };
+const RARITY_COLOR: Record<string, string> = { common:"#8B9AB0", uncommon:TG, rare:TB, epic:TA, legendary:TY };
 
 // ─── DEFAULT DATA (empty — real data comes from DB) ──────────────────────────
 const USER = {
@@ -96,11 +96,11 @@ const USER = {
   clan:null,
 };
 
-const MISSIONS = [];
+const MISSIONS: ZRMission[] = [];
 
-const MONTHLY_MISSIONS = [];
+const MONTHLY_MISSIONS: ZRMission[] = [];
 
-const LIVE_EVENTS = [];
+const LIVE_EVENTS: ZREvent[] = [];
 
 // Sprite preview images bundled locally from LPC repo
 const SPRITE_IMG: Record<string,string> = {
@@ -162,14 +162,14 @@ const INIT_SHOP_ITEMS = SHOP_ITEMS.map(item => ({
   soulBound: item.cat === "consumable",
 }));
 
-const PROOF_SUBMISSIONS = [];
+const PROOF_SUBMISSIONS: ZRProof[] = [];
 
-const COMMUNITY_ITEMS = [];
+const COMMUNITY_ITEMS: ZRShopItem[] = [];
 
 const STORY = { ch:0, title:"Coming Soon", sub:"Story quests are not yet available.", clues:0, total:0 };
 const WEEKLY = { done:0, total:0, days:0 };
 
-const STYLE_SUBMISSIONS_INIT = [];
+const STYLE_SUBMISSIONS_INIT: ZRStyleSub[] = [];
 
 const STYLE_EVENT_LIVE = {
   phase:"submission", weekId:1,
@@ -184,17 +184,17 @@ const CL_USER = {
   clan:null,
 };
 
-const MEMBERS = [];
+const MEMBERS: any[] = [];
 
 const GAME_RULES = { ZONE_ATTACK_COOLDOWN_HOURS:24, WAR_DECLARE_COST_AE:200, ZONE_GEO_RADIUS_METRES:100 };
 const _now = Date.now();
-const _hAgo = (h) => new Date(_now - h * 3600000).toISOString();
+const _hAgo = (h: number) => new Date(_now - h * 3600000).toISOString();
 
-function clanZoneOnCooldown(zone) {
+function clanZoneOnCooldown(zone: any) {
   if (!zone.lastAttackedAt) return false;
   return (_now - new Date(zone.lastAttackedAt).getTime()) < GAME_RULES.ZONE_ATTACK_COOLDOWN_HOURS * 3600000;
 }
-function clanCooldownRemaining(zone) {
+function clanCooldownRemaining(zone: any) {
   if (!zone.lastAttackedAt) return null;
   const rem = GAME_RULES.ZONE_ATTACK_COOLDOWN_HOURS * 3600000 - (_now - new Date(zone.lastAttackedAt).getTime());
   if (rem <= 0) return null;
@@ -202,11 +202,11 @@ function clanCooldownRemaining(zone) {
   return `${h}h ${m}m`;
 }
 
-const ZONES = [];
-const ATTACKABLE_ZONES = [];
-const WAR_LOG = [];
-const ENEMY_CLANS = [];
-const TREASURY_LOG = [];
+const ZONES: any[] = [];
+const ATTACKABLE_ZONES: any[] = [];
+const WAR_LOG: any[] = [];
+const ENEMY_CLANS: any[] = [];
+const TREASURY_LOG: ZRTreasuryEntry[] = [];
 
 // Moods for wellbeing overlay
 const MOODS = [
@@ -326,7 +326,7 @@ function GlobalStyles() {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // Pill chip — currency / tags
-function Chip({ color, bg, icon, label, onClick, style }) {
+function Chip({ color, bg, icon, label, onClick, style }: ChipProps) {
   return (
     <div
       onClick={onClick}
@@ -348,7 +348,7 @@ function Chip({ color, bg, icon, label, onClick, style }) {
 }
 
 // Colourful card — each one gets a vibrant top gradient stripe
-function Card({ children, style, accent, gradient, onClick, className }) {
+function Card({ children, style, accent, gradient, onClick, className }: CardProps) {
   return (
     <div
       onClick={onClick}
@@ -371,7 +371,7 @@ function Card({ children, style, accent, gradient, onClick, className }) {
 }
 
 // Section header
-function SectionHeader({ title, action, onAction }) {
+function SectionHeader({ title, action, onAction }: SectionHeaderProps) {
   return (
     <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
       <span style={{ fontSize:17, fontWeight:900, color:TX, letterSpacing:"-0.3px" }}>{title}</span>
@@ -385,7 +385,7 @@ function SectionHeader({ title, action, onAction }) {
 }
 
 // Animated progress bar with shimmer
-function ProgressBar({ value, max, color, height=6 }) {
+function ProgressBar({ value, max, color, height=6 }: ProgressBarProps) {
   const pct = Math.min(100, (value / max) * 100);
   return (
     <div style={{ height, background:"rgba(255,255,255,0.06)", borderRadius:99, overflow:"hidden", position:"relative" }}>
@@ -403,7 +403,7 @@ function ProgressBar({ value, max, color, height=6 }) {
 }
 
 // Segmented tab control — colourful active state
-function TabBar({ tabs, active, onSelect, style }) {
+function TabBar({ tabs, active, onSelect, style }: TabBarProps) {
   return (
     <div style={{
       display:"flex", gap:4,
@@ -443,7 +443,7 @@ function TabBar({ tabs, active, onSelect, style }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // WELLBEING OVERLAY
 // ═══════════════════════════════════════════════════════════════════════════════
-function WellbeingOverlay({ onDone }) {
+function WellbeingOverlay({ onDone }: WellbeingOverlayProps) {
   const [phase, setPhase] = useState("ask");
   const [mood, setMood] = useState(null);
   const [freeText, setFreeText] = useState("");
@@ -451,7 +451,7 @@ function WellbeingOverlay({ onDone }) {
   const [outreach, setOutreach] = useState(false);
   const [consentShare, setConsentShare] = useState(false);
 
-  const pickMood = (score) => {
+  const pickMood = (score: number) => {
     setMood(score);
     if (score <= 2) { setTimeout(() => setPhase("comfort"), 300); }
     else { setTimeout(() => onDone(score, null, false), 600); }
@@ -548,7 +548,7 @@ function WellbeingOverlay({ onDone }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // ZONE ALERT BANNER
 // ═══════════════════════════════════════════════════════════════════════════════
-function ZoneAlert({ onDismiss }) {
+function ZoneAlert({ onDismiss }: ZoneAlertProps) {
   const ctx = useContext(AppContext);
   const [secs, setSecs] = useState(1458);
   useEffect(() => {
@@ -583,9 +583,9 @@ function ZoneAlert({ onDismiss }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // HUD HEADER — hero gradient with floating orbs + 7-tap admin access
 // ═══════════════════════════════════════════════════════════════════════════════
-function HudHeader({ user, onAdminAccess }) {
-  const tapRef = useRef(0);
-  const tapTimer = useRef(null);
+function HudHeader({ user, onAdminAccess }: HudHeaderProps) {
+  const tapRef = useRef<number>(0);
+  const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleLogoTap = () => {
     tapRef.current += 1;
     clearTimeout(tapTimer.current);
@@ -642,7 +642,7 @@ function HudHeader({ user, onAdminAccess }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // XP BAR — animated with glow
 // ═══════════════════════════════════════════════════════════════════════════════
-function XpTrack({ user }) {
+function XpTrack({ user }: XpTrackProps) {
   const pct = (user.xp / user.xpNext) * 100;
   return (
     <div style={{ padding:"14px 16px 0" }}>
@@ -672,7 +672,7 @@ function XpTrack({ user }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // STAT STRIP — colourful scrollable stat cards
 // ═══════════════════════════════════════════════════════════════════════════════
-function StatStrip({ weekly }) {
+function StatStrip({ weekly }: StatStripProps) {
   const ctx = useContext(AppContext);
   const user = ctx?.sharedUser || USER;
   const completedCount = ctx?.completedMissions?.size || 0;
@@ -943,7 +943,7 @@ function MarketShortcut({ onOpen }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // MISSION CARD — colourful gradient accent, illustrated feel
 // ═══════════════════════════════════════════════════════════════════════════════
-function MissionCard({ m, idx=0 }) {
+function MissionCard({ m, idx=0 }: MissionCardProps) {
   const ctx = useContext(AppContext);
   const [submitting, setSubmitting] = useState(false);
   const [completed, setCompleted] = useState(() => ctx?.completedMissions?.has(m.id) || false);
@@ -1261,7 +1261,7 @@ function MissionCard({ m, idx=0 }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORY CARD
 // ═══════════════════════════════════════════════════════════════════════════════
-function StoryCard({ story }) {
+function StoryCard({ story }: StoryCardProps) {
   const ctx = useContext(AppContext);
   const [investigating, setInvestigating] = useState(false);
 
@@ -1430,7 +1430,7 @@ function BottomNav({ active, onSelect }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // STYLE EVENT GALLERY
 // ═══════════════════════════════════════════════════════════════════════════════
-function StyleEventGallery({ event, onBack }) {
+function StyleEventGallery({ event, onBack }: StyleEventGalleryProps) {
   const ctx = useContext(AppContext);
   const [myVote, setMyVote] = useState(null);
   const [voteConfirm, setVoteConfirm] = useState(false);
@@ -1635,7 +1635,7 @@ function StyleEventGallery({ event, onBack }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUEST SCREEN
 // ═══════════════════════════════════════════════════════════════════════════════
-function QuestScreen({ missions, events, styleEvent, onStyleEvent }) {
+function QuestScreen({ missions, events, styleEvent, onStyleEvent }: QuestScreenProps) {
   const ctx = useContext(AppContext);
   const [qTab, setQTab] = useState("daily");
 
@@ -1826,7 +1826,7 @@ function QuestScreen({ missions, events, styleEvent, onStyleEvent }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // MARKET SCREEN
 // ═══════════════════════════════════════════════════════════════════════════════
-function MarketScreen({ user }) {
+function MarketScreen({ user }: MarketScreenProps) {
   const ctx = useContext(AppContext);
   const [mTab, setMTab] = useState("shop");
   const [search, setSearch] = useState("");
@@ -2191,7 +2191,7 @@ function CommunityItemCard({ item, owned, onBuy }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // CLAN SCREEN
 // ═══════════════════════════════════════════════════════════════════════════════
-function ClanScreen({ userOverride, onBack }) {
+function ClanScreen({ userOverride, onBack }: ClanScreenProps) {
   const user = userOverride || CL_USER;
   const canCreate = user.level >= 5;
   const inClan = !!user.clan;
@@ -2199,9 +2199,9 @@ function ClanScreen({ userOverride, onBack }) {
   return <ClanHub user={user} onBack={onBack} />;
 }
 
-const SUGGESTED_CLANS = [];
+const SUGGESTED_CLANS: any[] = [];
 
-function NoClanScreen({ user, canCreate, onBack }) {
+function NoClanScreen({ user, canCreate, onBack }: NoClanScreenProps) {
   const ctx = useContext(AppContext);
   const [joinQuery, setJoinQuery] = useState("");
   const lvlToGo = Math.max(0, 5 - user.level);
@@ -2299,7 +2299,7 @@ function NoClanScreen({ user, canCreate, onBack }) {
   );
 }
 
-function ClanHub({ user, onBack }) {
+function ClanHub({ user, onBack }: ClanHubProps) {
   const ctx = useContext(AppContext);
   const clan = user.clan;
   const isLeader = clan.memberRole === "Leader";
@@ -2580,7 +2580,7 @@ function ZonesTab({ clan, isLeader, isOfficer }) {
   );
 }
 
-function WarTab({ clan, isLeader, isOfficer }) {
+function WarTab({ clan, isLeader, isOfficer }: WarTabProps) {
   const ctx = useContext(AppContext);
   const [selectedZone, setSelectedZone] = useState(null);
   const [declared, setDeclared] = useState(false);
@@ -2711,7 +2711,7 @@ function WarTab({ clan, isLeader, isOfficer }) {
   );
 }
 
-function TreasuryTab({ clan, isLeader }) {
+function TreasuryTab({ clan, isLeader }: TreasuryTabProps) {
   const ctx = useContext(AppContext);
   const [donateAmt, setDonateAmt] = useState("");
   const totalIncome = ZONES.reduce((s, z) => s + z.income, 0);
@@ -3125,7 +3125,7 @@ function AdminGlobalStyles() {
 }
 
 // ─── ADMIN HELPER COMPONENTS ───────────────────────────────────────────────────
-function AdminSectionTitle({ title, sub }) {
+function AdminSectionTitle({ title, sub }: AdminSectionTitleProps) {
   return (
     <div style={AA.sectionTitle}>
       <div style={AA.sectionTitleTxt}>{title}</div>
@@ -3136,7 +3136,7 @@ function AdminSectionTitle({ title, sub }) {
 // Alias for backward compat
 const SectionTitle = AdminSectionTitle;
 
-function KpiCard({ label, val, delta, color }) {
+function KpiCard({ label, val, delta, color }: KpiCardProps) {
   return (
     <div style={AA.kpiCard}>
       <div style={{ ...AA.kpiVal, color }}>{val}</div>
@@ -3146,12 +3146,12 @@ function KpiCard({ label, val, delta, color }) {
   );
 }
 
-function StatusPill({ status }) {
+function StatusPill({ status }: StatusPillProps) {
   const map = { active:C.teal, flagged:C.red, warned:C.amber, inactive:C.dim, pending:C.amber, reviewing:C.amber, resolved:C.teal };
   return <span style={{ ...AA.statusPillEl, color:map[status]||C.dim, borderColor:(map[status]||C.dim)+"44" }}>{status}</span>;
 }
 
-function StrengthBar({ val }) {
+function StrengthBar({ val }: StrengthBarProps) {
   const c = val > 70 ? C.teal : val > 40 ? C.amber : C.red;
   return (
     <div style={{ width:80 }}>
@@ -3163,7 +3163,7 @@ function StrengthBar({ val }) {
   );
 }
 
-function AdminTable({ cols, rows }) {
+function AdminTable({ cols, rows }: AdminTableProps) {
   return (
     <div style={AA.tableWrap}>
       <table style={AA.table}>
@@ -3187,7 +3187,7 @@ function AdminTable({ cols, rows }) {
 const Table = AdminTable;
 
 // ─── CHART COMPONENTS ──────────────────────────────────────────────────────────
-function MiniLineChart({ data, color, min, max, label }) {
+function MiniLineChart({ data, color, min, max, label }: MiniLineChartProps) {
   const h = 80, w = 400, pad = 10;
   const lo = min ?? Math.min(...data), hi = max ?? Math.max(...data);
   const pts = data.map((v, i) => {
@@ -3210,7 +3210,7 @@ function MiniLineChart({ data, color, min, max, label }) {
   );
 }
 
-function DualLineChart({ data1, data2, color1, color2 }) {
+function DualLineChart({ data1, data2, color1, color2 }: DualLineChartProps) {
   const h = 80, w = 400, pad = 10;
   const allVals = [...data1, ...data2];
   const lo = Math.min(...allVals), hi = Math.max(...allVals);
@@ -3239,12 +3239,12 @@ function DualLineChart({ data1, data2, color1, color2 }) {
   );
 }
 
-function polarToCartesian(cx, cy, r, deg) {
+function polarToCartesian(cx: number, cy: number, r: number, deg: number) {
   const rad = (deg * Math.PI) / 180;
   return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
 }
 
-function DonutChart({ segments }) {
+function DonutChart({ segments }: DonutChartProps) {
   const total = segments.reduce((s, seg) => s + seg.val, 0);
   let acc = -90;
   const r = 60, cx = 90, cy = 90;
@@ -3603,7 +3603,7 @@ function ActivityFeed() {
 }
 
 // ─── PLAYERS SECTION ───────────────────────────────────────────────────────────
-const MOCK_PLAYERS = [];
+const MOCK_PLAYERS: any[] = [];
 
 function PlayersSection() {
   const ctx = useContext(AppContext);
@@ -3669,7 +3669,7 @@ function PlayersSection() {
   );
 }
 
-function PlayerModal({ player, onClose, onWarn, onBan }) {
+function PlayerModal({ player, onClose, onWarn, onBan }: PlayerModalProps) {
   const ctx = useContext(AppContext);
   return (
     <div style={AA.modalOverlay} onClick={onClose}>
@@ -4393,7 +4393,7 @@ function ConfigSection() {
 // ZONE MAP SCREEN — Real GPS capture system
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function getDistanceMetres(lat1, lon1, lat2, lon2) {
+function getDistanceMetres(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371000;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
@@ -5030,8 +5030,8 @@ function HomeScreen() {
 // ═══════════════════════════════════════════════════════════════════════════════
 function ProfileScreen({ user, onAdminAccess }) {
   const ctx = useContext(AppContext);
-  const tapRef = useRef(0);
-  const tapTimer = useRef(null);
+  const tapRef = useRef<number>(0);
+  const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const iframeRef = useRef(null);
   const [showAvatarEditor, setShowAvatarEditor] = useState(false);
   const [avatarDataUrl, setAvatarDataUrl] = useState(null);
@@ -5323,7 +5323,7 @@ function ProfileScreen({ user, onAdminAccess }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // AUTH SCREEN — Signup / Login
 // ═══════════════════════════════════════════════════════════════════════════════
-function AuthScreen({ onAuth }) {
+function AuthScreen({ onAuth }: AuthScreenProps) {
   const [mode, setMode] = useState("signup"); // "signup" | "login"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
