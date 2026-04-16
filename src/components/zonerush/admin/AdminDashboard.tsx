@@ -1178,14 +1178,22 @@ function MissionsSection() {
     setLoading(true);
     const [defsRes, proofsRes] = await Promise.all([
       supabase.from("quest_definitions").select("*").order("sort_order"),
-      supabase.from("proof_submissions").select("*, quest_progress:quest_progress(*, quest_definition:quest_definitions(*)), submitter:profiles!proof_submissions_user_id_fkey(display_name)"),
+      supabase.from("proof_submissions").select("*, quest_progress:quest_progress(*, quest_definition:quest_definitions(*))"),
     ]);
     if (defsRes.data) setQuestDefs(defsRes.data);
     if (proofsRes.data) {
+      // Fetch display names for submitters
+      const userIds = [...new Set(proofsRes.data.map((p: any) => p.user_id))];
+      const { data: profiles } = userIds.length > 0
+        ? await supabase.from("profiles").select("user_id, display_name").in("user_id", userIds)
+        : { data: [] };
+      const nameMap: Record<string, string> = {};
+      (profiles || []).forEach((p: any) => { nameMap[p.user_id] = p.display_name; });
+
       setProofs(proofsRes.data.map((p: any) => ({
         id: p.id,
         userId: p.user_id,
-        userName: p.submitter?.display_name || "Unknown",
+        userName: nameMap[p.user_id] || "Unknown",
         missionTitle: p.quest_progress?.quest_definition?.title || "Unknown Mission",
         cat: p.quest_progress?.quest_definition?.category || "",
         status: p.status,
