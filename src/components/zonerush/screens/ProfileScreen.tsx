@@ -250,9 +250,15 @@ export function ProfileScreen({ user, onAdminAccess }: any) {
                     pollHandlesRef.current = {};
                   };
                 }, [ctx?.authUser]);
-                const handleConnect = () => {
+                const handleConnect = async () => {
                   if (!ctx?.authUser) return;
-                  window.open(`/api/google-fit/auth?user_id=${ctx.authUser.id}`, "_blank", "width=500,height=600");
+                  const { data: sess } = await supabase.auth.getSession();
+                  const token = sess?.session?.access_token;
+                  if (!token) return;
+                  const r = await fetch(`/api/google-fit/auth`, { headers: { Authorization: `Bearer ${token}` } });
+                  const j: any = await r.json().catch(() => ({}));
+                  if (!r.ok || !j?.url) return;
+                  window.open(j.url, "_blank", "width=500,height=600");
                   // Stop any prior in-flight poll so we don't stack intervals.
                   if (pollHandlesRef.current.interval) clearInterval(pollHandlesRef.current.interval);
                   if (pollHandlesRef.current.timeout) clearTimeout(pollHandlesRef.current.timeout);
