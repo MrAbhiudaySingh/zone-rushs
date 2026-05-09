@@ -76,20 +76,20 @@
 
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const redeemEventQR = createServerFn({ method: "POST" })
-  .inputValidator((input: { userId: string; token: string }) => input)
-  .handler(async ({ data }) => {
-    const token = (data.token || "").trim();
-    if (!token || token.length > 200) return { ok: false, error: "invalid_token" };
-
-    // The Postgres function `redeem_event_qr` performs all validation atomically
-    // (token lookup, validity-window check, single-use-per-user enforcement,
-    // redemption-cap check, reward grant). See the SQL block at the top of this
-    // file for the function body that needs to be deployed.
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { token: string }) => {
+    const token = (input?.token || "").trim();
+    if (!token || token.length > 200) throw new Error("invalid_token");
+    return { token };
+  })
+  .handler(async ({ data, context }) => {
+    // Always use the JWT-verified user ID — never trust the client.
     const { data: result, error } = await supabaseAdmin.rpc("redeem_event_qr", {
-      p_token: token,
-      p_user_id: data.userId,
+      p_token: data.token,
+      p_user_id: context.userId,
     });
 
     if (error) {
