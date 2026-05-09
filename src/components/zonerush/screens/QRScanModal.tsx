@@ -68,7 +68,7 @@ export function QRScanModal({ event, onClose }: QRScanModalProps) {
     setSubmitting(true);
     try { scannerRef.current?.stop(); } catch {}
     try {
-      const r: any = await redeemEventQR({ data: { userId: ctx.authUser.id, token } });
+      const r: any = await redeemEventQR({ data: { token } });
       if (!r?.ok) {
         const codeMap: any = {
           unknown_token:    "This QR isn't recognised. Make sure you scanned the right code.",
