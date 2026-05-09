@@ -1166,6 +1166,7 @@ export type Database = {
         Args: { p_token: string; p_user_id: string }
         Returns: Json
       }
+      reset_quest_progress: { Args: { _tier: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "moderator" | "researcher" | "user"

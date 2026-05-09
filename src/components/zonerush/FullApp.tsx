@@ -251,16 +251,19 @@ export default function ZoneRushApp() {
         }));
       }
 
-      // Fetch quest progress
+      // Fetch quest progress (server is source of truth — nightly cron clears completed rows)
       const { data: questProgress } = await supabase.from("quest_progress").select("*").eq("user_id", authUser.id);
-      if (questProgress?.length) {
-        const completedIds = new Set(questProgress.filter((qp: any) => qp.status === "completed" || qp.status === "claimed").map((qp: any) => qp.quest_definition_id));
-        _setCompletedMissions(completedIds);
-        setSharedMissions((ms: any) => ms.map((m: any) => {
-          const qp = questProgress.find((q: any) => q.quest_definition_id === m.id);
-          return qp ? { ...m, progress: qp.current_value, _progressId: qp.id } : m;
-        }));
-      }
+      const qp = questProgress || [];
+      const completedIds = new Set(
+        qp.filter((q: any) => q.status === "completed" || q.status === "claimed")
+          .map((q: any) => q.quest_definition_id)
+      );
+      _setCompletedMissions(completedIds);
+      try { localStorage.setItem("zr_completedMissions", JSON.stringify([...completedIds])); } catch {}
+      setSharedMissions((ms: any) => ms.map((m: any) => {
+        const row = qp.find((q: any) => q.quest_definition_id === m.id);
+        return row ? { ...m, progress: row.current_value, _progressId: row.id } : { ...m, progress: 0, _progressId: undefined };
+      }));
 
       // Fetch user inventory
       const { data: inventory } = await supabase.from("user_inventory").select("item_id").eq("user_id", authUser.id);
