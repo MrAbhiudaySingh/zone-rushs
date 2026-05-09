@@ -519,12 +519,8 @@ function BarChart({ data }: any) {
 }
 
 // ─── ACCESS GATE ───────────────────────────────────────────────────────────────
-// Dev fallback credentials — only used if user_roles check fails or for quick testing
-const DEV_CREDS = [
-  { user:"admin@campus.ac.uk",      pass:"CE_ADMIN_2026",  role:"admin"      },
-  { user:"research@campus.ac.uk",   pass:"CE_RESEARCH",    role:"researcher" },
-  { user:"mod@campus.ac.uk",        pass:"CE_MOD_2026",    role:"moderator"  },
-];
+// Admin access is gated entirely by Supabase Auth + the `user_roles` table.
+// No client-side credential fallback exists.
 
 export function AdminRoot({ onExitAdmin }: any) {
   const [authed, setAuthed]   = useState(false);
@@ -553,25 +549,17 @@ function AdminLogin({ onAuth, onCancel }: any) {
     setLoading(true);
     setErr("");
     try {
-      // Try real Supabase Auth first
       const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
-      if (!error && data.user) {
-        const userId = data.user.id;
-        const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", userId);
-        const userRole = roles?.[0]?.role;
-        if (userRole && ["admin", "moderator", "researcher"].includes(userRole)) {
-          onAuth(userRole);
-          return;
-        }
+      if (error || !data.user) {
+        throw new Error("ACCESS DENIED — invalid credentials");
+      }
+      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id);
+      const userRole = roles?.[0]?.role;
+      if (!userRole || !["admin", "moderator", "researcher"].includes(userRole)) {
         await supabase.auth.signOut();
+        throw new Error("ACCESS DENIED — staff role required");
       }
-      // Fallback to dev credentials
-      const devMatch = DEV_CREDS.find((c: any) => c.user === email && c.pass === pass);
-      if (devMatch) {
-        onAuth(devMatch.role);
-        return;
-      }
-      throw new Error("ACCESS DENIED — invalid credentials");
+      onAuth(userRole);
     } catch (e: any) {
       setErr(e.message || "Authentication failed");
       setShake(true);
@@ -627,7 +615,7 @@ function AdminLogin({ onAuth, onCancel }: any) {
           </div>
 
           <div style={AA.loginFooter}>
-            Demo: admin@campus.ac.uk / CE_ADMIN_2026
+            Staff access only. Sign in with your campus credentials.
             {onCancel && (
               <button onClick={onCancel} style={{ display:"block", marginTop:8, background:"none", border:"none", color:C.dim, fontFamily:ADM_MONO, fontSize:10, cursor:"pointer", textDecoration:"underline", padding:0 }}>
                 ← Back to app

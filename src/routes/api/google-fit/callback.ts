@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { verifyOAuthState } from "@/server/oauth-state.server";
 
 export const Route = createFileRoute("/api/google-fit/callback")({
   server: {
@@ -7,15 +8,17 @@ export const Route = createFileRoute("/api/google-fit/callback")({
       GET: async ({ request }) => {
         const url = new URL(request.url);
         const code = url.searchParams.get("code");
-        const userId = url.searchParams.get("state");
+        const state = url.searchParams.get("state");
         const error = url.searchParams.get("error");
 
-        if (error || !code || !userId) {
-          return new Response(renderHTML("Connection Failed", "Google Fit connection was denied or failed. You can close this window."), {
+        const verified = await verifyOAuthState(state);
+        if (error || !code || !verified.ok || !verified.userId) {
+          return new Response(renderHTML("Connection Failed", "Google Fit connection was denied or invalid. You can close this window."), {
             status: 400,
             headers: { "Content-Type": "text/html" },
           });
         }
+        const userId = verified.userId;
 
         const clientId = process.env.GOOGLE_FIT_CLIENT_ID!;
         const clientSecret = process.env.GOOGLE_FIT_CLIENT_SECRET!;

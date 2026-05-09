@@ -605,9 +605,15 @@ export function MissionCard({ m, idx=0 }: MissionCardProps) {
     fitPollRef.current = {};
   }, []);
 
-  const handleConnectGoogleFit = () => {
+  const handleConnectGoogleFit = async () => {
     if (!ctx?.authUser) return;
-    window.open(`/api/google-fit/auth?user_id=${ctx.authUser.id}`, "_blank", "width=500,height=600");
+    const { data: sess } = await supabase.auth.getSession();
+    const token = sess?.session?.access_token;
+    if (!token) return;
+    const r = await fetch(`/api/google-fit/auth`, { headers: { Authorization: `Bearer ${token}` } });
+    const j: any = await r.json().catch(() => ({}));
+    if (!r.ok || !j?.url) return;
+    window.open(j.url, "_blank", "width=500,height=600");
     if (fitPollRef.current.interval) clearInterval(fitPollRef.current.interval);
     if (fitPollRef.current.timeout) clearTimeout(fitPollRef.current.timeout);
     const interval = setInterval(async () => {
@@ -1333,7 +1339,7 @@ export function HomeScreen() {
           dismissWellbeing();
           if (moodScore != null && ctx?.authUser?.id) {
             try {
-              await saveMoodEntry({ data: { userId: ctx.authUser.id, moodScore, freeText, outreachRequested } });
+              await saveMoodEntry({ data: { moodScore, freeText, outreachRequested } });
             } catch (e) { console.error("Mood save error:", e); }
           }
         }} />}
