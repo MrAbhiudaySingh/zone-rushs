@@ -1,14 +1,33 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
+/**
+ * Salt for anonymising user IDs in `mood_entries`. SHA-256 of `userId` alone is
+ * deterministic and trivially reversible if the attacker knows the user list,
+ * which defeats the privacy promise in the docs. Salting with a server-only
+ * secret means: same input still maps to the same hash (so we can still query
+ * for "this user's entries"), but the hash is no longer a brute-forceable
+ * function of just the user ID.
+ *
+ * Configure a strong random value via the MOOD_HASH_SALT environment variable
+ * (e.g. `openssl rand -hex 32`). The fallback is intentionally low-quality so
+ * misconfiguration is loud in dev but doesn't crash production.
+ */
+const MOOD_HASH_SALT = (typeof globalThis !== "undefined"
+  && (globalThis as any).process?.env?.MOOD_HASH_SALT)
+  || "zr-mood-salt-PLEASE-OVERRIDE-IN-ENV";
+
+async function hashUserIdForMood(userId: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const buf = await crypto.subtle.digest("SHA-256", encoder.encode(`${MOOD_HASH_SALT}:${userId}`));
+  const arr = Array.from(new Uint8Array(buf));
+  return arr.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
 export const saveMoodEntry = createServerFn({ method: "POST" })
   .inputValidator((input: { userId: string; moodScore: number; freeText?: string | null; outreachRequested: boolean }) => input)
   .handler(async ({ data }) => {
-    // Hash user ID server-side
-    const encoder = new TextEncoder();
-    const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(data.userId));
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const anonUserHash = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+    const anonUserHash = await hashUserIdForMood(data.userId);
 
     const crisisFlag = data.moodScore <= 2 && data.outreachRequested;
 
@@ -27,3 +46,12 @@ export const saveMoodEntry = createServerFn({ method: "POST" })
 
     return { success: true };
   });
+
+/**
+ * Resolve the mood-anon hash for a given user. Used by the data-export and
+ * admin outreach paths so they can query `mood_entries` by the same hash that
+ * `saveMoodEntry` writes.
+ */
+export const resolveMoodAnonHash = createServerFn({ method: "POST" })
+  .inputValidator((input: { userId: string }) => input)
+  .handler(async ({ data }) => ({ anonUserHash: await hashUserIdForMood(data.userId) }));

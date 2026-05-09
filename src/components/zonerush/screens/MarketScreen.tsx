@@ -22,9 +22,12 @@ export function MarketScreen({ user }: MarketScreenProps) {
   const [catFilter, setCatFilter] = useState("all");
   const allShopItems = ctx?.sharedShopItems || SHOP_ITEMS;
   const activeShop = allShopItems.filter((i: any) => i.active !== false);
-  const [owned, setOwned] = useState(new Set(
-    activeShop.filter((i: any) => i.owned).map((i: any) => i.id).concat(COMMUNITY_ITEMS.filter((i: any) => i.owned).map((i: any) => i.id))
-  ));
+  // Derive `owned` directly from context so it stays in sync with DB fetches.
+  // The previous version kept a local Set which drifted whenever the context updated.
+  const owned = new Set<string>([
+    ...activeShop.filter((i: any) => i.owned).map((i: any) => i.id),
+    ...COMMUNITY_ITEMS.filter((i: any) => i.owned).map((i: any) => i.id),
+  ]);
   const [cart, setCart] = useState<any>(null);
   const [sellModal, setSellModal] = useState<any>(null);
   const [sellPrice, setSellPrice] = useState("");
@@ -48,13 +51,11 @@ export function MarketScreen({ user }: MarketScreenProps) {
     // If it's a marketplace listing, handle differently
     if (item._isMarketListing && ctx?.buyMarketplaceListing) {
       ctx.buyMarketplaceListing(item._inventoryId, item.id, price, item._sellerId);
-      setOwned(o => new Set([...o, item.id]));
       setCart(null);
       showToast(`🛍️ Purchased ${item.name} from ${item.seller} for ◎${price} AE!`, "success");
       return;
     }
     if (ctx?.purchaseItem) ctx.purchaseItem(item.id, price);
-    setOwned(o => new Set([...o, item.id]));
     setCart(null);
     showToast(`🛍️ Purchased ${item.name} for ◎${price} AE!`, "success");
   };

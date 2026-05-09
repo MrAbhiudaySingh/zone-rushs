@@ -34,8 +34,14 @@ export function ZoneMapScreen() {
   const watchRef = useRef(null);
   const timerRef = useRef(null);
 
-  const CAPTURE_TIME_SECONDS = 30 * 60;
-  const GEO_RADIUS = 100;
+  // Per-zone capture time: landmarks/arenas are 5 minutes, everything else is 3.
+  const captureTimeFor = (zone: any) => {
+    const t = (zone?.type || "").toLowerCase();
+    return (t === "landmark" || t === "arena" || zone?.tier === "premium")
+      ? GAME_RULES.ZONE_CAPTURE_SECS_LANDMARK
+      : GAME_RULES.ZONE_CAPTURE_SECS_STANDARD;
+  };
+  const GEO_RADIUS = GAME_RULES.ZONE_GEO_RADIUS_METRES;
 
   useEffect(() => {
     const fetchZones = async () => {
@@ -71,14 +77,16 @@ export function ZoneMapScreen() {
 
   useEffect(() => {
     if (!capturing || capturing.pausedAt) return;
+    const zoneForCapture = zones.find((z: any) => z.id === capturing.zoneId);
+    const totalSecs = captureTimeFor(zoneForCapture);
     timerRef.current = setInterval(() => {
       const now = Date.now();
       const active = Math.floor((now - capturing.startedAt) / 1000) - capturing.totalPaused;
       setElapsed(active);
-      if (active >= CAPTURE_TIME_SECONDS) { clearInterval(timerRef.current); completeCapture(); }
+      if (active >= totalSecs) { clearInterval(timerRef.current); completeCapture(); }
     }, 1000);
     return () => clearInterval(timerRef.current);
-  }, [capturing]);
+  }, [capturing, zones]);
 
   useEffect(() => {
     if (!capturing || !userPos) return;
@@ -167,7 +175,9 @@ export function ZoneMapScreen() {
 
   const ZONE_ICONS = { landmark:"🏛️", arena:"🏟️", residential:"🏠", standard:"📍" };
   const ZONE_COLORS = { landmark:TY, arena:TA, residential:T, standard:TB };
-  const remaining = Math.max(0, CAPTURE_TIME_SECONDS - elapsed);
+  const activeZone = capturing ? zonesWithDist.find((z: any) => z.id === capturing.zoneId) : null;
+  const activeTotalSecs = activeZone ? captureTimeFor(activeZone) : GAME_RULES.ZONE_CAPTURE_SECS_STANDARD;
+  const remaining = Math.max(0, activeTotalSecs - elapsed);
   const capMM = String(Math.floor(remaining / 60)).padStart(2, "0");
   const capSS = String(remaining % 60).padStart(2, "0");
   const capPct = (elapsed / CAPTURE_TIME_SECONDS) * 100;

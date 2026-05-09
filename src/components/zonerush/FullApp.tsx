@@ -8,6 +8,7 @@ import {
   USER, MISSIONS, LIVE_EVENTS, SHOP_ITEMS, INIT_SHOP_ITEMS,
   PROOF_SUBMISSIONS, COMMUNITY_ITEMS, STYLE_SUBMISSIONS_INIT,
   STYLE_EVENT_LIVE, CL_USER, ENEMY_CLANS, SUGGESTED_CLANS,
+  GAME_RULES,
   T, TL, TG, TA, TY, TR, TB, TX, TM,
 } from "./constants";
 import { AuthScreen } from "./screens/AuthScreen";
@@ -201,32 +202,34 @@ export default function ZoneRushApp() {
         profile = newProfile;
       }
       if (profile) {
-        const lastActive = profile.updated_at ? new Date(profile.updated_at) : null;
-        const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const lastDay = lastActive ? new Date(lastActive.getFullYear(), lastActive.getMonth(), lastActive.getDate()) : null;
-        const daysSinceActive = lastDay ? Math.floor((today - lastDay) / 86400000) : 999;
-        
-        let currentStreak = profile.streak || 0;
-        if (daysSinceActive > 1) {
-          currentStreak = 0;
-          await supabase.from("profiles").update({ streak: 0, updated_at: new Date().toISOString() }).eq("user_id", authUser.id);
-        } else if (daysSinceActive === 1) {
-          currentStreak = (profile.streak || 0) + 1;
-          await supabase.from("profiles").update({ streak: currentStreak, updated_at: new Date().toISOString() }).eq("user_id", authUser.id);
-        }
-        if (daysSinceActive === 0) {
-          await supabase.from("profiles").update({ updated_at: new Date().toISOString() }).eq("user_id", authUser.id);
-        }
+        // Streak decay logic — single source of truth.
+        // Returns the streak value to use, plus what (if anything) to write back.
+        const computeStreakUpdate = (lastUpdatedAt: string | null, currentStreak: number) => {
+          const now = new Date();
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+          if (!lastUpdatedAt) return { streak: currentStreak, write: { updated_at: now.toISOString() } as any };
+          const last = new Date(lastUpdatedAt);
+          const lastDay = new Date(last.getFullYear(), last.getMonth(), last.getDate()).getTime();
+          const days = Math.floor((today - lastDay) / 86400000);
+          if (days > 1) return { streak: 0, write: { streak: 0, updated_at: now.toISOString() } as any };
+          if (days === 1) return { streak: (currentStreak || 0) + 1, write: { streak: (currentStreak || 0) + 1, updated_at: now.toISOString() } as any };
+          // days === 0 (or negative due to clock skew) → just touch updated_at
+          return { streak: currentStreak || 0, write: { updated_at: now.toISOString() } as any };
+        };
 
-        _setSharedUser({
+        const { streak: currentStreak, write } = computeStreakUpdate(profile.updated_at, profile.streak || 0);
+        await supabase.from("profiles").update(write).eq("user_id", authUser.id);
+
+        _setSharedUser((u: any) => ({
+          ...(u || {}),
           name: profile.display_name || authUser.email,
           level: profile.level, xp: profile.xp, xpNext: profile.xp_next,
           ae: profile.aether, shards: profile.shards,
           streak: currentStreak, shields: profile.shields,
           combatRank: profile.combat_rank, influenceRank: profile.influence_rank,
-          clan: null,
-        });
+          // Preserve clan if it was already set by a faster-completing fetch
+          clan: u?.clan ?? null,
+        }));
       }
 
       // Fetch user's clan membership
@@ -379,10 +382,20 @@ export default function ZoneRushApp() {
       setSharedShopItems((is: any) => is.map((i: any) => i.id === id ? { ...i, sold:(i.sold||0)+1, owned: true } : i));
       if (authUser) {
         supabase.from("user_inventory").insert({ user_id: authUser.id, item_id: id }).then(() => {});
-        supabase.from("shop_items").update({ sold: undefined }).eq("id", id).then(() => {
-          supabase.from("shop_items").select("sold").eq("id", id).single().then(({ data }: any) => {
-            if (data) supabase.from("shop_items").update({ sold: data.sold + 1 }).eq("id", id).then(() => {});
-          });
+        // Atomic increment via Postgres RPC to avoid the read-then-write race that
+        // would let two simultaneous purchases both observe sold=N and both write
+        // sold=N+1 (losing one sale from the count).
+        // Migration: create or replace function increment_shop_sold(p_id text)
+        //              returns void language sql as
+        //              $$ update shop_items set sold = coalesce(sold,0) + 1 where id = p_id $$;
+        supabase.rpc("increment_shop_sold", { p_id: id }).then(({ error }: any) => {
+          if (error) {
+            // RPC not deployed yet — fall back to read+write. Still racy in theory,
+            // but better than not updating at all. Add the migration above to fix.
+            supabase.from("shop_items").select("sold").eq("id", id).single().then(({ data }: any) => {
+              if (data) supabase.from("shop_items").update({ sold: (data.sold || 0) + 1 }).eq("id", id).then(() => {});
+            });
+          }
         });
       }
     },
@@ -460,13 +473,19 @@ export default function ZoneRushApp() {
         }
       }, 8000);
     },
-    captureZone: () => {
+    captureZone: (opts?: { wasContested?: boolean; bonusAE?: number }) => {
+      // Per doc: 50 AE for unclaimed zone, 150 AE for contested takeover.
+      // 24-hour hold bonus (200 AE) is a separate cron concern; opts.bonusAE
+      // lets the caller add it when they detect a 24h-stable hold has elapsed.
+      const baseAE = opts?.wasContested ? GAME_RULES.CAPTURE_AE_CONTESTED : GAME_RULES.CAPTURE_AE_UNCLAIMED;
+      const totalAE = baseAE + (opts?.bonusAE || 0);
       setSharedUser((u: any) => {
         let newXp = u.xp + 100, newLevel = u.level, newXpNext = u.xpNext;
         while (newXp >= newXpNext) { newXp -= newXpNext; newLevel++; newXpNext = Math.floor(newXpNext * 1.25); }
-        return { ...u, ae: u.ae + 50, xp: newXp, level: newLevel, xpNext: newXpNext };
+        return { ...u, ae: u.ae + totalAE, xp: newXp, level: newLevel, xpNext: newXpNext };
       });
-      showToast("📍 Zone captured! +50 AE +100 XP", "success");
+      const bonusNote = opts?.bonusAE ? ` (+${opts.bonusAE} hold bonus)` : "";
+      showToast(`📍 Zone captured! +${totalAE} AE${bonusNote} +100 XP`, "success");
     },
     defendZone: () => {
       showToast("🛡️ GPS lock verifying defense position...", "info");
@@ -580,17 +599,20 @@ export default function ZoneRushApp() {
     },
     warnPlayer: (name) => { showToast(`⚠ Warning issued to ${name}`, "warning"); },
     banPlayer: (name) => { showToast(`🚫 ${name} has been banned`, "error"); },
-    createClan: async (name, tag, motto) => {
+    createClan: async (name, tag, motto, opts) => {
+      const isOpen = opts?.isOpen !== false;          // default open
+      const bannerEmoji = opts?.bannerEmoji || "⚔️";
       if (authUser) {
         const { data: newClan, error } = await supabase.from("clans").insert({
           name, tag, motto: motto || "New clan!", color: TL, treasury: 0,
+          is_open: isOpen, banner_emoji: bannerEmoji,
         }).select().single();
         if (newClan) {
-          await supabase.from("clan_members").insert({ clan_id: newClan.id, user_id: authUser.id, role: "leader" });
-          await supabase.from("profiles").update({ clan_id: newClan.id, ae: sharedUser.ae - 500 }).eq("user_id", authUser.id);
+          await supabase.from("clan_members").insert({ clan_id: newClan.id, user_id: authUser.id, clan_role: "leader" });
+          await supabase.from("profiles").update({ clan_id: newClan.id, aether: sharedUser.ae - 500 }).eq("user_id", authUser.id);
           setSharedUser((u: any) => ({
             ...u, ae: u.ae - 500,
-            clan: { id: newClan.id, name, tag, motto: motto || "New clan!", color: TL, founded: "Mar 2026", memberRole: "Leader", treasury: 0, weeklyXP: 0, rank: 99, cpr: 0, zonesHeld: 0, totalMembers: 1, maxMembers: 20 }
+            clan: { id: newClan.id, name, tag, motto: motto || "New clan!", color: TL, founded: "Mar 2026", memberRole: "Leader", treasury: 0, weeklyXP: 0, rank: 99, cpr: 0, zonesHeld: 0, totalMembers: 1, maxMembers: 20, isOpen, bannerEmoji }
           }));
         } else {
           showToast(`❌ Clan creation failed: ${error?.message || "Unknown error"}`, "error");
@@ -598,7 +620,7 @@ export default function ZoneRushApp() {
       } else {
         setSharedUser((u: any) => ({
           ...u, ae: u.ae - 500,
-          clan: { id:tag.toLowerCase(), name, tag, motto: motto || "New clan!", color:TL, founded:"Mar 2026", memberRole:"Leader", treasury:0, weeklyXP:0, rank:99, cpr:0, zonesHeld:0, totalMembers:1, maxMembers:20 }
+          clan: { id:tag.toLowerCase(), name, tag, motto: motto || "New clan!", color:TL, founded:"Mar 2026", memberRole:"Leader", treasury:0, weeklyXP:0, rank:99, cpr:0, zonesHeld:0, totalMembers:1, maxMembers:20, isOpen, bannerEmoji }
         }));
       }
     },

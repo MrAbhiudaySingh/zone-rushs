@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppContext } from "../AppContext";
 import { showToast } from "../toast";
 import { Chip, Card, SectionHeader, ProgressBar, TabBar } from "../ui/Primitives";
+import { resolveMoodAnonHash } from "@/server/mood";
 import {
   BG, S1, S2, BR, T, TL, TG, TA, TY, TR, TB, TX, TM, TD, FONT, MONO,
   RARITY_COLOR, USER, MISSIONS, SHOP_ITEMS, INIT_SHOP_ITEMS,
@@ -235,22 +236,41 @@ export function ProfileScreen({ user, onAdminAccess }: any) {
                 const [fitConnected, setFitConnected] = useState<boolean>(false);
                 const [fitLoading, setFitLoading] = useState(true);
                 const ctx = useContext(AppContext);
+                const pollHandlesRef = useRef<{ interval?: any; timeout?: any }>({});
                 useEffect(() => {
                   if (!ctx?.authUser) return;
                   supabase.from("google_fit_tokens").select("connected").eq("user_id", ctx.authUser.id).maybeSingle().then(({ data }: any) => {
                     setFitConnected(!!data?.connected);
                     setFitLoading(false);
                   });
+                  // Cleanup any active poll on unmount or auth change.
+                  return () => {
+                    if (pollHandlesRef.current.interval) clearInterval(pollHandlesRef.current.interval);
+                    if (pollHandlesRef.current.timeout) clearTimeout(pollHandlesRef.current.timeout);
+                    pollHandlesRef.current = {};
+                  };
                 }, [ctx?.authUser]);
                 const handleConnect = () => {
                   if (!ctx?.authUser) return;
                   window.open(`/api/google-fit/auth?user_id=${ctx.authUser.id}`, "_blank", "width=500,height=600");
-                  // Poll for connection
+                  // Stop any prior in-flight poll so we don't stack intervals.
+                  if (pollHandlesRef.current.interval) clearInterval(pollHandlesRef.current.interval);
+                  if (pollHandlesRef.current.timeout) clearTimeout(pollHandlesRef.current.timeout);
                   const interval = setInterval(async () => {
                     const { data } = await supabase.from("google_fit_tokens").select("connected").eq("user_id", ctx.authUser.id).maybeSingle();
-                    if (data?.connected) { setFitConnected(true); clearInterval(interval); showToast("✅ Google Fit connected! Steps will sync automatically.", "success"); }
+                    if (data?.connected) {
+                      setFitConnected(true);
+                      clearInterval(interval);
+                      if (pollHandlesRef.current.timeout) clearTimeout(pollHandlesRef.current.timeout);
+                      pollHandlesRef.current = {};
+                      showToast("✅ Google Fit connected! Steps will sync automatically.", "success");
+                    }
                   }, 3000);
-                  setTimeout(() => clearInterval(interval), 120000);
+                  const timeout = setTimeout(() => {
+                    clearInterval(interval);
+                    pollHandlesRef.current = {};
+                  }, 120000);
+                  pollHandlesRef.current = { interval, timeout };
                 };
                 return (
                   <div onClick={fitConnected ? undefined : handleConnect} style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px", background:S1, border:`1.5px solid ${fitConnected ? TG : T}`, borderRadius:16, cursor: fitConnected ? "default" : "pointer" }}>
@@ -283,13 +303,53 @@ export function ProfileScreen({ user, onAdminAccess }: any) {
                 </div>
               </div>
               {/* Data Export */}
-              <div onClick={() => { showToast("📊 Your data export is being prepared. Download will start shortly.", "success"); }} style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px", background:S1, border:`1.5px solid ${BR}`, borderRadius:16, cursor:"pointer" }}>
+              <div onClick={async () => {
+                try {
+                  showToast("📊 Preparing your data export...", "info");
+                  const uid = ctx?.authUser?.id;
+                  const data: any = { exportedAt: new Date().toISOString(), profile: ctx?.sharedUser };
+                  if (uid) {
+                    // mood_entries uses a salted hash, not the raw uid — resolve it server-side
+                    let anonHash: string | null = null;
+                    try {
+                      const r: any = await resolveMoodAnonHash({ data: { userId: uid } });
+                      anonHash = r?.anonUserHash || null;
+                    } catch {}
+                    const moodsP = anonHash
+                      ? supabase.from("mood_entries").select("mood_score, created_at").eq("anon_user_hash", anonHash)
+                      : Promise.resolve({ data: [] } as any);
+                    const [prof, quests, inv, moods] = await Promise.all([
+                      supabase.from("profiles").select("*").eq("user_id", uid).maybeSingle(),
+                      supabase.from("quest_progress").select("*").eq("user_id", uid),
+                      supabase.from("user_inventory").select("*").eq("user_id", uid),
+                      moodsP,
+                    ]);
+                    data.profile_db = prof.data;
+                    data.quests = quests.data || [];
+                    data.inventory = inv.data || [];
+                    data.moods = moods.data || [];
+                  }
+                  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `zonerush-export-${new Date().toISOString().slice(0,10)}.json`;
+                  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                  showToast("✅ Data export downloaded", "success");
+                } catch (err: any) { showToast(`❌ Export failed: ${err.message || err}`, "error"); }
+              }} style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px", background:S1, border:`1.5px solid ${BR}`, borderRadius:16, cursor:"pointer" }}>
                 <span style={{ fontSize:18 }}>📊</span>
-                <div style={{ flex:1 }}><div style={{ fontSize:13, fontWeight:700, color:TX }}>Data Export</div><div style={{ fontSize:11, color:TM }}>Download your activity data</div></div>
+                <div style={{ flex:1 }}><div style={{ fontSize:13, fontWeight:700, color:TX }}>Data Export</div><div style={{ fontSize:11, color:TM }}>Download your activity data as JSON</div></div>
                 <span style={{ color:TM, fontSize:16 }}>›</span>
               </div>
               {/* Terms */}
-              <div onClick={() => showToast("📋 Terms & Privacy policy would open here", "info")} style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px", background:S1, border:`1.5px solid ${BR}`, borderRadius:16, cursor:"pointer" }}>
+              <div onClick={() => {
+                const win = window.open("", "_blank", "width=600,height=700");
+                if (win) {
+                  win.document.write(`<!doctype html><meta charset=utf-8><title>Terms &amp; Privacy — ZoneRush</title><style>body{font:14px/1.6 system-ui;padding:24px;max-width:560px;margin:0 auto;background:#0D1117;color:#E8EFF8}h1{color:#00C9B1}h2{color:#F0F6FC;margin-top:24px;font-size:16px}p{color:#8B9AB0}</style><h1>ZoneRush — Terms &amp; Privacy</h1><h2>Data you provide</h2><p>Username, campus email, level, AE/shards balance, quest progress, GPS location during active captures, optional mood check-ins.</p><h2>Wellbeing data</h2><p>Mood entries are anonymised with a per-user hash and never linked to rewards, leaderboards, or streaks. Free-text entries are visible to admins <em>only</em> if you toggle consent to share. Data is encrypted at rest.</p><h2>Location data</h2><p>GPS is used only for zone capture verification while a capture is in progress. Coordinates are discarded after the session; we do not maintain a location history.</p><h2>Your rights</h2><p>Use Settings → Data Export to download everything we store about you. Request deletion via the in-app support request.</p><h2>Contact</h2><p>support@zonerush.campus</p>`);
+                }
+              }} style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px", background:S1, border:`1.5px solid ${BR}`, borderRadius:16, cursor:"pointer" }}>
                 <span style={{ fontSize:18 }}>📋</span>
                 <div style={{ flex:1 }}><div style={{ fontSize:13, fontWeight:700, color:TX }}>Terms & Privacy</div></div>
                 <span style={{ color:TM, fontSize:16 }}>›</span>
