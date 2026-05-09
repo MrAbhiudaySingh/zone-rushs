@@ -312,7 +312,7 @@ export function ProfileScreen({ user, onAdminAccess }: any) {
                     // mood_entries uses a salted hash, not the raw uid — resolve it server-side
                     let anonHash: string | null = null;
                     try {
-                      const r: any = await resolveMoodAnonHash({ data: { userId: uid } });
+                      const r: any = await resolveMoodAnonHash({ data: {} });
                       anonHash = r?.anonUserHash || null;
                     } catch {}
                     const moodsP = anonHash
