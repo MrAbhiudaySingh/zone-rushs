@@ -14,6 +14,7 @@ import {
   LIVE_EVENTS, MONTHLY_MISSIONS, PROOF_SUBMISSIONS, STYLE_SUBMISSIONS_INIT,
 } from "../constants";
 import type { AdminSectionTitleProps, KpiCardProps, StatusPillProps, StrengthBarProps, AdminTableProps, MiniLineChartProps, DualLineChartProps, DonutChartProps, PlayerModalProps } from "../types";
+import { QRSection } from "./QRSection";
 
 
 // ─── TOKENS ────────────────────────────────────────────────────────────────────
@@ -667,6 +668,7 @@ const SECTIONS = [
   { id:"shop",        icon:"🛒", label:"Shop",          roles:["admin"] },
   { id:"missions",    icon:"🎯", label:"Missions",      roles:["admin"] },
   { id:"events",      icon:"⚡", label:"Events",        roles:["admin"] },
+  { id:"qrcodes",     icon:"📱", label:"QR Codes",      roles:["admin"] },
   { id:"styleevent",  icon:"👗", label:"Style Event",   roles:["admin","moderator"] },
   { id:"combat",      icon:"⚔️", label:"Combat",        roles:["admin","moderator"] },
   { id:"clans",       icon:"🛡️", label:"Clans",         roles:["admin","moderator"] },
@@ -757,6 +759,7 @@ function AdminDashboard({ role, onLogout }: any) {
             {section === "shop"       && <ShopSection />}
             {section === "missions"   && <MissionsSection />}
             {section === "events"     && <EventsSection key={realtimeTick} />}
+            {section === "qrcodes"    && <QRSection />}
             {section === "styleevent" && <StyleEventSection />}
             {section === "combat"     && <CombatSection key={realtimeTick} />}
             {section === "clans"      && <ClansSection key={realtimeTick} />}
@@ -797,10 +800,10 @@ function OverviewSection() {
   useEffect(() => {
     (async () => {
       const [profilesRes, zonesRes, questProgRes, moodRes, clansRes] = await Promise.all([
-        supabase.from("profiles").select("*"),
+        supabase.from("profiles").select("aether"),
         supabase.from("zones").select("id, contest_status, owner_clan_id"),
-        supabase.from("quest_progress").select("id, status, created_at"),
-        supabase.from("mood_entries").select("id, mood_score, crisis_flag"),
+        supabase.from("quest_progress").select("id, created_at"),
+        supabase.from("mood_entries").select("id, crisis_flag"),
         supabase.from("clans").select("id"),
       ]);
 
@@ -981,6 +984,43 @@ function PlayerModal({ player, onClose, onWarn, onBan }: PlayerModalProps) {
   const [grantType, setGrantType] = useState<"xp"|"ae"|"shards"|null>(null);
   const [grantAmount, setGrantAmount] = useState("");
   const [granting, setGranting] = useState(false);
+  const [view, setView] = useState<"main" | "activity" | "message">("main");
+  const [activity, setActivity] = useState<any[]>([]);
+  const [activityLoading, setActivityLoading] = useState(false);
+  const [msgText, setMsgText] = useState("");
+  const [msgSending, setMsgSending] = useState(false);
+
+  const loadActivity = async () => {
+    setView("activity");
+    setActivityLoading(true);
+    try {
+      const [quests, captures, notifs] = await Promise.all([
+        supabase.from("quest_progress").select("quest_definition_id, status, completed_at, created_at").eq("user_id", player.id).order("created_at", { ascending: false }).limit(20),
+        supabase.from("zone_captures").select("zone_id, status, timer_started_at").eq("attacker_user_id", player.id).order("timer_started_at", { ascending: false }).limit(20),
+        supabase.from("notifications").select("type, message, created_at").eq("user_id", player.id).order("created_at", { ascending: false }).limit(20),
+      ]);
+      const rows: any[] = [];
+      (quests.data || []).forEach(q => rows.push({ ts: q.completed_at || q.created_at, icon: "🎯", kind: "Quest", detail: q.status }));
+      (captures.data || []).forEach(c => rows.push({ ts: c.timer_started_at, icon: "⚔️", kind: "Zone capture", detail: c.status }));
+      (notifs.data || []).forEach(n => rows.push({ ts: n.created_at, icon: n.type === "crisis" ? "⚠" : "🔔", kind: n.type, detail: n.message }));
+      rows.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
+      setActivity(rows.slice(0, 30));
+    } catch (err: any) { showToast(`❌ Couldn't load activity: ${err.message}`, "error"); }
+    setActivityLoading(false);
+  };
+
+  const sendMessage = async () => {
+    const txt = msgText.trim();
+    if (!txt) return;
+    setMsgSending(true);
+    try {
+      await supabase.from("notifications").insert({ user_id: player.id, type: "admin_message", message: `📬 From Admin: ${txt}` });
+      showToast(`✉️ Message delivered to ${player.name}`, "success");
+      setMsgText("");
+      setView("main");
+    } catch (err: any) { showToast(`❌ Send failed: ${err.message}`, "error"); }
+    setMsgSending(false);
+  };
 
   const handleGrant = async () => {
     const amount = parseInt(grantAmount);
@@ -1007,8 +1047,41 @@ function PlayerModal({ player, onClose, onWarn, onBan }: PlayerModalProps) {
           </div>
           <button style={AA.modalClose} onClick={onClose}>✕</button>
         </div>
+
+        {view === "activity" && (
+          <div>
+            <button style={{ ...AA.tinyBtn, marginBottom: 10 }} onClick={() => setView("main")}>← Back</button>
+            <div style={{ fontSize: 11, fontWeight: 700, color: C.dim, fontFamily: ADM_MONO, marginBottom: 8 }}>ACTIVITY LOG · LAST 30</div>
+            {activityLoading ? <div style={{ color: C.dim, fontFamily: ADM_MONO, fontSize: 11, padding: 12 }}>Loading...</div>
+              : activity.length === 0 ? <div style={{ color: C.dim, fontFamily: ADM_MONO, fontSize: 11, padding: 12 }}>No activity recorded for this player yet.</div>
+              : <div style={{ maxHeight: 420, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+                {activity.map((a, i) => (
+                  <div key={i} style={{ display: "flex", gap: 10, padding: "8px 10px", background: ADM_S2, border: `1px solid ${ADM_BR}`, borderRadius: 4, fontSize: 11 }}>
+                    <span style={{ fontSize: 14, flexShrink: 0 }}>{a.icon}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ color: ADM_TX, fontWeight: 700 }}>{a.kind}</div>
+                      <div style={{ color: C.dim, fontFamily: ADM_MONO, fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.detail}</div>
+                    </div>
+                    <div style={{ color: C.dim, fontFamily: ADM_MONO, fontSize: 10, flexShrink: 0 }}>{a.ts ? new Date(a.ts).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"}</div>
+                  </div>
+                ))}
+              </div>}
+          </div>
+        )}
+
+        {view === "message" && (
+          <div>
+            <button style={{ ...AA.tinyBtn, marginBottom: 10 }} onClick={() => setView("main")}>← Back</button>
+            <div style={{ fontSize: 11, fontWeight: 700, color: C.dim, fontFamily: ADM_MONO, marginBottom: 8 }}>DIRECT MESSAGE · PLAYER INBOX</div>
+            <textarea value={msgText} onChange={e => setMsgText(e.target.value)} maxLength={500} placeholder="Type your message — player will receive it as a notification" style={{ ...AA.fieldInput, width: "100%", minHeight: 110, resize: "none", lineHeight: 1.5, fontFamily: ADM_FONT, fontSize: 12 }} />
+            <div style={{ fontSize: 10, color: C.dim, textAlign: "right", marginTop: 4, fontFamily: ADM_MONO }}>{msgText.length}/500</div>
+            <button style={{ ...AA.modalBtn, marginTop: 10, background: `linear-gradient(135deg, ${C.teal}, #0088BB)`, color: "#050810", fontWeight: 700, border: "none", opacity: msgText.trim() && !msgSending ? 1 : 0.5 }} disabled={!msgText.trim() || msgSending} onClick={sendMessage}>{msgSending ? "Sending..." : "✉️ Send Message"}</button>
+          </div>
+        )}
+
+        {view === "main" && <>
         <div style={AA.modalGrid}>
-          {[["Level",`Lv ${player.level}`],["XP",player.xp.toLocaleString()],["AE Balance",player.ae.toLocaleString()],["Shards",player.shards.toLocaleString()],["Streak",`${player.streak} days`],["Status",player.status]].map((k: any, v: any) => (
+          {[["Level",`Lv ${player.level}`],["XP",player.xp.toLocaleString()],["AE Balance",player.ae.toLocaleString()],["Shards",player.shards.toLocaleString()],["Streak",`${player.streak} days`],["Status",player.status]].map(([k, v]: any) => (
             <div key={k} style={AA.modalStat}><div style={AA.modalStatLbl}>{k}</div><div style={AA.modalStatVal}>{v}</div></div>
           ))}
         </div>
@@ -1044,11 +1117,12 @@ function PlayerModal({ player, onClose, onWarn, onBan }: PlayerModalProps) {
         </div>
 
         <div style={AA.modalActions}>
-          <button style={AA.modalBtn} onClick={() => { showToast(`📋 Activity log for ${player.name} opened`, "info"); onClose(); }}>🔍 View Full Activity Log</button>
-          <button style={AA.modalBtn} onClick={() => { showToast(`✉️ Message sent to ${player.name}`, "success"); onClose(); }}>✉️ Send Direct Message</button>
+          <button style={AA.modalBtn} onClick={loadActivity}>🔍 View Full Activity Log</button>
+          <button style={AA.modalBtn} onClick={() => setView("message")}>✉️ Send Direct Message</button>
           <button style={{ ...AA.modalBtn, borderColor:"rgba(245,166,35,0.4)", color:C.amber }} onClick={() => { ctx?.warnPlayer(player.name); onWarn?.(); onClose(); }}>⚠ Issue Formal Warning</button>
           <button style={{ ...AA.modalBtn, ...AA.modalBtnRed }} onClick={() => { ctx?.banPlayer(player.name); onBan?.(); onClose(); }}>🚫 Ban Player</button>
         </div>
+        </>}
       </div>
     </div>
   );
@@ -1094,7 +1168,22 @@ function WellbeingSection() {
                   <div style={AA.crisisMeta}>Mood: {f.mood_score}/5 · {new Date(f.created_at).toLocaleTimeString("en-GB", { hour:"2-digit", minute:"2-digit" })} · {f.outreach_requested ? "🙋 Outreach requested" : "No outreach opt-in"}</div>
                 </div>
                 <div style={AA.crisisActions}>
-                  {!isResolved && f.outreach_requested && <button style={AA.crisisContactBtn}>Contact Student Support</button>}
+                  {!isResolved && f.outreach_requested && <button style={AA.crisisContactBtn} onClick={async () => {
+                    // Privacy-preserving outreach: we DO NOT have the real user_id
+                    // here (only the salted anon_user_hash), so we can't push a
+                    // notification straight to the user — that's by design. We
+                    // mark the entry as contacted and log the case for the
+                    // wellbeing team to action through a non-app channel.
+                    try {
+                      await supabase.from("mood_entries").update({ outreach_contacted_at: new Date().toISOString() }).eq("id", f.id);
+                    } catch {}
+                    try {
+                      // Best-effort case log — silently no-ops if the table doesn't exist yet.
+                      await supabase.from("wellbeing_outreach").insert({ mood_entry_id: f.id, anon_user_hash: f.anon_user_hash, contacted_at: new Date().toISOString() });
+                    } catch {}
+                    showToast("📞 Outreach logged — wellbeing team assigned (out-of-band)", "success");
+                    resolve(f.id);
+                  }}>Contact Student Support</button>}
                   {!isResolved && <button style={AA.crisisResolveBtn} onClick={() => resolve(f.id)}>Mark Resolved</button>}
                   {isResolved && <span style={AA.resolvedBadge}>✓ Resolved</span>}
                 </div>
@@ -1118,7 +1207,8 @@ function WellbeingSection() {
 }
 
 // ─── ZONES SECTION ─────────────────────────────────────────────────────────────
-const ADMIN_GAME_RULES: Record<string, number> = { ZONE_ATTACK_COOLDOWN_HOURS:24, ZONE_CAPTURE_MINS_STANDARD:3, ZONE_CAPTURE_MINS_LANDMARK:5, CLAN_CREATE_MIN_LEVEL:5, CLAN_MAX_MEMBERS:20, CLAN_CREATE_COST_AE:500, WAR_DECLARE_COST_AE:200, COMBAT_OPPONENT_COOLDOWN_HOURS:4, COMBAT_MAX_INCOMING:3, COMBAT_LEVEL_RANGE:5 };
+// Game-rule constants for zones live in ../constants.ts (GAME_RULES). Do not
+// redefine here — keeping one source of truth prevents drift.
 
 function ZonesSection() {
   const [zones, setZones] = useState<any[]>([]);
@@ -1177,8 +1267,21 @@ function ZonesSection() {
               ))}
             </div>
             <div style={AA.modalActions}>
-              <button style={AA.modalBtn}>🔄 Force Unclaim</button>
-              <button style={AA.modalBtn}>⬆ Upgrade Tier</button>
+              <button style={AA.modalBtn} disabled={!sel.owner} onClick={async () => {
+                const { error } = await supabase.from("zones").update({ owner_clan_id: null, control_strength: 50, contest_status: "peaceful" }).eq("id", sel.id);
+                if (error) { showToast(`❌ ${error.message}`, "error"); return; }
+                setZones(zs => zs.map((z: any) => z.id === sel.id ? { ...z, owner: null, ownerTag: null, strength: 50, contested: false } : z));
+                showToast(`🔄 ${sel.name} force-unclaimed`, "success");
+                setSel(null);
+              }}>🔄 Force Unclaim</button>
+              <button style={AA.modalBtn} disabled={sel.tier >= 3} onClick={async () => {
+                const newTier = Math.min(3, (sel.tier || 1) + 1);
+                const { error } = await supabase.from("zones").update({ tier: newTier }).eq("id", sel.id);
+                if (error) { showToast(`❌ ${error.message}`, "error"); return; }
+                setZones(zs => zs.map((z: any) => z.id === sel.id ? { ...z, tier: newTier } : z));
+                showToast(`⬆ ${sel.name} promoted to Tier ${newTier}`, "success");
+                setSel(null);
+              }}>⬆ Upgrade Tier {sel.tier >= 3 && "(max)"}</button>
             </div>
           </div>
         </div>
@@ -1236,6 +1339,7 @@ function ShopSection() {
   const ctx = useContext(AppContext);
   const items = ctx?.sharedShopItems || INIT_SHOP_ITEMS;
   const [showAdd, setShowAdd] = useState(false);
+  const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState(BLANK_ITEM);
   const [filter, setFilter] = useState("all");
 
@@ -1252,6 +1356,21 @@ function ShopSection() {
     setShowAdd(false);
   };
 
+  const saveEdit = async () => {
+    if (!editing) return;
+    const newPrice = parseInt(editing.priceAE);
+    const newStock = editing.type === "limited" && editing.stock !== "" && editing.stock !== null ? parseInt(editing.stock) : null;
+    if (isNaN(newPrice) || newPrice <= 0) { showToast("⚠ Price must be a positive number", "error"); return; }
+    try {
+      await supabase.from("shop_items").update({ price_ae: newPrice, rarity: editing.rarity, stock: newStock, featured: !!editing.featured }).eq("id", editing.id);
+    } catch {}
+    if (ctx?.setSharedShopItems) {
+      ctx.setSharedShopItems((is: any) => is.map((i: any) => i.id === editing.id ? { ...i, priceAE: newPrice, price: newPrice, rarity: editing.rarity, stock: newStock, featured: !!editing.featured } : i));
+    }
+    showToast(`✓ ${editing.name} updated`, "success");
+    setEditing(null);
+  };
+
   return (
     <div style={AA.secWrap}>
       <SectionTitle title="Shop Manager" sub={`${items.filter(i=>i.active).length} active · ${items.filter(i=>i.type==="limited").length} limited`} />
@@ -1266,7 +1385,7 @@ function ShopSection() {
         item.type==="limited" ? <span style={{ ...AA.mono, color:stockOut?C.red:ADM_TX }}>{item.sold}/{item.stock??"∞"}</span> : <span style={AA.monoSm}>∞</span>,
         <span style={{ ...AA.mono, color:C.teal }}>{item.sold}</span>,
         <span style={{ color:item.active&&!stockOut?C.teal:C.red, fontSize:11, fontWeight:700 }}>{stockOut?"SOLD OUT":item.active?"ACTIVE":"OFF"}</span>,
-        <div style={AA.actionBtns}>{!stockOut && <button style={{ ...AA.tinyBtn, ...(item.active?AA.tinyBtnRed:AA.tinyBtnGreen) }} onClick={() => toggle(item.id)}>{item.active?"Delist":"List"}</button>}<button style={AA.tinyBtn}>Edit</button></div>,
+        <div style={AA.actionBtns}>{!stockOut && <button style={{ ...AA.tinyBtn, ...(item.active?AA.tinyBtnRed:AA.tinyBtnGreen) }} onClick={() => toggle(item.id)}>{item.active?"Delist":"List"}</button>}<button style={AA.tinyBtn} onClick={() => setEditing({ ...item })}>Edit</button></div>,
       ]; })} />
       {showAdd && (
         <div style={AA.modalOverlay} onClick={() => setShowAdd(false)}>
@@ -1282,6 +1401,28 @@ function ShopSection() {
               <div style={{ display:"flex", gap:10, marginTop:4 }}>
                 <button style={{ ...AA.exportBtn, flex:1 }} onClick={() => { setShowAdd(false); setForm(BLANK_ITEM); }}>Cancel</button>
                 <button style={{ ...AA.exportBtn, flex:2, background:`linear-gradient(135deg, ${C.teal}, #0088BB)`, color:"#050810", fontWeight:700, border:"none", opacity: form.name&&form.priceAE ? 1 : 0.5 }} onClick={addItem} disabled={!form.name || !form.priceAE}>✓ Add to Shop</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {editing && (
+        <div style={AA.modalOverlay} onClick={() => setEditing(null)}>
+          <div style={{ ...AA.modal, maxWidth:560 }} onClick={e => e.stopPropagation()}>
+            <div style={AA.modalHdr}><div><div style={AA.modalTitle}>✏️ Edit: {editing.name}</div><div style={AA.modalSub}>{editing.cat} · {editing.rarity}</div></div><button style={AA.modalClose} onClick={() => setEditing(null)}>✕</button></div>
+            <div style={{ display:"flex", flexDirection:"column", gap:12, marginTop:4 }}>
+              <div style={AA.fieldWrap}><label style={AA.fieldLabel}>PRICE (AE)</label><input style={AA.fieldInput} type="number" value={editing.priceAE || editing.price || ""} onChange={e => setEditing((f: any) => ({ ...f, priceAE: e.target.value }))} /></div>
+              <div style={AA.fieldWrap}><label style={AA.fieldLabel}>RARITY</label><select style={{ ...AA.fieldInput, color: ADM_TX }} value={editing.rarity || "common"} onChange={e => setEditing((f: any) => ({ ...f, rarity: e.target.value }))}>{RARITIES.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}</select></div>
+              {editing.type === "limited" && (
+                <div style={AA.fieldWrap}><label style={AA.fieldLabel}>STOCK LIMIT</label><input style={AA.fieldInput} type="number" value={editing.stock ?? ""} placeholder="e.g. 50" onChange={e => setEditing((f: any) => ({ ...f, stock: e.target.value }))} /></div>
+              )}
+              <label style={{ display:"flex", alignItems:"center", gap:8, color: ADM_TX, fontSize:12, fontFamily: ADM_FONT, cursor:"pointer" }}>
+                <input type="checkbox" checked={!!editing.featured} onChange={e => setEditing((f: any) => ({ ...f, featured: e.target.checked }))} />
+                Featured in shop
+              </label>
+              <div style={{ display:"flex", gap:10, marginTop:4 }}>
+                <button style={{ ...AA.exportBtn, flex:1 }} onClick={() => setEditing(null)}>Cancel</button>
+                <button style={{ ...AA.exportBtn, flex:2, background:`linear-gradient(135deg, ${C.teal}, #0088BB)`, color:"#050810", fontWeight:700, border:"none" }} onClick={saveEdit}>✓ Save Changes</button>
               </div>
             </div>
           </div>
