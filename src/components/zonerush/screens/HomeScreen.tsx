@@ -1333,7 +1333,7 @@ export function HomeScreen() {
           dismissWellbeing();
           if (moodScore != null && ctx?.authUser?.id) {
             try {
-              await saveMoodEntry({ data: { userId: ctx.authUser.id, moodScore, freeText, outreachRequested } });
+              await saveMoodEntry({ data: { moodScore, freeText, outreachRequested } });
             } catch (e) { console.error("Mood save error:", e); }
           }
         }} />}
