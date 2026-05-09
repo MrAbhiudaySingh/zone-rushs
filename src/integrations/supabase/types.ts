@@ -135,12 +135,132 @@ export type Database = {
           },
         ]
       }
+      event_qr_codes: {
+        Row: {
+          created_at: string
+          event_id: string | null
+          id: string
+          max_redemptions: number | null
+          redeemed_count: number
+          reward_label: string | null
+          reward_type: string
+          reward_value_int: number | null
+          reward_value_text: string | null
+          token: string
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          max_redemptions?: number | null
+          redeemed_count?: number
+          reward_label?: string | null
+          reward_type: string
+          reward_value_int?: number | null
+          reward_value_text?: string | null
+          token: string
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          max_redemptions?: number | null
+          redeemed_count?: number
+          reward_label?: string | null
+          reward_type?: string
+          reward_value_int?: number | null
+          reward_value_text?: string | null
+          token?: string
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_qr_codes_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_qr_redemptions: {
+        Row: {
+          id: string
+          qr_code_id: string
+          redeemed_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          qr_code_id: string
+          redeemed_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          qr_code_id?: string
+          redeemed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_qr_redemptions_qr_code_id_fkey"
+            columns: ["qr_code_id"]
+            isOneToOne: false
+            referencedRelation: "event_qr_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_qr_scan_attempts: {
+        Row: {
+          attempt_token: string | null
+          created_at: string
+          id: string
+          outcome: string
+          qr_code_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          attempt_token?: string | null
+          created_at?: string
+          id?: string
+          outcome: string
+          qr_code_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          attempt_token?: string | null
+          created_at?: string
+          id?: string
+          outcome?: string
+          qr_code_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_qr_scan_attempts_qr_code_id_fkey"
+            columns: ["qr_code_id"]
+            isOneToOne: false
+            referencedRelation: "event_qr_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           created_at: string
+          date_end: string | null
+          date_start: string | null
           description: string | null
           ends_at: string | null
           id: string
+          qr_enabled: boolean
           reward_ae: number
           starts_at: string | null
           status: string
@@ -148,9 +268,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          date_end?: string | null
+          date_start?: string | null
           description?: string | null
           ends_at?: string | null
           id?: string
+          qr_enabled?: boolean
           reward_ae?: number
           starts_at?: string | null
           status?: string
@@ -158,9 +281,12 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          date_end?: string | null
+          date_start?: string | null
           description?: string | null
           ends_at?: string | null
           id?: string
+          qr_enabled?: boolean
           reward_ae?: number
           starts_at?: string | null
           status?: string
@@ -233,6 +359,7 @@ export type Database = {
           free_text: string | null
           id: string
           mood_score: number
+          outreach_contacted_at: string | null
           outreach_requested: boolean
         }
         Insert: {
@@ -242,6 +369,7 @@ export type Database = {
           free_text?: string | null
           id?: string
           mood_score: number
+          outreach_contacted_at?: string | null
           outreach_requested?: boolean
         }
         Update: {
@@ -251,6 +379,7 @@ export type Database = {
           free_text?: string | null
           id?: string
           mood_score?: number
+          outreach_contacted_at?: string | null
           outreach_requested?: boolean
         }
         Relationships: []
@@ -783,6 +912,38 @@ export type Database = {
         }
         Relationships: []
       }
+      wellbeing_outreach: {
+        Row: {
+          anon_user_hash: string | null
+          contacted_at: string
+          created_at: string
+          id: string
+          mood_entry_id: string | null
+        }
+        Insert: {
+          anon_user_hash?: string | null
+          contacted_at?: string
+          created_at?: string
+          id?: string
+          mood_entry_id?: string | null
+        }
+        Update: {
+          anon_user_hash?: string | null
+          contacted_at?: string
+          created_at?: string
+          id?: string
+          mood_entry_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wellbeing_outreach_mood_entry_id_fkey"
+            columns: ["mood_entry_id"]
+            isOneToOne: false
+            referencedRelation: "mood_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       zone_captures: {
         Row: {
           attacker_user_id: string
@@ -907,6 +1068,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      redeem_event_qr: {
+        Args: { p_token: string; p_user_id: string }
+        Returns: Json
       }
     }
     Enums: {
