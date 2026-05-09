@@ -15,10 +15,12 @@ import {
 } from "../constants";
 import type { QuestScreenProps } from "../types";
 import { MissionCard } from "./HomeScreen";
+import { QRScanModal } from "./QRScanModal";
 
 export function QuestScreen({ missions, events, styleEvent, onStyleEvent }: QuestScreenProps) {
   const ctx = useContext(AppContext);
   const [qTab, setQTab] = useState("daily");
+  const [qrEvent, setQrEvent] = useState<any>(null);
 
   const daily  = missions.filter((m: any) => m.tier === "daily" && !m._disabled);
   const weekly = missions.filter((m: any) => m.tier === "weekly" && !m._disabled);
@@ -65,6 +67,13 @@ export function QuestScreen({ missions, events, styleEvent, onStyleEvent }: Ques
   };
 
   const renderGroup = (quests) => {
+    if (quests.length === 0) return (
+      <div style={{ padding:"48px 20px", textAlign:"center", color:TM }}>
+        <div style={{ fontSize:36, marginBottom:10 }}>🎯</div>
+        <div style={{ fontSize:14, fontWeight:700, color:TX, marginBottom:4 }}>No quests here right now</div>
+        <div style={{ fontSize:12 }}>New ones drop automatically on reset</div>
+      </div>
+    );
     const groups = groupByCategory(quests);
     return Object.entries(groups).map(([cat, items]: [string, any[]]) => (
       <div key={cat} style={{ marginBottom:16 }}>
@@ -86,9 +95,9 @@ export function QuestScreen({ missions, events, styleEvent, onStyleEvent }: Ques
         <div style={{ fontSize:13, color:TM, marginBottom:16 }}>Complete quests · earn AE + XP + 💎</div>
         <TabBar
           tabs={[
-            ["daily","Daily", daily.length],
-            ["weekly","Weekly", weekly.length],
-            ["monthly","Monthly", monthly.length],
+            ["daily","Daily", Math.max(0, daily.length - dailyCompleted)],
+            ["weekly","Weekly", Math.max(0, weekly.length - weeklyCompleted)],
+            ["monthly","Monthly", Math.max(0, monthly.length - monthlyCompleted)],
             ["events","Events", events.length],
           ]}
           active={qTab}
@@ -144,7 +153,7 @@ export function QuestScreen({ missions, events, styleEvent, onStyleEvent }: Ques
               <ProgressBar value={monthlyCompleted} max={monthly.length || 1} color={`linear-gradient(90deg, ${TL}, ${TG})`} height={6} />
               <div style={{ display:"flex", justifyContent:"space-between", marginTop:8 }}>
                 <span style={{ fontSize:11, color:TM }}>{daysLeftMonth} days left</span>
-                <span style={{ fontSize:11, color:TL, fontWeight:700 }}>All done → +2,000 AE 🏆</span>
+                <span style={{ fontSize:11, color:TL, fontWeight:700 }}>All done → +3,550 AE 🏆</span>
               </div>
             </Card>
             {renderGroup(monthly)}
@@ -186,7 +195,12 @@ export function QuestScreen({ missions, events, styleEvent, onStyleEvent }: Ques
                   <div style={{ fontSize:12, color:TM, marginBottom:10, lineHeight:1.5 }}>{ev.desc}</div>
                   <ProgressBar value={pct} max={100} color={ev.color} height={4} />
                   <div style={{ fontSize:10, color:TM, marginTop:4, marginBottom:10 }}>{ev.participants}/{ev.maxParticipants} participants · {ev.eligibility}</div>
-                  <button onClick={() => { if (ctx?.joinEvent) ctx.joinEvent(ev.id); showToast(`⚡ Joined "${ev.title}"!`, "success"); }} disabled={ctx?.joinedEvents?.has(ev.id)} style={{ padding:"9px 16px", background: ctx?.joinedEvents?.has(ev.id) ? `${TG}30` : ev.color, border:"none", borderRadius:10, color: ctx?.joinedEvents?.has(ev.id) ? TG : "#fff", fontSize:12, fontWeight:700, fontFamily:FONT }}>{ctx?.joinedEvents?.has(ev.id) ? "✓ Joined" : "Join Event →"}</button>
+                  <div style={{ display:"flex", gap:8 }}>
+                    <button onClick={() => { if (ctx?.joinEvent) ctx.joinEvent(ev.id); showToast(`⚡ Joined "${ev.title}"!`, "success"); }} disabled={ctx?.joinedEvents?.has(ev.id)} style={{ flex:1, padding:"9px 16px", background: ctx?.joinedEvents?.has(ev.id) ? `${TG}30` : ev.color, border:"none", borderRadius:10, color: ctx?.joinedEvents?.has(ev.id) ? TG : "#fff", fontSize:12, fontWeight:700, fontFamily:FONT, cursor:"pointer" }}>{ctx?.joinedEvents?.has(ev.id) ? "✓ Joined" : "Join Event →"}</button>
+                    {(ev.qr_enabled || ev.qrEnabled) && (
+                      <button onClick={() => setQrEvent(ev)} title="Scan QR for event rewards" style={{ padding:"9px 14px", background:`linear-gradient(135deg, ${T}, ${TG})`, border:"none", borderRadius:10, color:"#0D1117", fontSize:12, fontWeight:800, fontFamily:FONT, cursor:"pointer" }}>📷 Scan QR</button>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -200,6 +214,7 @@ export function QuestScreen({ missions, events, styleEvent, onStyleEvent }: Ques
           </div>
         )}
       </div>
+      {qrEvent && <QRScanModal event={qrEvent} onClose={() => setQrEvent(null)} />}
     </div>
   );
 }

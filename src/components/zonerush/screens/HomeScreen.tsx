@@ -24,6 +24,10 @@ import { QuestScreen } from "./QuestScreen";
 import { MarketScreen } from "./MarketScreen";
 import { ClanScreen } from "./ClanScreen";
 import { ProfileScreen } from "./ProfileScreen";
+import { LeaderboardScreen } from "./LeaderboardScreen";
+import { NotificationsScreen, NotificationBell } from "./NotificationsScreen";
+import { StoryScreen } from "./StoryScreen";
+import { Onboarding, shouldShowOnboarding } from "./Onboarding";
 
 function WellbeingOverlay({ onDone }: WellbeingOverlayProps) {
   const [phase, setPhase] = useState("ask");
@@ -133,13 +137,53 @@ function WellbeingOverlay({ onDone }: WellbeingOverlayProps) {
 // ═══════════════════════════════════════════════════════════════════════════════
 function ZoneAlert({ onDismiss }: ZoneAlertProps) {
   const ctx = useContext(AppContext);
-  const [secs, setSecs] = useState(1458);
+  const [contested, setContested] = useState<any>(null);
+  const [secs, setSecs] = useState(0);
+  const clanId = ctx?.sharedUser?.clan?.id;
+
+  // Pull the most-recently-attacked of MY clan's zones, plus the attacker's name.
   useEffect(() => {
+    if (!clanId) { setContested(null); return; }
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const { data } = await supabase
+          .from("zones")
+          .select("id, name, contesting_clan_tag, contest_status, last_attacked_at")
+          .eq("owner_clan_id", clanId)
+          .eq("contest_status", "contested")
+          .order("last_attacked_at", { ascending: false })
+          .limit(1);
+        if (cancelled) return;
+        const z = data?.[0];
+        if (!z) { setContested(null); return; }
+        // Capture timer per doc: 3 min standard, 5 min landmark/arena. Compute remaining
+        // from last_attacked_at; default to 3 min if start time missing or skewed.
+        const startMs = z.last_attacked_at ? new Date(z.last_attacked_at).getTime() : Date.now();
+        const totalSecs = 3 * 60;
+        const elapsed = Math.floor((Date.now() - startMs) / 1000);
+        setContested({ ...z, totalSecs });
+        setSecs(Math.max(0, totalSecs - elapsed));
+      } catch { if (!cancelled) setContested(null); }
+    };
+    load();
+    // Re-poll every 30 s in case a new contest starts; the realtime channel
+    // triggered from FullApp also refreshes this on change.
+    const poll = setInterval(load, 30000);
+    return () => { cancelled = true; clearInterval(poll); };
+  }, [clanId]);
+
+  // Tick the visible countdown.
+  useEffect(() => {
+    if (!contested) return;
     const t = setInterval(() => setSecs((s: any) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(t);
-  }, []);
+  }, [contested]);
+
+  if (!contested || secs <= 0) return null;
   const mm = String(Math.floor(secs / 60)).padStart(2, "0");
   const ss = String(secs % 60).padStart(2, "0");
+  const attackerLabel = contested.contesting_clan_tag ? `${contested.contesting_clan_tag} is capturing` : "Hostile capture in progress";
   return (
     <div style={{
       margin:"12px 14px 0", padding:"14px 16px",
@@ -152,12 +196,12 @@ function ZoneAlert({ onDismiss }: ZoneAlertProps) {
       <div style={{ width:50, height:50, borderRadius:16, background:`${TR}20`, border:`1.5px solid ${TR}50`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>⚔️</div>
       <div style={{ flex:1, minWidth:0 }}>
         <div style={{ fontSize:12, fontWeight:900, color:TR, letterSpacing:"0.8px", marginBottom:2 }}>ZONE UNDER ATTACK</div>
-        <div style={{ fontSize:12, color:TM }}>Library Zone · BlazeThorn is capturing</div>
+        <div style={{ fontSize:12, color:TM, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{contested.name} · {attackerLabel}</div>
         <div style={{ fontSize:22, fontWeight:900, color:TR, letterSpacing:3, marginTop:2, fontVariantNumeric:"tabular-nums" }}>{mm}:{ss}</div>
       </div>
       <div style={{ display:"flex", flexDirection:"column", gap:6, flexShrink:0 }}>
-        <button onClick={() => { if (ctx?.defendZone) ctx.defendZone(); onDismiss(); }} style={{ padding:"9px 16px", background:`linear-gradient(135deg,${TR},#FF8C00)`, border:"none", borderRadius:12, color:"#fff", fontSize:12, fontWeight:900, boxShadow:`0 4px 16px ${TR}40` }}>Defend!</button>
-        <button onClick={onDismiss} style={{ padding:"6px", background:"none", border:`1px solid ${BR}`, borderRadius:8, color:TM, fontSize:11, fontFamily:FONT }}>✕</button>
+        <button onClick={() => { if (ctx?.defendZone) ctx.defendZone(); onDismiss(); }} style={{ padding:"9px 16px", background:`linear-gradient(135deg,${TR},#FF8C00)`, border:"none", borderRadius:12, color:"#fff", fontSize:12, fontWeight:900, boxShadow:`0 4px 16px ${TR}40`, cursor:"pointer", fontFamily:FONT }}>Defend!</button>
+        <button onClick={onDismiss} style={{ padding:"6px", background:"none", border:`1px solid ${BR}`, borderRadius:8, color:TM, fontSize:11, fontFamily:FONT, cursor:"pointer" }}>✕</button>
       </div>
     </div>
   );
@@ -166,7 +210,7 @@ function ZoneAlert({ onDismiss }: ZoneAlertProps) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // HUD HEADER — hero gradient with floating orbs + 7-tap admin access
 // ═══════════════════════════════════════════════════════════════════════════════
-function HudHeader({ user, onAdminAccess }: HudHeaderProps) {
+function HudHeader({ user, onAdminAccess, onLeaderboard, onNotifications }: HudHeaderProps & { onLeaderboard?: () => void; onNotifications?: () => void }) {
   const tapRef = useRef<number>(0);
   const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleLogoTap = () => {
@@ -212,8 +256,12 @@ function HudHeader({ user, onAdminAccess }: HudHeaderProps) {
             </div>
           </div>
         </div>
-        {/* Currency chips */}
-        <div style={{ display:"flex", gap:7 }}>
+        {/* Header actions: leaderboard, notifications, currency chips */}
+        <div style={{ display:"flex", gap:7, alignItems:"center" }}>
+          {onLeaderboard && (
+            <button onClick={onLeaderboard} aria-label="Leaderboards" style={{ width:38, height:38, borderRadius:12, background:S1, border:`1px solid ${BR}`, color:TX, fontSize:17, cursor:"pointer", fontFamily:FONT, display:"flex", alignItems:"center", justifyContent:"center" }}>🏆</button>
+          )}
+          {onNotifications && <NotificationBell onClick={onNotifications} />}
           <Chip color={TY} icon="◎" label={user.ae.toLocaleString()} />
           <Chip color={T} icon="◆" label={user.shards} />
         </div>
@@ -382,8 +430,8 @@ function StreakCard({ user }: any) {
 // ═══════════════════════════════════════════════════════════════════════════════
 function SquadUpCard({ user, onNavigateClan }: any) {
   const [jName, setJName] = useState("");
-  const canCreate = user.level >= 5;
-  const lvlToGo = Math.max(0, 5 - user.level);
+  const canCreate = user.level >= GAME_RULES.CLAN_CREATE_MIN_LEVEL;
+  const lvlToGo = Math.max(0, GAME_RULES.CLAN_CREATE_MIN_LEVEL - user.level);
 
   return (
     <div className="card-entry" style={{
@@ -409,8 +457,12 @@ function SquadUpCard({ user, onNavigateClan }: any) {
           placeholder="Search clan name or tag..."
           value={jName}
           onChange={e => setJName(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") onNavigateClan?.(); }}
         />
-        <button style={{ padding:"11px 18px", background:`linear-gradient(135deg, ${T}, ${TG})`, border:"none", borderRadius:14, color:"#0D1117", fontSize:13, fontWeight:900, boxShadow:`0 4px 16px ${T}40`, fontFamily:FONT }}>Search</button>
+        <button
+          onClick={() => { onNavigateClan?.(); }}
+          style={{ padding:"11px 18px", background:`linear-gradient(135deg, ${T}, ${TG})`, border:"none", borderRadius:14, color:"#0D1117", fontSize:13, fontWeight:900, boxShadow:`0 4px 16px ${T}40`, fontFamily:FONT }}
+        >Search</button>
       </div>
 
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 14px", background:"rgba(255,255,255,0.03)", borderRadius:14, border:`1.5px solid ${BR}` }}>
@@ -419,7 +471,7 @@ function SquadUpCard({ user, onNavigateClan }: any) {
           <div>
             <div style={{ fontSize:13, fontWeight:800, color: canCreate ? TX : TM }}>Create a clan</div>
             <div style={{ fontSize:11, color:TD }}>
-              {canCreate ? "You're eligible — go to Clan tab" : `Level 5 required (${lvlToGo} level${lvlToGo !== 1 ? "s" : ""} away)`}
+              {canCreate ? "You're eligible — go to Clan tab" : `Level ${GAME_RULES.CLAN_CREATE_MIN_LEVEL} required (${lvlToGo} level${lvlToGo !== 1 ? "s" : ""} away)`}
             </div>
           </div>
         </div>
@@ -538,6 +590,7 @@ export function MissionCard({ m, idx=0 }: MissionCardProps) {
   const fileInputRef = useRef(null);
 
   // Check Google Fit connection for health_api quests
+  const fitPollRef = useRef<{ interval?: any; timeout?: any }>({});
   useEffect(() => {
     if (m.type !== "health_api" || !ctx?.authUser) return;
     supabase.from("google_fit_tokens").select("connected").eq("user_id", ctx.authUser.id).maybeSingle().then(({ data }: any) => {
@@ -545,14 +598,33 @@ export function MissionCard({ m, idx=0 }: MissionCardProps) {
     });
   }, [m.type, ctx?.authUser]);
 
+  // Always clean up any in-flight poll handles when this MissionCard unmounts.
+  useEffect(() => () => {
+    if (fitPollRef.current.interval) clearInterval(fitPollRef.current.interval);
+    if (fitPollRef.current.timeout) clearTimeout(fitPollRef.current.timeout);
+    fitPollRef.current = {};
+  }, []);
+
   const handleConnectGoogleFit = () => {
     if (!ctx?.authUser) return;
     window.open(`/api/google-fit/auth?user_id=${ctx.authUser.id}`, "_blank", "width=500,height=600");
+    if (fitPollRef.current.interval) clearInterval(fitPollRef.current.interval);
+    if (fitPollRef.current.timeout) clearTimeout(fitPollRef.current.timeout);
     const interval = setInterval(async () => {
       const { data } = await supabase.from("google_fit_tokens").select("connected").eq("user_id", ctx.authUser.id).maybeSingle();
-      if (data?.connected) { setFitConnected(true); clearInterval(interval); showToast("✅ Google Fit connected! Tap Sync to pull steps.", "success"); }
+      if (data?.connected) {
+        setFitConnected(true);
+        clearInterval(interval);
+        if (fitPollRef.current.timeout) clearTimeout(fitPollRef.current.timeout);
+        fitPollRef.current = {};
+        showToast("✅ Google Fit connected! Tap Sync to pull steps.", "success");
+      }
     }, 3000);
-    setTimeout(() => clearInterval(interval), 120000);
+    const timeout = setTimeout(() => {
+      clearInterval(interval);
+      fitPollRef.current = {};
+    }, 120000);
+    fitPollRef.current = { interval, timeout };
   };
 
   // Sync completion state from context
@@ -844,7 +916,7 @@ export function MissionCard({ m, idx=0 }: MissionCardProps) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORY CARD
 // ═══════════════════════════════════════════════════════════════════════════════
-function StoryCard({ story }: StoryCardProps) {
+function StoryCard({ story, onOpenStory }: StoryCardProps & { onOpenStory?: () => void }) {
   const ctx = useContext(AppContext);
   const [investigating, setInvestigating] = useState(false);
 
@@ -891,47 +963,23 @@ function StoryCard({ story }: StoryCardProps) {
 
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", position:"relative" }}>
         <span style={{ fontSize:11, color:TM }}>{story.clues}/{story.total} clues found</span>
-        <button onClick={handleInvestigate} disabled={investigating || story.clues >= story.total} style={{
-          padding:"9px 18px", border:"none", borderRadius:12, fontSize:12, fontWeight:900, fontFamily:FONT,
-          background: investigating ? `${TM}30` : story.clues >= story.total ? `${TG}30` : `linear-gradient(135deg, ${T}, ${TG})`,
-          color: investigating ? TM : story.clues >= story.total ? TG : "#0D1117",
-          boxShadow: investigating || story.clues >= story.total ? "none" : `0 4px 16px ${T}40`,
-          cursor: investigating || story.clues >= story.total ? "default" : "pointer",
-        }}>
-          {investigating ? "🔍 Searching..." : story.clues >= story.total ? "✓ All Found" : "Investigate →"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// DEN PREVIEW
-// ═══════════════════════════════════════════════════════════════════════════════
-function DenPreview() {
-  const [bg, setBg] = useState("neon");
-  return (
-    <div className="card-entry" style={{ margin:"14px 16px 0", borderRadius:22, overflow:"hidden", border:`1.5px solid ${T}30`, boxShadow:`0 8px 28px rgba(0,0,0,0.3)` }}>
-      <div style={{ height:120, background:`linear-gradient(135deg, #061210, #0D1F1C)`, backgroundImage:`url(${bg === "neon" ? IMG.denNeon : IMG.denRooftop})`, backgroundSize:"cover", backgroundPosition:"center", position:"relative" }}>
-        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(13,17,23,0.92), rgba(13,17,23,0.2))" }} />
-        <div style={{ position:"absolute", top:12, left:14 }}>
-          <div style={{ fontSize:9, fontWeight:900, color:TG, letterSpacing:"0.8px", marginBottom:2 }}>YOUR DEN</div>
-          <div style={{ fontSize:18, fontWeight:900, color:TX }}>Dorm Room</div>
-        </div>
-      </div>
-      <div style={{ padding:"12px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", background:S1 }}>
         <div style={{ display:"flex", gap:6 }}>
-          {["neon","rooftop"].map((b: any) => (
-            <button key={b} onClick={() => setBg(b)} style={{
-              padding:"6px 12px", borderRadius:10, border:`1.5px solid ${bg===b ? T : BR}`,
-              background: bg===b ? `${T}18` : "none", color: bg===b ? T : TM, fontSize:11, fontWeight:800, fontFamily:FONT,
-              boxShadow: bg===b ? `0 2px 8px ${T}30` : "none",
-            }}>
-              {b === "neon" ? "🌙 Neon" : "🏙️ Rooftop"}
-            </button>
-          ))}
+          {onOpenStory && (
+            <button onClick={onOpenStory} style={{
+              padding:"9px 14px", border:`1px solid ${T}40`, borderRadius:12, fontSize:11, fontWeight:800, fontFamily:FONT,
+              background:"rgba(255,255,255,0.03)", color:T, cursor:"pointer",
+            }}>📖 Open</button>
+          )}
+          <button onClick={handleInvestigate} disabled={investigating || story.clues >= story.total} style={{
+            padding:"9px 18px", border:"none", borderRadius:12, fontSize:12, fontWeight:900, fontFamily:FONT,
+            background: investigating ? `${TM}30` : story.clues >= story.total ? `${TG}30` : `linear-gradient(135deg, ${T}, ${TG})`,
+            color: investigating ? TM : story.clues >= story.total ? TG : "#0D1117",
+            boxShadow: investigating || story.clues >= story.total ? "none" : `0 4px 16px ${T}40`,
+            cursor: investigating || story.clues >= story.total ? "default" : "pointer",
+          }}>
+            {investigating ? "🔍 Searching..." : story.clues >= story.total ? "✓ All Found" : "Investigate →"}
+          </button>
         </div>
-        <button style={{ padding:"9px 16px", background:`linear-gradient(135deg, ${T}, ${TG})`, border:"none", borderRadius:12, color:"#0D1117", fontSize:12, fontWeight:900, fontFamily:FONT, boxShadow:`0 4px 12px ${T}40` }}>Enter →</button>
       </div>
     </div>
   );
@@ -1211,10 +1259,30 @@ function StyleEventGallery({ event, onBack }: StyleEventGalleryProps) {
 export function HomeScreen() {
   const ctx = useContext(AppContext);
   const [tab, setTab] = useState("home");
-  const [wellbeing, setWellbeing] = useState(true);
+  // Wellbeing check-in shows at most once per calendar day per user
+  // (matching the "daily check-in" intent in the docs).
+  const [wellbeing, setWellbeing] = useState<boolean>(() => {
+    try {
+      const uid = (typeof window !== "undefined" && (window as any).__zr_auth_uid) || "anon";
+      const today = new Date().toISOString().slice(0, 10);
+      const key = `zr_wb_lastSeen_${uid}`;
+      const last = typeof window !== "undefined" ? window.localStorage.getItem(key) : null;
+      return last !== today;
+    } catch { return true; }
+  });
   const [alertDismissed, setAlertDismissed] = useState(false);
   const [styleTab, setStyleTab] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
+  const [showLeaderboards, setShowLeaderboards] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showStory, setShowStory] = useState(false);
+  // Onboarding shows once per user (keyed in localStorage).
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
+    try {
+      const uid = (typeof window !== "undefined" && (window as any).__zr_auth_uid) || "anon";
+      return shouldShowOnboarding(uid);
+    } catch { return false; }
+  });
 
   const user     = ctx?.sharedUser      || USER;
   const missions   = ctx?.sharedMissions   || MISSIONS;
@@ -1222,13 +1290,36 @@ export function HomeScreen() {
   const styleEvent = ctx?.sharedStyleEvent || STYLE_EVENT_LIVE;
   const notifs     = ctx?.playerNotifs     || [];
 
-  useEffect(() => {
-    document.body.style.overflow = wellbeing ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [wellbeing]);
+  // Stash auth uid in window for the wellbeing-day key (no React effect needed).
+  if (typeof window !== "undefined" && ctx?.authUser?.id) {
+    (window as any).__zr_auth_uid = ctx.authUser.id;
+  }
 
-  // ── 7-tap admin overlay (after all hooks) ──
+  // Re-evaluate onboarding gate when auth resolves (window.__zr_auth_uid is set lazily).
+  useEffect(() => {
+    if (ctx?.authUser?.id) setShowOnboarding(shouldShowOnboarding(ctx.authUser.id));
+  }, [ctx?.authUser?.id]);
+
+  useEffect(() => {
+    document.body.style.overflow = (wellbeing || showOnboarding) ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [wellbeing, showOnboarding]);
+
+  const dismissWellbeing = () => {
+    setWellbeing(false);
+    try {
+      const uid = ctx?.authUser?.id || "anon";
+      const today = new Date().toISOString().slice(0, 10);
+      window.localStorage.setItem(`zr_wb_lastSeen_${uid}`, today);
+    } catch {}
+  };
+
+  // ── Overlay screens take precedence in render order ──
   if (showAdmin) return <AdminRoot onExitAdmin={() => setShowAdmin(false)} />;
+  if (showOnboarding) return <Onboarding onComplete={() => setShowOnboarding(false)} />;
+  if (showLeaderboards) return <LeaderboardScreen onBack={() => setShowLeaderboards(false)} />;
+  if (showNotifications) return <NotificationsScreen onBack={() => setShowNotifications(false)} />;
+  if (showStory) return <StoryScreen onBack={() => setShowStory(false)} />;
 
   const shell = (children) => (
     <>
@@ -1239,7 +1330,7 @@ export function HomeScreen() {
 
       <div style={{ position:"relative", width:"100%", maxWidth:430, margin:"0 auto", minHeight:"100dvh", color:TX, fontFamily:FONT, overflowX:"hidden" }}>
         {wellbeing && <WellbeingOverlay onDone={async (moodScore, freeText, outreachRequested) => {
-          setWellbeing(false);
+          dismissWellbeing();
           if (moodScore != null && ctx?.authUser?.id) {
             try {
               await saveMoodEntry({ data: { userId: ctx.authUser.id, moodScore, freeText, outreachRequested } });
@@ -1266,7 +1357,12 @@ export function HomeScreen() {
 
   if (tab === "home") return shell(
     <div style={{ position:"relative", zIndex:1, height:"100dvh", overflowY:"auto", paddingBottom:90 }}>
-      <HudHeader user={user} onAdminAccess={() => setShowAdmin(true)} />
+      <HudHeader
+        user={user}
+        onAdminAccess={() => setShowAdmin(true)}
+        onLeaderboard={() => setShowLeaderboards(true)}
+        onNotifications={() => setShowNotifications(true)}
+      />
       <XpTrack user={user} />
 
       {/* ═══ HERO BANNER — Illustrated campus zone map ═══ */}
@@ -1510,7 +1606,7 @@ export function HomeScreen() {
 
       {/* ═══ STORY CARD ═══ */}
       <div style={{ padding:"14px 16px 0" }}>
-        <StoryCard story={STORY} />
+        <StoryCard story={STORY} onOpenStory={() => setShowStory(true)} />
       </div>
 
       {/* ═══ STYLE EVENT ═══ */}
