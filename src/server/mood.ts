@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /**
  * Salt for anonymising user IDs in `mood_entries`. SHA-256 of `userId` alone is
@@ -25,16 +26,28 @@ async function hashUserIdForMood(userId: string): Promise<string> {
 }
 
 export const saveMoodEntry = createServerFn({ method: "POST" })
-  .inputValidator((input: { userId: string; moodScore: number; freeText?: string | null; outreachRequested: boolean }) => input)
-  .handler(async ({ data }) => {
-    const anonUserHash = await hashUserIdForMood(data.userId);
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { moodScore: number; freeText?: string | null; outreachRequested: boolean }) => {
+    if (typeof input?.moodScore !== "number" || input.moodScore < 1 || input.moodScore > 5) {
+      throw new Error("Invalid mood score");
+    }
+    const freeText = typeof input.freeText === "string" ? input.freeText.slice(0, 2000) : null;
+    return {
+      moodScore: Math.round(input.moodScore),
+      freeText,
+      outreachRequested: !!input.outreachRequested,
+    };
+  })
+  .handler(async ({ data, context }) => {
+    // Use the JWT-verified user ID, never trust the client.
+    const anonUserHash = await hashUserIdForMood(context.userId);
 
     const crisisFlag = data.moodScore <= 2 && data.outreachRequested;
 
     const { error } = await supabaseAdmin.from("mood_entries").insert({
       anon_user_hash: anonUserHash,
       mood_score: data.moodScore,
-      free_text: data.freeText || null,
+      free_text: data.freeText,
       outreach_requested: data.outreachRequested,
       crisis_flag: crisisFlag,
     });
@@ -48,10 +61,12 @@ export const saveMoodEntry = createServerFn({ method: "POST" })
   });
 
 /**
- * Resolve the mood-anon hash for a given user. Used by the data-export and
- * admin outreach paths so they can query `mood_entries` by the same hash that
- * `saveMoodEntry` writes.
+ * Resolve the mood-anon hash for the *currently authenticated* user only.
+ * Used by the data-export path so it can query `mood_entries` by the same hash
+ * that `saveMoodEntry` writes. Never accepts a user ID from the client.
  */
 export const resolveMoodAnonHash = createServerFn({ method: "POST" })
-  .inputValidator((input: { userId: string }) => input)
-  .handler(async ({ data }) => ({ anonUserHash: await hashUserIdForMood(data.userId) }));
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => ({
+    anonUserHash: await hashUserIdForMood(context.userId),
+  }));
