@@ -519,12 +519,8 @@ function BarChart({ data }: any) {
 }
 
 // ─── ACCESS GATE ───────────────────────────────────────────────────────────────
-// Dev fallback credentials — only used if user_roles check fails or for quick testing
-const DEV_CREDS = [
-  { user:"admin@campus.ac.uk",      pass:"CE_ADMIN_2026",  role:"admin"      },
-  { user:"research@campus.ac.uk",   pass:"CE_RESEARCH",    role:"researcher" },
-  { user:"mod@campus.ac.uk",        pass:"CE_MOD_2026",    role:"moderator"  },
-];
+// Admin access is gated entirely by Supabase Auth + the `user_roles` table.
+// No client-side credential fallback exists.
 
 export function AdminRoot({ onExitAdmin }: any) {
   const [authed, setAuthed]   = useState(false);
