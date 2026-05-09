@@ -615,7 +615,7 @@ function AdminLogin({ onAuth, onCancel }: any) {
           </div>
 
           <div style={AA.loginFooter}>
-            Demo: admin@campus.ac.uk / CE_ADMIN_2026
+            Staff access only. Sign in with your campus credentials.
             {onCancel && (
               <button onClick={onCancel} style={{ display:"block", marginTop:8, background:"none", border:"none", color:C.dim, fontFamily:ADM_MONO, fontSize:10, cursor:"pointer", textDecoration:"underline", padding:0 }}>
                 ← Back to app
