@@ -549,25 +549,17 @@ function AdminLogin({ onAuth, onCancel }: any) {
     setLoading(true);
     setErr("");
     try {
-      // Try real Supabase Auth first
       const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
-      if (!error && data.user) {
-        const userId = data.user.id;
-        const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", userId);
-        const userRole = roles?.[0]?.role;
-        if (userRole && ["admin", "moderator", "researcher"].includes(userRole)) {
-          onAuth(userRole);
-          return;
-        }
+      if (error || !data.user) {
+        throw new Error("ACCESS DENIED — invalid credentials");
+      }
+      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id);
+      const userRole = roles?.[0]?.role;
+      if (!userRole || !["admin", "moderator", "researcher"].includes(userRole)) {
         await supabase.auth.signOut();
+        throw new Error("ACCESS DENIED — staff role required");
       }
-      // Fallback to dev credentials
-      const devMatch = DEV_CREDS.find((c: any) => c.user === email && c.pass === pass);
-      if (devMatch) {
-        onAuth(devMatch.role);
-        return;
-      }
-      throw new Error("ACCESS DENIED — invalid credentials");
+      onAuth(userRole);
     } catch (e: any) {
       setErr(e.message || "Authentication failed");
       setShake(true);
