@@ -52,11 +52,13 @@ export type Database = {
       clans: {
         Row: {
           aether_treasury: number
+          banner_emoji: string | null
           color: string
           cpr_score: number
           created_at: string
           description: string | null
           id: string
+          is_open: boolean
           last_leader_active_at: string | null
           leader_id: string | null
           max_members: number
@@ -65,16 +67,20 @@ export type Database = {
           rank: number | null
           tag: string
           total_members: number
+          treasury: number
           updated_at: string
+          weekly_xp: number
           zones_held: number
         }
         Insert: {
           aether_treasury?: number
+          banner_emoji?: string | null
           color?: string
           cpr_score?: number
           created_at?: string
           description?: string | null
           id?: string
+          is_open?: boolean
           last_leader_active_at?: string | null
           leader_id?: string | null
           max_members?: number
@@ -83,16 +89,20 @@ export type Database = {
           rank?: number | null
           tag: string
           total_members?: number
+          treasury?: number
           updated_at?: string
+          weekly_xp?: number
           zones_held?: number
         }
         Update: {
           aether_treasury?: number
+          banner_emoji?: string | null
           color?: string
           cpr_score?: number
           created_at?: string
           description?: string | null
           id?: string
+          is_open?: boolean
           last_leader_active_at?: string | null
           leader_id?: string | null
           max_members?: number
@@ -101,7 +111,9 @@ export type Database = {
           rank?: number | null
           tag?: string
           total_members?: number
+          treasury?: number
           updated_at?: string
+          weekly_xp?: number
           zones_held?: number
         }
         Relationships: []
@@ -386,6 +398,7 @@ export type Database = {
       }
       notifications: {
         Row: {
+          action_url: string | null
           created_at: string
           id: string
           message: string
@@ -394,6 +407,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          action_url?: string | null
           created_at?: string
           id?: string
           message: string
@@ -402,6 +416,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          action_url?: string | null
           created_at?: string
           id?: string
           message?: string
@@ -416,17 +431,21 @@ export type Database = {
           aether: number
           avatar_config: Json | null
           avatar_data_url: string | null
+          clan_id: string | null
           combat_rank: string
           course: string | null
           created_at: string
           display_name: string
           id: string
+          influence_points: number
           influence_rank: string
           level: number
+          missions_completed: number
           roll_number: string | null
           shards: number
           shields: number
           specialisation: string | null
+          story_clues: number
           streak: number
           updated_at: string
           user_id: string
@@ -438,17 +457,21 @@ export type Database = {
           aether?: number
           avatar_config?: Json | null
           avatar_data_url?: string | null
+          clan_id?: string | null
           combat_rank?: string
           course?: string | null
           created_at?: string
           display_name?: string
           id?: string
+          influence_points?: number
           influence_rank?: string
           level?: number
+          missions_completed?: number
           roll_number?: string | null
           shards?: number
           shields?: number
           specialisation?: string | null
+          story_clues?: number
           streak?: number
           updated_at?: string
           user_id: string
@@ -460,17 +483,21 @@ export type Database = {
           aether?: number
           avatar_config?: Json | null
           avatar_data_url?: string | null
+          clan_id?: string | null
           combat_rank?: string
           course?: string | null
           created_at?: string
           display_name?: string
           id?: string
+          influence_points?: number
           influence_rank?: string
           level?: number
+          missions_completed?: number
           roll_number?: string | null
           shards?: number
           shields?: number
           specialisation?: string | null
+          story_clues?: number
           streak?: number
           updated_at?: string
           user_id?: string
@@ -485,6 +512,7 @@ export type Database = {
           id: string
           proof_url: string | null
           quest_progress_id: string
+          reject_reason: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           status: string
@@ -494,6 +522,7 @@ export type Database = {
           id?: string
           proof_url?: string | null
           quest_progress_id: string
+          reject_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
@@ -503,6 +532,7 @@ export type Database = {
           id?: string
           proof_url?: string | null
           quest_progress_id?: string
+          reject_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
@@ -720,6 +750,51 @@ export type Database = {
         }
         Relationships: []
       }
+      story_chapters: {
+        Row: {
+          accent_color: string | null
+          art_emoji: string | null
+          chapter_num: number
+          clues: Json | null
+          created_at: string
+          id: string
+          status: string | null
+          subtitle: string | null
+          summary: string | null
+          title: string
+          total_clues: number | null
+          updated_at: string
+        }
+        Insert: {
+          accent_color?: string | null
+          art_emoji?: string | null
+          chapter_num: number
+          clues?: Json | null
+          created_at?: string
+          id?: string
+          status?: string | null
+          subtitle?: string | null
+          summary?: string | null
+          title: string
+          total_clues?: number | null
+          updated_at?: string
+        }
+        Update: {
+          accent_color?: string | null
+          art_emoji?: string | null
+          chapter_num?: number
+          clues?: Json | null
+          created_at?: string
+          id?: string
+          status?: string | null
+          subtitle?: string | null
+          summary?: string | null
+          title?: string
+          total_clues?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       story_progress: {
         Row: {
           chapter_id: string
@@ -777,6 +852,8 @@ export type Database = {
           description: string | null
           design_png_url: string | null
           id: string
+          is_winner: boolean
+          status: string
           style_event_id: string
           submitted_at: string
           title: string
@@ -788,6 +865,8 @@ export type Database = {
           description?: string | null
           design_png_url?: string | null
           id?: string
+          is_winner?: boolean
+          status?: string
           style_event_id: string
           submitted_at?: string
           title: string
@@ -799,6 +878,8 @@ export type Database = {
           description?: string | null
           design_png_url?: string | null
           id?: string
+          is_winner?: boolean
+          status?: string
           style_event_id?: string
           submitted_at?: string
           title?: string
@@ -818,24 +899,36 @@ export type Database = {
       treasury_log: {
         Row: {
           action: string
+          amount: number | null
           amount_ae: number
           clan_id: string
           created_at: string
+          created_by: string | null
+          description: string | null
           id: string
+          type: string | null
         }
         Insert: {
           action: string
+          amount?: number | null
           amount_ae?: number
           clan_id: string
           created_at?: string
+          created_by?: string | null
+          description?: string | null
           id?: string
+          type?: string | null
         }
         Update: {
           action?: string
+          amount?: number | null
           amount_ae?: number
           clan_id?: string
           created_at?: string
+          created_by?: string | null
+          description?: string | null
           id?: string
+          type?: string | null
         }
         Relationships: [
           {
