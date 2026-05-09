@@ -507,7 +507,7 @@ function LiveEventsStrip({ events, onViewAll }: any) {
             <div style={{ fontSize:11, color:TM }}>Ends {ev.endDate} · {ev.participants}/{ev.maxParticipants || "∞"} joined</div>
           </div>
           <div style={{ textAlign:"right", flexShrink:0 }}>
-            <div style={{ fontSize:13, fontWeight:900, color:ev.color, marginBottom:6 }}>{ev.reward.split(" + ")[0]}</div>
+            <div style={{ fontSize:13, fontWeight:900, color:ev.color, marginBottom:6 }}>{(ev.reward || "").split(" + ")[0]}</div>
             <button style={{ padding:"8px 14px", background:`linear-gradient(135deg, ${ev.color}, ${ev.color}CC)`, border:"none", borderRadius:12, color:"#0D1117", fontSize:12, fontWeight:900, fontFamily:FONT, boxShadow:`0 4px 12px ${ev.color}40` }}>Join →</button>
           </div>
         </div>
@@ -1593,8 +1593,8 @@ export function HomeScreen() {
                 </div>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                    <span style={{ fontSize:14, fontWeight:900, color:TY }}>🏆 {ev.reward.split(" + ")[0]}</span>
-                    {ev.reward.split(" + ")[1] && <span style={{ fontSize:11, color:TM }}>+ {ev.reward.split(" + ")[1]}</span>}
+                    <span style={{ fontSize:14, fontWeight:900, color:TY }}>🏆 {(ev.reward || "").split(" + ")[0]}</span>
+                    {(ev.reward || "").split(" + ")[1] && <span style={{ fontSize:11, color:TM }}>+ {(ev.reward || "").split(" + ")[1]}</span>}
                   </div>
                   <button onClick={() => { if (ctx?.joinEvent) ctx.joinEvent(ev.id); showToast(`⚡ Joined "${ev.title}"!`, "success"); }} disabled={ctx?.joinedEvents?.has(ev.id)} style={{ padding:"9px 20px", background: ctx?.joinedEvents?.has(ev.id) ? `${TG}30` : `linear-gradient(135deg, ${ev.color}, ${ev.color}CC)`, border:"none", borderRadius:14, color: ctx?.joinedEvents?.has(ev.id) ? TG : "#0D1117", fontSize:13, fontWeight:900, fontFamily:FONT, boxShadow: ctx?.joinedEvents?.has(ev.id) ? "none" : `0 4px 16px ${ev.color}50` }}>{ctx?.joinedEvents?.has(ev.id) ? "✓ Joined" : "Join →"}</button>
                 </div>
