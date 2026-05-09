@@ -507,7 +507,7 @@ function LiveEventsStrip({ events, onViewAll }: any) {
             <div style={{ fontSize:11, color:TM }}>Ends {ev.endDate} · {ev.participants}/{ev.maxParticipants || "∞"} joined</div>
           </div>
           <div style={{ textAlign:"right", flexShrink:0 }}>
-            <div style={{ fontSize:13, fontWeight:900, color:ev.color, marginBottom:6 }}>{ev.reward.split(" + ")[0]}</div>
+            <div style={{ fontSize:13, fontWeight:900, color:ev.color, marginBottom:6 }}>{(ev.reward || "").split(" + ")[0]}</div>
             <button style={{ padding:"8px 14px", background:`linear-gradient(135deg, ${ev.color}, ${ev.color}CC)`, border:"none", borderRadius:12, color:"#0D1117", fontSize:12, fontWeight:900, fontFamily:FONT, boxShadow:`0 4px 12px ${ev.color}40` }}>Join →</button>
           </div>
         </div>
