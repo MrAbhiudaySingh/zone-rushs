@@ -1085,6 +1085,9 @@ function blitLayer(ctx, img, sx, sy, fs, cs, type, oversize){
   if(off.width!==cs||off.height!==cs){off.width=cs;off.height=cs;}
   offx.clearRect(0,0,cs,cs);
   offx.imageSmoothingEnabled=false;
+  // Static fallback (single 64x64 icon, no per-direction frames): always
+  // sample from (0,0) so the icon is visible across every animation frame.
+  if(img._static){ sx = 0; sy = 0; }
 
   if(type==='weapon' && oversize){
     // Oversize weapon: frame is 192px, needs to be drawn at offset
