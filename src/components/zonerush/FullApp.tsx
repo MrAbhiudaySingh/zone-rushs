@@ -265,11 +265,37 @@ export default function ZoneRushApp() {
         return row ? { ...m, progress: row.current_value, _progressId: row.id } : { ...m, progress: 0, _progressId: undefined };
       }));
 
-      // Fetch user inventory
+      // Fetch user inventory (DB-backed UUID items) + locally-persisted event QR rewards (string sprite ids)
       const { data: inventory } = await supabase.from("user_inventory").select("item_id").eq("user_id", authUser.id);
-      if (inventory?.length) {
-        const ownedIds = new Set(inventory.map((i: any) => i.item_id));
-        setSharedShopItems(items => items.map((it: any) => ({ ...it, owned: ownedIds.has(it.id) })));
+      let redeemedEventIds: string[] = [];
+      try {
+        const raw = localStorage.getItem(`zr_redeemed_${authUser.id}`);
+        if (raw) redeemedEventIds = JSON.parse(raw) || [];
+      } catch {}
+      const ownedIds = new Set<string>([
+        ...(inventory || []).map((i: any) => i.item_id),
+        ...redeemedEventIds,
+      ]);
+      if (ownedIds.size) {
+        setSharedShopItems(items => {
+          const present = new Set(items.map((i: any) => i.id));
+          const next = items.map((it: any) => ownedIds.has(it.id) ? { ...it, owned: true } : it);
+          // Append event-only catalog items the user redeemed but that aren't in the shop list
+          for (const id of redeemedEventIds) {
+            if (present.has(id)) continue;
+            const c: any = ITEM_CATALOG.find((it: any) => it.id === id);
+            if (!c) continue;
+            next.push({
+              id, name: c.name || id, cat: c.cat || "cosmetic",
+              price: 0, priceAE: 0, rarity: c.rarity || "rare",
+              img: c.img, icon: c.icon || "🎁",
+              avatarSlot: c.avatarSlot, weaponType: c.weaponType,
+              owned: true, featured: false, type: "general",
+              stock: null, sold: 0, active: true, soulBound: true, eventOnly: true,
+            });
+          }
+          return next;
+        });
       }
 
       // Fetch user's event participations
