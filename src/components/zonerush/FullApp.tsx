@@ -5,7 +5,7 @@ import type { ZRNotif } from "./types";
 import { AppContext } from "./AppContext";
 import { showToast, ToastContainer } from "./toast";
 import {
-  USER, MISSIONS, LIVE_EVENTS, SHOP_ITEMS, INIT_SHOP_ITEMS,
+  USER, MISSIONS, LIVE_EVENTS, SHOP_ITEMS, INIT_SHOP_ITEMS, ITEM_CATALOG,
   PROOF_SUBMISSIONS, COMMUNITY_ITEMS, STYLE_SUBMISSIONS_INIT,
   STYLE_EVENT_LIVE, CL_USER, ENEMY_CLANS, SUGGESTED_CLANS,
   GAME_RULES,
