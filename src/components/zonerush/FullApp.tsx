@@ -118,10 +118,10 @@ export default function ZoneRushApp() {
         const { data: dbEvents } = await supabase.from("events").select("*").eq("status", "active");
         if (dbEvents?.length) {
           setSharedEvents(dbEvents.map((e: any) => ({
-            id: e.id, title: e.title, type: e.type, status: e.status,
+            id: e.id, title: e.title, type: e.type || "event", status: e.status,
             desc: e.description, endDate: (e.date_end || e.ends_at) ? new Date(e.date_end || e.ends_at).toLocaleDateString("en-GB", { month:"short", day:"numeric" }) : "",
             reward: e.reward || (e.reward_ae ? `${e.reward_ae} AE` : "—"), participants: 0, maxParticipants: e.max_participants ?? null,
-            eligibility: e.eligibility || "", color: e.color || "#0E7C66",
+            eligibility: e.eligibility || "", color: e.color || "#0E7C66", qr_enabled: e.qr_enabled,
           })));
           // Fetch participant counts
           for (const e of dbEvents) {

@@ -185,7 +185,7 @@ export function QuestScreen({ missions, events, styleEvent, onStyleEvent }: Ques
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                     <div>
                       <div style={{ fontSize:14, fontWeight:700, color:TX, marginBottom:3 }}>{ev.title}</div>
-                      <span style={{ fontSize:10, fontWeight:700, color:ev.color, background:`${ev.color}15`, borderRadius:99, padding:"2px 8px" }}>{ev.type.toUpperCase()}</span>
+                      <span style={{ fontSize:10, fontWeight:700, color:ev.color, background:`${ev.color}15`, borderRadius:99, padding:"2px 8px" }}>{(ev.type || "event").toUpperCase()}</span>
                     </div>
                     <div style={{ textAlign:"right" }}>
                       <div style={{ fontSize:12, fontWeight:800, color:ev.color }}>{ev.reward?.split(" + ")?.[0]}</div>
