@@ -346,7 +346,9 @@ function ShopItemCard({ item, owned, onBuy, featured, forceOwned }: any) {
       <div style={{ height:3, background:rc }} />
       <div style={{ padding:"14px 12px 12px", display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
         <div style={{ width:56, height:56, background:`${rc}10`, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
-          {spriteImg ? (
+          {item.img ? (
+            <img src={item.img} alt={item.name} style={{ width:"100%", height:"100%", objectFit:"contain", imageRendering:"pixelated" }} />
+          ) : spriteImg ? (
             <SpritePreview src={spriteImg} size={56} />
           ) : (
             <span style={{ fontSize:28 }}>{item.icon || ITEM_ICONS[item.cat] || "📦"}</span>
