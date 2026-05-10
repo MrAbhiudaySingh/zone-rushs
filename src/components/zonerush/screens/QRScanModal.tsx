@@ -105,18 +105,25 @@ export function QRScanModal({ event, onClose }: QRScanModalProps) {
           if (exists) {
             return items.map((i: any) => i.id === itemId ? { ...i, owned: true } : i);
           }
-          // Item came from the event-only catalog (not yet in sharedShopItems) — append it.
+          // Item came from the event-only catalog (not yet in sharedShopItems) — append it
+          // with its full catalog metadata (img/icon/rarity) so the inventory tile and
+          // avatar studio see the proper sprite instead of a placeholder.
+          const catalogEntry = ITEM_CATALOG.find((it: any) => it.id === itemId) || {};
           return [...items, {
             id: itemId,
-            name: r.reward_label || itemId,
-            cat: "cosmetic",
+            name: catalogEntry.name || r.reward_label || itemId,
+            cat: catalogEntry.cat || "cosmetic",
             price: 0, priceAE: 0,
-            rarity: "rare",
-            icon: "🎁",
+            rarity: catalogEntry.rarity || "rare",
+            img: catalogEntry.img,
+            icon: catalogEntry.icon || "🎁",
+            avatarSlot: catalogEntry.avatarSlot,
+            weaponType: catalogEntry.weaponType,
             owned: true,
             featured: false,
             type: "general",
             stock: null, sold: 0, active: true, soulBound: true,
+            eventOnly: true,
           }];
         });
       }
