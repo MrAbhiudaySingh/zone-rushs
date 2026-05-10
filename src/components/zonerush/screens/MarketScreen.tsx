@@ -206,7 +206,13 @@ export function MarketScreen({ user }: MarketScreenProps) {
                     }}>
                       <div style={{ height:3, background: isListed ? TA : RARITY_COLOR[item.rarity] }} />
                       <div style={{ padding:"14px 12px 12px", display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
-                        <div style={{ fontSize:32 }}>{item.icon}</div>
+                        <div style={{ width:56, height:56, background:`${RARITY_COLOR[item.rarity]}10`, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+                          {item.img ? (
+                            <img src={item.img} alt={item.name} style={{ width:"100%", height:"100%", objectFit:"contain", imageRendering:"pixelated" }} />
+                          ) : (
+                            <span style={{ fontSize:28 }}>{item.icon || ITEM_ICONS[item.cat] || "📦"}</span>
+                          )}
+                        </div>
                         <div style={{ fontSize:12, fontWeight:700, color:TX, textAlign:"center", lineHeight:1.3 }}>{item.name}</div>
                         <div style={{ fontSize:10, color:RARITY_COLOR[item.rarity], fontWeight:700 }}>{item.rarity} · {item.cat}</div>
                         <div style={{ padding:"5px 12px", background:`${TG}15`, border:`1px solid ${TG}40`, borderRadius:99, fontSize:11, fontWeight:700, color:TG }}>✓ Owned</div>
