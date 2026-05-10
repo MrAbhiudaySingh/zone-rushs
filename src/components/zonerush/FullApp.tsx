@@ -5,7 +5,7 @@ import type { ZRNotif } from "./types";
 import { AppContext } from "./AppContext";
 import { showToast, ToastContainer } from "./toast";
 import {
-  USER, MISSIONS, LIVE_EVENTS, SHOP_ITEMS, INIT_SHOP_ITEMS,
+  USER, MISSIONS, LIVE_EVENTS, SHOP_ITEMS, INIT_SHOP_ITEMS, ITEM_CATALOG,
   PROOF_SUBMISSIONS, COMMUNITY_ITEMS, STYLE_SUBMISSIONS_INIT,
   STYLE_EVENT_LIVE, CL_USER, ENEMY_CLANS, SUGGESTED_CLANS,
   GAME_RULES,
@@ -265,11 +265,58 @@ export default function ZoneRushApp() {
         return row ? { ...m, progress: row.current_value, _progressId: row.id } : { ...m, progress: 0, _progressId: undefined };
       }));
 
-      // Fetch user inventory
+      // Backfill local redeemed list from DB so users recover items across devices/reinstalls.
+      try {
+        const { data: redemptions } = await supabase
+          .from("event_qr_redemptions").select("qr_code_id").eq("user_id", authUser.id);
+        const qrIds = (redemptions || []).map((r: any) => r.qr_code_id).filter(Boolean);
+        if (qrIds.length) {
+          const { data: qrs } = await supabase
+            .from("event_qr_codes").select("id, reward_type, reward_value_text").in("id", qrIds);
+          const dbIds = (qrs || [])
+            .filter((q: any) => ["avatar_item","consumable"].includes(q.reward_type) && q.reward_value_text)
+            .map((q: any) => q.reward_value_text);
+          if (dbIds.length) {
+            const key = `zr_redeemed_${authUser.id}`;
+            let list: string[] = [];
+            try { list = JSON.parse(localStorage.getItem(key) || "[]") || []; } catch {}
+            const merged = Array.from(new Set([...list, ...dbIds]));
+            localStorage.setItem(key, JSON.stringify(merged));
+          }
+        }
+      } catch (e) { console.warn("redemption backfill failed", e); }
+
+      // Fetch user inventory (DB-backed UUID items) + locally-persisted event QR rewards (string sprite ids)
       const { data: inventory } = await supabase.from("user_inventory").select("item_id").eq("user_id", authUser.id);
-      if (inventory?.length) {
-        const ownedIds = new Set(inventory.map((i: any) => i.item_id));
-        setSharedShopItems(items => items.map((it: any) => ({ ...it, owned: ownedIds.has(it.id) })));
+      let redeemedEventIds: string[] = [];
+      try {
+        const raw = localStorage.getItem(`zr_redeemed_${authUser.id}`);
+        if (raw) redeemedEventIds = JSON.parse(raw) || [];
+      } catch {}
+      const ownedIds = new Set<string>([
+        ...(inventory || []).map((i: any) => i.item_id),
+        ...redeemedEventIds,
+      ]);
+      if (ownedIds.size) {
+        setSharedShopItems(items => {
+          const present = new Set(items.map((i: any) => i.id));
+          const next = items.map((it: any) => ownedIds.has(it.id) ? { ...it, owned: true } : it);
+          // Append event-only catalog items the user redeemed but that aren't in the shop list
+          for (const id of redeemedEventIds) {
+            if (present.has(id)) continue;
+            const c: any = ITEM_CATALOG.find((it: any) => it.id === id);
+            if (!c) continue;
+            next.push({
+              id, name: c.name || id, cat: c.cat || "cosmetic",
+              price: 0, priceAE: 0, rarity: c.rarity || "rare",
+              img: c.img, icon: c.icon || "🎁",
+              avatarSlot: c.avatarSlot, weaponType: c.weaponType,
+              owned: true, featured: false, type: "general",
+              stock: null, sold: 0, active: true, soulBound: true, eventOnly: true,
+            });
+          }
+          return next;
+        });
       }
 
       // Fetch user's event participations

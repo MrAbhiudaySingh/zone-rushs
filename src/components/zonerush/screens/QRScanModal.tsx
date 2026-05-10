@@ -98,6 +98,19 @@ export function QRScanModal({ event, onClose }: QRScanModalProps) {
       }
       // For item rewards, mark the item as owned so it shows up in the
       // Inventory tab AND in the Avatar Studio's owned-items list.
+      if ((r.reward_type === "avatar_item" || r.reward_type === "consumable") && r.reward_value_text) {
+        // Persist redemption locally so it survives reloads (DB user_inventory only
+        // accepts uuid item_ids; event sprite items use string ids and are skipped server-side).
+        try {
+          const key = `zr_redeemed_${ctx.authUser.id}`;
+          const raw = localStorage.getItem(key);
+          const list: string[] = raw ? JSON.parse(raw) : [];
+          if (!list.includes(r.reward_value_text)) {
+            list.push(r.reward_value_text);
+            localStorage.setItem(key, JSON.stringify(list));
+          }
+        } catch {}
+      }
       if ((r.reward_type === "avatar_item" || r.reward_type === "consumable") && r.reward_value_text && ctx?.setSharedShopItems) {
         ctx.setSharedShopItems((items: any[]) => {
           const itemId = r.reward_value_text;
