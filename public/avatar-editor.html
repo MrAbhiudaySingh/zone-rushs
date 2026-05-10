@@ -983,7 +983,23 @@ function getImg(path){
   // When an async-loaded event sheet finishes downloading, retrigger the
   // current frame so the new layer becomes visible without a manual click.
   img.onload  = () => { try { renderFrame(frameIdx); } catch(_) {} };
-  img.onerror = () => { imgCache[path] = null; };
+  img.onerror = () => {
+    // Fallback: event item without a full LPC sheet — use the static 64x64
+    // inventory icon so something visible appears when equipped. We mark the
+    // image `_static` so blitLayer ignores sx/sy and draws frame 0 every time.
+    if(path.startsWith('event/')){
+      // path looks like 'event/hat_celestial/idle.png' → id = 'hat_celestial'
+      const id = path.slice('event/'.length).split('/')[0];
+      const fallback = new Image();
+      fallback._static = true;
+      fallback.onload  = () => { try { renderFrame(frameIdx); } catch(_) {} };
+      fallback.onerror = () => { imgCache[path] = null; };
+      fallback.src = '/sprites/items/' + id + '.png';
+      imgCache[path] = fallback;
+    } else {
+      imgCache[path] = null;
+    }
+  };
   img.src = src;
   imgCache[path] = img;
   return img;
