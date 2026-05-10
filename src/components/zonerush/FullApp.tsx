@@ -265,6 +265,26 @@ export default function ZoneRushApp() {
         return row ? { ...m, progress: row.current_value, _progressId: row.id } : { ...m, progress: 0, _progressId: undefined };
       }));
 
+      // Backfill local redeemed list from DB so users recover items across devices/reinstalls.
+      try {
+        const { data: redemptions } = await supabase
+          .from("event_qr_redemptions")
+          .select("qr_code_id, event_qr_codes!inner(reward_type, reward_value_text)")
+          .eq("user_id", authUser.id);
+        if (redemptions?.length) {
+          const dbIds = redemptions
+            .filter((r: any) => ["avatar_item","consumable"].includes(r.event_qr_codes?.reward_type) && r.event_qr_codes?.reward_value_text)
+            .map((r: any) => r.event_qr_codes.reward_value_text);
+          if (dbIds.length) {
+            const key = `zr_redeemed_${authUser.id}`;
+            let list: string[] = [];
+            try { list = JSON.parse(localStorage.getItem(key) || "[]") || []; } catch {}
+            const merged = Array.from(new Set([...list, ...dbIds]));
+            localStorage.setItem(key, JSON.stringify(merged));
+          }
+        }
+      } catch (e) { console.warn("redemption backfill failed", e); }
+
       // Fetch user inventory (DB-backed UUID items) + locally-persisted event QR rewards (string sprite ids)
       const { data: inventory } = await supabase.from("user_inventory").select("item_id").eq("user_id", authUser.id);
       let redeemedEventIds: string[] = [];
