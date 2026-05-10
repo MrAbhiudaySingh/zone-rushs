@@ -137,6 +137,7 @@ input[type=range]{accent-color:var(--accent);height:4px}
   <div class="sec"><div class="st">Hat / Helm</div><div class="og" id="hat-og"></div></div>
   <div class="sec"><div class="st">Weapon</div><div class="og" id="weapon-og"></div></div>
   <div class="sec"><div class="st">Shield</div><div class="og" id="shield-og"></div></div>
+  <div class="sec"><div class="st">Cape</div><div class="og" id="cape-og"></div></div>
   <div class="sec"><div class="st">Cloth Color</div><div class="sr" id="cloth-sw"></div></div>
   <div class="sec"><div class="st">Background</div><div class="scg" id="scn"></div></div>
 </div>
@@ -890,9 +891,16 @@ const FEET_OPTS = [
 ];
 
 const HAT_OPTS = [
-  {id:'none',   label:'NONE',  icon:'—', path:null},
-  {id:'helmet', label:'HELM',  icon:'⛑',path:'hat/helmet/bascinet/adult/{a}.png'},
-  {id:'wizard', label:'WIZRD', icon:'🧙',path:'hat/magic/wizard/base/adult/{a}.png'},
+  {id:'none',      label:'NONE',  icon:'—', path:null},
+  {id:'helmet',    label:'HELM',  icon:'⛑',path:'hat/helmet/bascinet/adult/{a}.png'},
+  {id:'wizard',    label:'WIZRD', icon:'🧙',path:'hat/magic/wizard/base/adult/{a}.png'},
+  // Event-only cosmetics — unlocked when redeemed via event QR codes (shopId
+  // matches the item_id stored in user_inventory). Sheets live under
+  // /sprites/items/sheets/<id>/ and are loaded via the `event/` path prefix.
+  {id:'celestial', label:'CELST', icon:'🌙',path:'event/hat_celestial/{a}.png', shopId:'hat_celestial'},
+  {id:'tricorne',  label:'TRIC',  icon:'🎩',path:'event/hat_tricorne/{a}.png',  shopId:'hat_tricorne'},
+  {id:'santa',     label:'SANTA', icon:'🎅',path:'event/hat_santa/{a}.png',     shopId:'hat_santa'},
+  {id:'elf',       label:'ELF',   icon:'🧝',path:'event/hat_elf/{a}.png',       shopId:'hat_elf'},
 ];
 
 // WEAPONS - special: oversize frames for slash/thrust on some weapons
@@ -906,12 +914,20 @@ const WEAPON_OPTS = [
   {id:'spear',    label:'SPEAR',  icon:'🏹', path:'weapon/spear/{a}.png',     oversize:[], shopId:'lpc_spear'},
   {id:'bow',      label:'BOW',    icon:'🏹', path:'weapon/bow/{a}.png',       oversize:[], shopId:'lpc_bow'},
   {id:'staff',    label:'STAFF',  icon:'🪄', path:'weapon/staff/{a}.png',     oversize:[], shopId:'lpc_staff'},
+  // Event-only weapon — unlocked via QR redemption
+  {id:'scythe',   label:'SCYTH',  icon:'🪦', path:'event/weap_scythe/{a}.png', oversize:['slash'], shopId:'weap_scythe'},
 ];
 
 // SHIELDS
 const SHIELD_OPTS = [
   {id:'none',  label:'NONE',  icon:'—', path:null},
   {id:'round', label:'ROUND', icon:'🛡',path:'shield/round/{a}.png', shopId:'lpc_shield_round'},
+];
+
+// CAPES — new layer. Drawn behind the body. Unlocked via shop or event QR.
+const CAPE_OPTS = [
+  {id:'none',  label:'NONE',  icon:'—',  path:null},
+  {id:'white', label:'WHITE', icon:'🦸', path:'event/cape_white/{a}.png', shopId:'cape_white'},
 ];
 
 const SCENES = [
@@ -936,6 +952,7 @@ const S = {
   arms:ARMS_OPTS[0],
   torso:TORSO_OPTS[1], legs:LEGS_OPTS[1], feet:FEET_OPTS[1], hat:HAT_OPTS[0],
   weapon:WEAPON_OPTS[0], shield:SHIELD_OPTS[0],
+  cape:CAPE_OPTS[0],
   clothColor:CLOTH_SW[5],
   anim:'idle', dir:2, scene:SCENES[0], speed:8, scale:3,
 };
@@ -949,9 +966,27 @@ const imgCache={};
 function getImg(path){
   if(!path) return null;
   if(imgCache[path]!==undefined) return imgCache[path];
-  const src=SPRITES[path];
-  if(!src){imgCache[path]=null;return null;}
-  const img=new Image(); img.src=src; imgCache[path]=img; return img;
+
+  // First, look in the inlined SPRITES dict (base64 sheets bundled at build time).
+  let src = SPRITES[path];
+
+  // Fallback: if the path begins with `event/` it points to an event-only
+  // cosmetic whose sheet wasn't inlined. Load it from /sprites/items/sheets/
+  // — the public URL is constructed by stripping the `event/` prefix.
+  if(!src && path.startsWith('event/')){
+    src = '/sprites/items/sheets/' + path.slice('event/'.length);
+  }
+
+  if(!src){ imgCache[path]=null; return null; }
+
+  const img = new Image();
+  // When an async-loaded event sheet finishes downloading, retrigger the
+  // current frame so the new layer becomes visible without a manual click.
+  img.onload  = () => { try { renderFrame(frameIdx); } catch(_) {} };
+  img.onerror = () => { imgCache[path] = null; };
+  img.src = src;
+  imgCache[path] = img;
+  return img;
 }
 
 // ─────────────────────────────────────────
@@ -984,6 +1019,11 @@ function rp(template, animFile){
 function getLayers(animFile){
   const L=[];
   const A=ANIMS[S.anim];
+
+  // Cape — rendered first so it sits behind the body (player's perspective).
+  // For directions where the cape would be in front (down-facing), the
+  // sheet's per-direction frames already account for that.
+  if(S.cape && S.cape.path) L.push({path:rp(S.cape.path,animFile), type:'plain'});
 
   // Body & head (skin-tinted)
   L.push({path:`body/bodies/${S.sex}/${animFile}.png`,       type:'skin'});
@@ -1189,6 +1229,7 @@ function buildAll(){
   buildOg('hat-og',HAT_OPTS,'hat');
   buildOg('weapon-og',WEAPON_OPTS,'weapon');
   buildOg('shield-og',SHIELD_OPTS,'shield');
+  buildOg('cape-og',CAPE_OPTS,'cape');
   buildSw('cloth-sw',CLOTH_SW,'clothColor');
   buildAnims(); buildDir(); buildScenes();
 }
@@ -1221,6 +1262,7 @@ function randomize(){
   const oh=ownedOnly(HAT_OPTS); S.hat=pick(oh.length?oh:[HAT_OPTS[0]]);
   const ow=ownedOnly(WEAPON_OPTS.filter(w=>w.id!=='none')); S.weapon=pick(ow.length?ow:[WEAPON_OPTS[0]]);
   const os=ownedOnly(SHIELD_OPTS); S.shield=pick(os.length?os:[SHIELD_OPTS[0]]);
+  const oc=ownedOnly(CAPE_OPTS); S.cape=pick(oc.length?oc:[CAPE_OPTS[0]]);
   S.clothColor=pick(CLOTH_SW);
   S.anim      =pick(Object.keys(ANIMS));
   S.scene     =pick(SCENES);
