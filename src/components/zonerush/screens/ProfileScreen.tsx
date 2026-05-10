@@ -21,7 +21,27 @@ export function ProfileScreen({ user, onAdminAccess }: any) {
   const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const iframeRef = useRef(null);
   const [showAvatarEditor, setShowAvatarEditor] = useState(false);
-  const [avatarDataUrl, setAvatarDataUrl] = useState(null);
+  // Persist avatar across tab changes / reloads / logins via localStorage.
+  // Keyed by user id so different accounts on the same device don't collide.
+  const avatarStorageKey = `zr_avatar_${ctx?.authUser?.id || "guest"}`;
+  const [avatarDataUrl, _setAvatarDataUrl] = useState<string | null>(() => {
+    try { return localStorage.getItem(avatarStorageKey); } catch { return null; }
+  });
+  const setAvatarDataUrl = (url: string | null) => {
+    _setAvatarDataUrl(url);
+    try {
+      if (url) localStorage.setItem(avatarStorageKey, url);
+      else localStorage.removeItem(avatarStorageKey);
+    } catch {}
+  };
+  // Re-hydrate when the user id becomes available (login completes after mount).
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem(avatarStorageKey);
+      if (v && v !== avatarDataUrl) _setAvatarDataUrl(v);
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ctx?.authUser?.id]);
   const handleAdminTap = () => {
     tapRef.current += 1;
     if (tapTimer.current) clearTimeout(tapTimer.current);

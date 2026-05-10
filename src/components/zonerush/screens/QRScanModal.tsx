@@ -96,6 +96,30 @@ export function QRScanModal({ event, onClose }: QRScanModalProps) {
           return u;
         });
       }
+      // For item rewards, mark the item as owned so it shows up in the
+      // Inventory tab AND in the Avatar Studio's owned-items list.
+      if ((r.reward_type === "avatar_item" || r.reward_type === "consumable") && r.reward_value_text && ctx?.setSharedShopItems) {
+        ctx.setSharedShopItems((items: any[]) => {
+          const itemId = r.reward_value_text;
+          const exists = items.some((i: any) => i.id === itemId);
+          if (exists) {
+            return items.map((i: any) => i.id === itemId ? { ...i, owned: true } : i);
+          }
+          // Item came from the event-only catalog (not yet in sharedShopItems) — append it.
+          return [...items, {
+            id: itemId,
+            name: r.reward_label || itemId,
+            cat: "cosmetic",
+            price: 0, priceAE: 0,
+            rarity: "rare",
+            icon: "🎁",
+            owned: true,
+            featured: false,
+            type: "general",
+            stock: null, sold: 0, active: true, soulBound: true,
+          }];
+        });
+      }
       showToast(`🎁 Redeemed: ${r.reward_label || r.reward_type}`, "success");
     } catch (err: any) {
       console.error(err);
