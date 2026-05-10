@@ -77,9 +77,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { attachSupabaseAuth } from "@/integrations/supabase/auth-client-middleware";
 
 export const redeemEventQR = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .inputValidator((input: { token: string }) => {
     const token = (input?.token || "").trim();
     if (!token || token.length > 200) throw new Error("invalid_token");
