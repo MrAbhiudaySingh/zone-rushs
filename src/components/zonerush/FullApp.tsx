@@ -268,13 +268,14 @@ export default function ZoneRushApp() {
       // Backfill local redeemed list from DB so users recover items across devices/reinstalls.
       try {
         const { data: redemptions } = await supabase
-          .from("event_qr_redemptions")
-          .select("qr_code_id, event_qr_codes!inner(reward_type, reward_value_text)")
-          .eq("user_id", authUser.id);
-        if (redemptions?.length) {
-          const dbIds = redemptions
-            .filter((r: any) => ["avatar_item","consumable"].includes(r.event_qr_codes?.reward_type) && r.event_qr_codes?.reward_value_text)
-            .map((r: any) => r.event_qr_codes.reward_value_text);
+          .from("event_qr_redemptions").select("qr_code_id").eq("user_id", authUser.id);
+        const qrIds = (redemptions || []).map((r: any) => r.qr_code_id).filter(Boolean);
+        if (qrIds.length) {
+          const { data: qrs } = await supabase
+            .from("event_qr_codes").select("id, reward_type, reward_value_text").in("id", qrIds);
+          const dbIds = (qrs || [])
+            .filter((q: any) => ["avatar_item","consumable"].includes(q.reward_type) && q.reward_value_text)
+            .map((q: any) => q.reward_value_text);
           if (dbIds.length) {
             const key = `zr_redeemed_${authUser.id}`;
             let list: string[] = [];
