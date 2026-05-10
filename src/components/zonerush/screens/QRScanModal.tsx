@@ -13,7 +13,7 @@ import { useEffect, useRef, useState, useContext } from "react";
 import { AppContext } from "../AppContext";
 import { showToast } from "../toast";
 import { redeemEventQR } from "@/server/events";
-import { BG, S1, S2, BR, T, TG, TA, TR, TX, TM, FONT, MONO } from "../constants";
+import { BG, S1, S2, BR, T, TG, TA, TR, TX, TM, FONT, MONO, ITEM_CATALOG } from "../constants";
 
 interface QRScanModalProps { event: any; onClose: () => void; }
 
