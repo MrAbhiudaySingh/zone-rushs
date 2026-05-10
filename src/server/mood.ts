@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { attachSupabaseAuth } from "@/integrations/supabase/auth-client-middleware";
 
 /**
  * Salt for anonymising user IDs in `mood_entries`. SHA-256 of `userId` alone is
@@ -26,7 +27,7 @@ async function hashUserIdForMood(userId: string): Promise<string> {
 }
 
 export const saveMoodEntry = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .inputValidator((input: { moodScore: number; freeText?: string | null; outreachRequested: boolean }) => {
     if (typeof input?.moodScore !== "number" || input.moodScore < 1 || input.moodScore > 5) {
       throw new Error("Invalid mood score");
@@ -66,7 +67,7 @@ export const saveMoodEntry = createServerFn({ method: "POST" })
  * that `saveMoodEntry` writes. Never accepts a user ID from the client.
  */
 export const resolveMoodAnonHash = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .handler(async ({ context }) => ({
     anonUserHash: await hashUserIdForMood(context.userId),
   }));
